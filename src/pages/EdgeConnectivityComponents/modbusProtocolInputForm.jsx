@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AutocompleteInput from "../../Components/AutoCompleteInput";
 import Dropdown from "../../Components/Dropdown";
+import axios from "axios";
 
-const frequencies=[1,2,3]
+
+
 
 const baudrates=[
     <option>1200</option>
@@ -19,27 +21,38 @@ const Parities=['O','N','E'];
 export const ModbusProtocolInputForm=()=>{
 
   // Modbus State Variables
-    const [registerType, setRegisterType] = useState("tcpip");
+    const [registerType, setRegisterType] = useState("RTU");
 
 
 
 
   const [modbusConfig, setModbusConfig] = useState({
+    name:"",
   modbusIpAddress: "",
-  modbusPort: "/dev/ttyUSB0",
-  registerType: "tcpip",
-  baudRate: "9600",
-  parity: "N",
-  stopBits: "1",
-  byteSize: "8",
-  frequency: "2 second",
+  modbusPort: "",
+  registerType: "TCP",
+  baudRate: 9600,
+  parity: "E",
+  stopBits: 1,
+  byteSize: 8,
+  frequency:1,
 });
 
 //Connection and submit
+  const [apiUrl,setApiUrl]=useState('http://100.123.97.82:8000/modbus-rtu/test-connection')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [connected,setConnected]=useState(false);
+  const [connected,setConnected]=useState(true);
+
+
+  useEffect(()=>{
+    if(registerType==="tcpip"){
+      setApiUrl("http://100.123.97.82:8000/modbus-tcp/test-connection")
+    }else{
+      setApiUrl("http://100.123.97.82:8000/modbus-rtu/test-connection")
+    }
+  },[registerType])
 
 
 const handleInputChange = (name,value) => {
@@ -49,13 +62,58 @@ const handleInputChange = (name,value) => {
   }));
 };
 
-const testConnection=()=>{
-
+const testConnection=async()=>{
+    
+   try{
+     const response=await axios.post(`${apiUrl}`,{
+    "port":modbusConfig.modbusPort,
+    "expression":"2*5*10",
+    "baudrate":modbusConfig.baudRate,
+    "parity":modbusConfig.parity,
+    "IP":modbusConfig.modbusIpAddress,
+    "stopbit":modbusConfig.stopBits,        
+    "bytesize":modbusConfig.byteSize
+})
+    if(response.data?.status==="Connected"){
+        setConnected(true);
+        setSuccessMessage("Connection Successfull");
+    }
+   }catch(e){
+    setError("Connection Failed");
+   }
+    
 } 
 
-const submitServer=()=>{
 
+const submitServer=async()=>{
+      try{
+        
+        const response=await axios.post(`http://localhost:3001/modbus/saveServer`,{
+           port:modbusConfig.modbusPort,
+           name:modbusConfig.name,
+           type:modbusConfig.registerType,
+    expression:"2*5*10",
+    baudrate:modbusConfig.baudRate,
+    parity:modbusConfig.parity,
+    IP:modbusConfig.modbusIpAddress,
+    stopbit:modbusConfig.stopBits,        
+    bytesize:modbusConfig.byteSize
+        })
+
+        if(response.data?.status==="Success"){
+          
+          setSuccessMessage("Submitted Successfully")
+        }
+
+        console.log(response.data)
+      }catch(e){
+        console.log(e);
+        alert("Please Select a Unique server Name")
+      }
 }
+
+
+
 
     return (    
         <div className="flex justify-center">
@@ -67,25 +125,25 @@ const submitServer=()=>{
                   <label>
                     <input
                       type="radio"
-                      value="tcpip"
-                      checked={registerType === "tcpip"}
-                      onChange={() => setRegisterType("tcpip")}
+                      value="TCP"
+                      checked={registerType === "TCP"}
+                      onChange={() => setRegisterType("TCP")}
                     />
                     Modbus TCP IP
                   </label>
                   <label>
                     <input
                       type="radio"
-                      value="rtu"
-                      checked={registerType === "rtu"}
-                      onChange={() => setRegisterType("rtu")}
+                      value="RTU"
+                      checked={registerType === "RTU"}
+                      onChange={() => setRegisterType("RTU")}
                     />
                     Modbus RTU
                   </label>
                 </div>
               </div>
 
-              {registerType === "tcpip" && (
+              {registerType === "TCP" && (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -97,35 +155,44 @@ const submitServer=()=>{
                      <div>
                  <AutocompleteInput label="Frequency (in seconds)" onSelect={(value)=>handleInputChange('frequency',value)}  type="number"/>
               </div>
+              <div>
+                 <AutocompleteInput label="Unique Server Name" onSelect={(value)=>handleInputChange('name',value)}  />
+              </div>
                   </div>
                 </>
               )}
 
-              {registerType === "rtu" && (
+              {registerType === "RTU" && (
                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+                      <AutocompleteInput label="Port"  onSelect={(value)=>handleInputChange('modbusPort',value)} />
+                    </div>
                      <div>
                   <Dropdown label="Baud Rate" options={baudrates} onSelect={(value)=>handleInputChange('baudRate',value)}/>
                 </div>
                 <div>
-                  <Dropdown label="Parity" options={Parities} onSelect={(value)=>{handleInputChange('parity',value)}}/>
+                  <Dropdown label="Parity" options={Parities}  onSelect={(value)=>{handleInputChange('parity',value)}}/>
                 </div>
 
                 <div>
-                  <AutocompleteInput label="Byte Size" onSelect={(value)=>{handleInputChange('byteSize',value)}}/>
+                  <AutocompleteInput label="Byte Size" type="number" onSelect={(value)=>{handleInputChange('byteSize',value)}}/>
                 </div>
                
                 <div>
-                  <AutocompleteInput label="Stop Bits" onSelect={(value)=>handleInputChange('stopBits',value)}/>
+                  <AutocompleteInput label="Stop Bits" type="number" onSelect={(value)=>handleInputChange('stopBits',value)}/>
                 </div>
                  <div>
-                    <AutocompleteInput label="Frequency (in seconds)" onSelect={(value)=>handleInputChange('frequency',value)}  type="number"/>
+                    <AutocompleteInput label="Frequency (in seconds)"  onSelect={(value)=>handleInputChange('frequency',value)}  type="number"/>
 
+              </div>
+              <div>
+                 <AutocompleteInput label="Unique Server Name" onSelect={(value)=>handleInputChange('name',value)}  />
               </div>
                 </div>
               )}
 
 
-              <div>
+              <div className="mt-5 ">
                  <div className="text-right">
     <button
       type="button"
@@ -134,7 +201,17 @@ const submitServer=()=>{
     >
       {connected ? "Submit" : "Test Connection"}
     </button>
+    
   </div>
+  {
+    successMessage!=="" 
+    && 
+    (
+        <div className="text-right px-3">
+        <span className="text-xs text-green-600 font-semibold">{successMessage}</span>
+    </div>
+    )
+  }
               </div>
 
 

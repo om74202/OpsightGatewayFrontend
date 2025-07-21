@@ -9,7 +9,7 @@ const Login = () => {
  
     const navigate = useNavigate();
     const [credentials, setCredentials] = useState({
-        email: "",
+        username: "",
         password: "",
     });
     const [error, setError] = useState("");
@@ -22,15 +22,17 @@ const Login = () => {
         e.preventDefault();
         setError("");
         try {
+            // const response=await axios.post(`http://localhost:3001/gateway/login`,credentials)
             
-            if (credentials.email === "opsight@gmail.com" && credentials.password==="Opsight@123") {
-               localStorage.setItem("Email",credentials.email);
+            if ( true) {
+               localStorage.setItem("Email",credentials.username);
                localStorage.setItem("Password",credentials.password);
                 navigate("/gateway"); // or any page you want to redirect to
             } else {
                 setError(  "Login failed");
             }
         } catch (err) {
+            console.log(e)
             setError(err.response?.data?.message || "Something went wrong");
         }
     };
@@ -54,10 +56,10 @@ const Login = () => {
                             </label>
                             <input
                                 type="email"
-                                name="email"
+                                name="username"
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 px-3 py-2 text-sm"
                                 placeholder="Example@email.com"
-                                value={credentials.email}
+                                value={credentials.username}
                                 onChange={handleChange}
                                 required
                             />

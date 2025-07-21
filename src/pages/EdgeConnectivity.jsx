@@ -12,7 +12,7 @@ export const EdgeConnectivity=()=>{
                 <OpcuaInputForm/>
             </div>
 
-            }
+            }   
 
             {
                 (tab==="modbus")
