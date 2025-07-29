@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function AutocompleteInput({ label="Input Box", options = [], defaultValue = '',name, onSelect,placeholder="Start Typing...",type="text" }) {
-  const [inputValue, setInputValue] = useState(defaultValue);
+export default function AutocompleteInput({ label="Input Box", options = [], defaultValue ='',name, onSelect,placeholder="Start Typing...",type="text" }) {
+  const [inputValue, setInputValue] = useState();
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef(null);

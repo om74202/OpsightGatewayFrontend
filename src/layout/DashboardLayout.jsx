@@ -9,7 +9,8 @@ const pageTitles = {
   "/gateway/edge-connection/modbus": "Modbus ",
 
   "/gateway/database-management":"Database Management",
-  "/gateway/health-monitoring":"Health Monitoring "
+  "/gateway/health-monitoring":"Health Monitoring ",
+  "/gateway/modbus/ConfigTags":"Modbus Tags Configuration"
   };
 
 export function DashboardLayout() {

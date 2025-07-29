@@ -7,6 +7,7 @@ import { LayoutDashboard } from "lucide-react";
 import { HealthMonitoring } from "./pages/HealthMonitoring";
 import { DatabaseHandling } from "./pages/DatabaseHandling";
 import { EdgeConnectivity } from "./pages/EdgeConnectivity";
+import { ModbusConfigTags } from "./pages/EdgeConnectivityComponents/ModbusConfigTags";
 
 
 
@@ -28,6 +29,8 @@ function App() {
         <Route path="health-monitoring" element={<HealthMonitoring/>}></Route>
         <Route path="database-management" element={<DatabaseHandling/>}></Route>
         <Route path="edge-connection/:tab" element={<EdgeConnectivity/>}></Route>
+        <Route path="modbus/ConfigTags" element={<ModbusConfigTags/>}></Route>
+
         </Route>
         
 
