@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from "react-router-dom"
 import { OpcuaInputForm } from "./EdgeConnectivityComponents/OpcuaInputForm"
 import { ModbusProtocolInputForm } from "./EdgeConnectivityComponents/modbusProtocolInputForm"
+import { SimensInputForm } from "./EdgeConnectivityComponents/simensInputForm"
 
 export const EdgeConnectivity=()=>{
      const {tab} = useParams()
@@ -19,6 +20,13 @@ export const EdgeConnectivity=()=>{
                 && 
                 <div>
                     <ModbusProtocolInputForm/>
+                </div>
+            }
+            {
+                (tab==="s-7")
+                && 
+                <div>
+                    <SimensInputForm/>
                 </div>
             }
 

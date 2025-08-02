@@ -4,6 +4,7 @@ import Dropdown from "../../Components/Dropdown";
 import axios from "axios";
 import { Edit, Plus, Server, Tags, Trash2, Wifi, WifiOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+const url=process.env.REACT_APP_API_URL;
 
 
 
@@ -29,18 +30,29 @@ export const ModbusProtocolInputForm=()=>{
 
 
 
-  const [modbusConfig, setModbusConfig] = useState({
-    serverId:null,
+    const [modbusConfig, setModbusConfig] = useState({
+      serverId:null,
+      serverName:"",
+       modbusIpAddress: "",
+       modbusPort: "",
+       registerType: "RTU",
+       baudRate: 0,
+       parity: "E",
+       stopBits: 0,
+       byteSize: 0,
+       frequency:0,
+  });
+  const [editConfig,setEditConfig]=useState({
     serverName:"",
-  modbusIpAddress: "",
-  modbusPort: "",
-  registerType: "TCP",
-  baudRate: 9600,
-  parity: "E",
-  stopBits: 1,
-  byteSize: 8,
-  frequency:1,
-});
+       serverIp: "",
+       serverPort: "",
+       type: "RTU",
+       serverBaudrate: 0,
+       serverParity: "E",
+       serverStopBit: 0,
+       serverByteSize: 0,
+       serverFrequency:0,
+  })
 
 const [count,setCount]=useState(0);
 
@@ -58,16 +70,7 @@ const [count,setCount]=useState(0);
   // Server List 
   const [expandList,setExpandList]=useState(true);
   const [serverList, setServerList]=useState([{
-      name:"test",
-  modbusIpAddress: "",
-  modbusPort: "/dev/ttyUSB0",
-  registerType: "rtu",
-  baudRate: 9600,
-  parity: "E",
-  stopBits: 1,
-  byteSize: 8,
-  frequency:1,
-  }]);
+    }]);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
 
@@ -84,7 +87,7 @@ const [count,setCount]=useState(0);
   },[registerType])
 
 const getServerList=async()=>{
-    const url=`http://localhost:3001/modbus/getServers`;
+    const url=`${process.env.REACT_APP_API_URL}/modbus/getServers`;
 
     try{
         const response = await axios.get(url);
@@ -98,23 +101,27 @@ useEffect(()=>{
   getServerList();
 },[count])
 
-const handleEdit = (server) => {
-    setEditingId(server.id);
-    setEditName(server.name);
+const handleEdit = (id,name="",value="") => {
+  
+    setEditingId(id);
+    setEditConfig((prev)=>({
+      ...prev,
+      [name]:value
+    }))
   };
 
   const handleSaveEdit = async(id) => {
-      const url=`http://localhost:3001/modbus/updateServer/${id}`
+      const url=`${process.env.REACT_APP_API_URL}/modbus/updateServer/${id}`
     try{
-      const payload={};
-        const response=await axios.post(url,payload)
+      
+        const response=await axios.post(url,editConfig)
         setCount(count+1);
     }catch(e){
       console.log(e);
     }
     
     setEditingId(null);
-    setEditName('');
+    setCount(count+1)
   };
 
   const handleCancelEdit = () => {
@@ -124,7 +131,7 @@ const handleEdit = (server) => {
 
   const handleDelete = async(id) => {
     if (window.confirm('Are you sure you want to delete this server?')) {
-      const url=`http://localhost:3001/modbus/deleteServer/${id}`
+      const url=`${process.env.REACT_APP_API_URL}/modbus/deleteServer/${id}`
       try{
         const response=await axios.delete(url);
         setCount(count+1);
@@ -140,6 +147,7 @@ const handleInputChange = (name,value) => {
     ...prev,
     [name]: value,
   }));
+  console.log(modbusConfig)
 };
 
 const testConnection=async()=>{
@@ -166,21 +174,23 @@ const testConnection=async()=>{
 
 
 const submitServer=async()=>{
+  console.log(modbusConfig)
       try{
         
-        const response=await axios.post(`http://localhost:3001/modbus/saveServer`,{
+        const response=await axios.post(`${process.env.REACT_APP_API_URL}/modbus/saveServer`,{
            port:modbusConfig.modbusPort,
            name:modbusConfig.name,
            type:modbusConfig.registerType,
-    expression:"2*5*10",
-    baudrate:modbusConfig.baudRate,
+    frequency:parseInt(modbusConfig.frequency),
+    baudrate:parseInt(modbusConfig.baudRate),
     parity:modbusConfig.parity,
     IP:modbusConfig.modbusIpAddress,
-    stopbit:modbusConfig.stopBits,        
-    bytesize:modbusConfig.byteSize
+    stopbit:parseInt(modbusConfig.stopBits),        
+    bytesize:parseInt(modbusConfig.byteSize)
         })
 
         if(response.data?.status==="Success"){
+          setCount(count+1);
           
           setSuccessMessage("Submitted Successfully")
         }
@@ -226,7 +236,9 @@ const submitServer=async()=>{
                       type="radio"
                       value="TCP"
                       checked={registerType === "TCP"}
-                      onChange={() => setRegisterType("TCP")}
+                      onChange={() =>{ setRegisterType("TCP")
+                        handleInputChange("registerType","TCP");
+                      }}
                     />
                     Modbus TCP IP
                   </label>
@@ -235,7 +247,9 @@ const submitServer=async()=>{
                       type="radio"
                       value="RTU"
                       checked={registerType === "RTU"}
-                      onChange={() => setRegisterType("RTU")}
+                      onChange={() => {setRegisterType("RTU")
+                        handleInputChange("registerType","RTU")
+                      }}
                     />
                     Modbus RTU
                   </label>
@@ -361,15 +375,89 @@ const submitServer=async()=>{
                   
                   <div className="flex-1">
                     {editingId === server.serverId ? (
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-2 gap-5">
+                        <div className="flex flex-col">
+                          <label>Name</label>
                         <input
                           type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
+                          value={editConfig.serverName}
+                          onChange={(e) => handleEdit(server.serverId,'serverName',e.target.value)}
                           className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(server.serverId)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(server.serverId,'serverName',e.target.value)}
                           autoFocus
                         />
+                        </div>
+                        <div className="flex flex-col">
+                          <label>Port</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverPort}
+                          onChange={(e) => handleEdit(server.serverId,'serverPort',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        />  
+                        </div>
+                        {editConfig.type==='RTU' && (
+                         <div className="grid grid-cols-2 gap-5">
+                          <div className="flex flex-col">
+                          <label>Baudrate</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverBaudrate}
+                          onChange={(e) => handleEdit(server.serverId,'serverBaudrate',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          
+                          autoFocus
+                        />
+                        </div>
+                         <div className="flex flex-col">
+                          <label>Parity</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverParity}
+                          onChange={(e) => handleEdit(server.serverId,'serverParity',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          
+                          autoFocus
+                        />
+                        </div>
+                          <div className="flex flex-col">
+                          <label>Byte Size</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverByteSize}
+                          onChange={(e) => handleEdit(server.serverId,'serverByteSize',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          
+                          autoFocus
+                        />
+                        </div>
+                          <div className="flex flex-col">
+                          <label>Stop Bit</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverStopBit}
+                          onChange={(e) => handleEdit(server.serverId,'serverStopBit',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          
+                          autoFocus
+                        />
+                        </div>
+                         </div>
+                        
+                        )}
+                          <div className="flex flex-col">
+                          <label>Frequency</label>
+                        <input
+                          type="text"
+                          value={editConfig.serverFrequency}
+                          onChange={(e) => handleEdit(server.serverId,'serverFrequency',e.target.value)}
+                          className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          
+                          autoFocus
+                        />
+                        </div>
+
                         <button
                           onClick={() => handleSaveEdit(server.serverId)}
                           className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
@@ -420,14 +508,18 @@ const submitServer=async()=>{
                       <Tags className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleEdit(server)}
+                      onClick={() => {handleEdit(server.serverId)
+                        setEditConfig(server)
+                      }}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Edit server"
                     >
                       <Edit className="w-4 h-4" />
                     </button> 
                     <button
-                      onClick={() => handleDelete(server.serverId)}
+                      onClick={() => {handleDelete(server.serverId)
+                        
+                      }}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete server"
                     >

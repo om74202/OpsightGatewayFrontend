@@ -44,7 +44,7 @@ export const OpcuaInputForm=()=>{
 
                 <div>
                                 <div className="">
-              <h2 className="text-md ">OPCUA Configuration</h2>
+              {/* <h2 className="text-md ">OPCUA Configuration</h2> */}
               <div className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6 space-y-6">
   <div className="grid grid-cols-2 gap-4">
     {/* IP Address */}

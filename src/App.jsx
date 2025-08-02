@@ -30,6 +30,8 @@ function App() {
         <Route path="database-management" element={<DatabaseHandling/>}></Route>
         <Route path="edge-connection/:tab" element={<EdgeConnectivity/>}></Route>
         <Route path="modbus/ConfigTags" element={<ModbusConfigTags/>}></Route>
+        
+
 
         </Route>
         

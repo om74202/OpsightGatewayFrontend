@@ -24,6 +24,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       children: [
       { name: "OPC UA ", path: "/gateway/edge-connection/opcua" ,tab:"OPCUA"},
       { name: "Modbus", path: "/gateway/edge-connection/modbus" ,tab:"Modbus "},
+      { name: "Simens", path: "/gateway/edge-connection/s-7" ,tab:"Simens"},
+
    
     ]
      },
