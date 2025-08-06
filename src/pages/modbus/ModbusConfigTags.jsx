@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Play, RefreshCw, Save, CheckCircle, Wifi, WifiOff, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
+import { applyScaling } from '../../functions/tags';
 
 const dataTypes = ['INT16', 'UINT16', 'INT32', 'UINT32', 'FLOAT32', 'BOOL', 'STRING'];
 const functionCodes = [
@@ -12,7 +13,7 @@ const functionCodes = [
   { value: '4', label: 'Input' }
 ];
 
-const ServerSection = React.memo(({ server, updateServer, updateTag, toggleExpand, browseTags,serverInfo }) => (
+const ServerSection = React.memo(({ server, updateServer, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
     
@@ -65,17 +66,6 @@ const ServerSection = React.memo(({ server, updateServer, updateTag, toggleExpan
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
         </div>
-       
-        {/* <div >
-        
-          <label className="block  text-sm font-medium text-gray-700 mb-1">Conversion</label>
-          <input
-            type="text"
-            value={server.conversion}
-            onChange={(e) => updateServer(server.id, 'conversion', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          />
-        </div> */}
      
       </div>
 
@@ -92,7 +82,7 @@ const ServerSection = React.memo(({ server, updateServer, updateTag, toggleExpan
           value={funcCfg.functionCode}
           onChange={(e) => {
             const updated = [...server.functionConfigs];
-            updated[fcIndex].functionCode = parseInt(e.target.value, 10);
+            updated[fcIndex].functionCode = e.target.value;
             updateServer(server.id, 'functionConfigs', updated);
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -199,7 +189,9 @@ const ServerSection = React.memo(({ server, updateServer, updateTag, toggleExpan
       conversion: '',
       ranges: []
     }];
-    updateServer(server.id, 'functionConfigs', newConfigs);
+   
+     updateServer(server.id, 'functionConfigs', newConfigs); 
+    
   }}
   className="text-blue-600 text-sm hover:underline"
 >
@@ -219,37 +211,43 @@ const ServerSection = React.memo(({ server, updateServer, updateTag, toggleExpan
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th> */}
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">check</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Type</th> */}
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
                       {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {server.tags.map((tag) => (
-                      <tr key={tag.tag} className="hover:bg-gray-50">
-                        {/* <td className="px-4 py-3">
+                      <tr key={tag.address} className="hover:bg-gray-50">
+                         <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                           
+                            onClick={(e)=>updateTagProperties(server.id,tag.address,{ status: e.target.checked ? 'pass' : 'fail' })}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
                           <input
                             type="text"
                             value={tag.name}
-                            onChange={(e) => updateTag(server.id, tag.id, 'name', e.target.value)}
+                            onChange={(e) => updateTagProperties(server.id, tag.address, {'name': e.target.value})}
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                           />
-                        </td> */}
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.tag}</td>
-                        {/* <td className="px-4 py-3">
-                          <select
-                            value={tag.dataType}
-                            onChange={(e) => updateTag(server.id, tag.id, 'dataType', e.target.value)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.address}</td>
+                        <td className="px-4 py-3">
+                           <input
+                            type="text"
+                            value={tag.scaling}
+                            onChange={(e) => updateTagProperties(server.id, tag.address,{ 'scaling':e.target.value})}
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          >
-                            {dataTypes.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        </td> */}
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.value}</td>
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{applyScaling(tag?.scaling || "",tag.value)}</td>
                        
                       </tr>
                     ))}
@@ -320,6 +318,43 @@ export const ModbusConfigTags = () => {
       }
     }
 
+    const saveTags=()=>{
+      try{
+        servers.map(async (server)=>{
+          try{
+            const allowedKeys = ['name', 'scaling', 'address', 'serverId'];
+            const TotalTags = server.tags.filter(
+  (tag) =>
+    tag.status === "pass" &&
+    !isNaN(applyScaling(tag?.scaling || "", tag.value)
+  && (applyScaling(tag?.scaling || "",tag.value)))
+);
+            
+
+           
+            const tags = (TotalTags || []).map(tag => {
+              const cleanedTag = {};
+              allowedKeys.forEach(key => {
+                if (key in tag) cleanedTag[key] = tag[key];
+              });
+              return cleanedTag;
+            });
+
+            // 3. Submit to backend
+            const response = await axios.post(
+              `${process.env.REACT_APP_API_URL}/modbus/saveTags`,
+              tags
+            );
+            alert("Tags Saved Successfully")
+          }catch(e){
+            console.log(e)
+          }
+        })
+      }catch(e){
+        alert("Failed to save Tags")
+      }
+    }
+
 
 
 
@@ -335,11 +370,46 @@ export const ModbusConfigTags = () => {
     ));
   }, []);
 
- const updateTags = useCallback((serverId, field, value) => {
-  setServers(prev => prev.map(server =>
-    server.id === serverId ? { ...server, [field]: value } : server
-  ));
-}, []);
+ 
+function updateTagValue(serverId, newEntries) {
+  setServers(prevServers =>
+    prevServers.map(server => {
+      if (server.id !== serverId) return server;
+
+      // First time: initialize tags
+      if (!server.tags || server.tags.length === 0) {
+        return { ...server, tags: newEntries };
+      }
+
+      // Subsequent updates: only update values by address
+      const updatedTags = server.tags.map(tag => {
+        const matchingNewEntry = newEntries.find(entry => entry.address === tag.address);
+        return matchingNewEntry
+          ? { ...tag, value: matchingNewEntry.value, timestamp: matchingNewEntry.timestamp }
+          : tag;
+      });
+
+      return { ...server, tags: updatedTags };
+    })
+  );
+}
+function updateTagProperties(serverId, address, updatedFields) {
+  setServers(prevServers =>
+    prevServers.map(server => {
+      if (server.id !== serverId) return server;
+
+      const updatedTags = server.tags.map(tag =>
+        tag.address === address
+          ? { ...tag, ...updatedFields } // Merge new properties
+          : tag
+      );
+
+      return { ...server, tags: updatedTags };
+    })
+  );
+}
+
+
 
 
   const toggleExpand = useCallback((serverId) => {
@@ -365,31 +435,31 @@ export const ModbusConfigTags = () => {
       const found = functionCodes.find(fc => fc.value === functionConfig.functionCode);
       
 const type = found ? found.label : null;
-
-console.log(found,type,functionConfig.functionCode)
-    if (!type) return; // skip unknown functionCodes
+    if (!type) {
+      console.log(type);
+      return;
+    } // skip unknown functionCodes
     if (!result[name]) {
-      result[name] = {
-        slave: parseInt(slaveId),
-        [type]: {
-          register: [],
-        }
-      };
-    }
-  
-   
+  result[name] = {
+    slave: parseInt(slaveId),
+  };
+}
 
+// ✅ Add this to safely initialize type-level register array
+if (!result[name][type]) {
+  result[name][type] = {
+    register: [],
+  };
+}
     // Push the address-count pair
-   
+    console.log(result)
       functionConfig.ranges.map((range)=>{
-        
+        console.log(name,result)
         result[name][type].register.push(
           range
     );
-      })
-    
-  });
-
+          })
+      });
     })
  
 
@@ -406,6 +476,7 @@ console.log(found,type,functionConfig.functionCode)
     },
     result
    }
+   console.log(payload)
   
 
 
@@ -429,22 +500,26 @@ useEffect(() => {
     };
 
     ws.onmessage = (event) => {
+       
       try {
-        const msg = JSON.parse(event.data);
+       servers.map((server)=>{
+         const msg = JSON.parse(event.data);
         const deviceName = msg.stream.split(':')[1];
         const dataEntries = Object.entries(msg.data)
           .filter(([key]) => key !== `connection_Holding_slave_1`) // filter out metadata
           .map(([key, value]) => ({
-            tag: key,
+            serverId:serverInfo.serverId,
+            name:key,
+            address: key,
             value,
             id: msg.id,
             timestamp: new Date(parseInt(msg.id.split('-')[0])).toLocaleString()
           }));
 
             // console.log(msg.id.split('-'))
-        // setRows(dataEntries);
-        updateTags(1,'tags',dataEntries)
         console.log(dataEntries)
+        updateTagValue(server.id,dataEntries)
+       })
         
       } catch (err) {
         console.error('Error parsing WebSocket data', err);
@@ -461,6 +536,10 @@ useEffect(() => {
 
     return () => ws.close();
   }, [count]);
+
+
+
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -478,6 +557,13 @@ useEffect(() => {
             <Play className="w-4 h-4" />
             Browse Tags
           </button>
+           <button
+            onClick={() => saveTags()}
+            className="flex items-center  px-3 py-1 max-h-10 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+          >
+            <Play className="w-4 h-4" />
+            Save Tags
+          </button>
           
         </div>
       </div>
@@ -488,7 +574,7 @@ useEffect(() => {
               serverInfo={serverInfo}
               server={server}
               updateServer={updateServer}
-              updateTag={updateTags}
+              updateTagProperties={updateTagProperties}
               toggleExpand={toggleExpand}
               browseTags={browseTags}
             />

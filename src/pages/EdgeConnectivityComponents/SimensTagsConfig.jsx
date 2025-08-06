@@ -1,0 +1,482 @@
+import React, { useState, useCallback, useEffect } from "react";
+import {
+  Play,
+  RefreshCw,
+  Save,
+  CheckCircle,
+  Wifi,
+  WifiOff,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+} from "lucide-react";
+import { applyScaling } from "../../functions/tags";
+import axios from "axios";
+
+const Datatypes = ["INT","DINT", "REAL", "BOOL"];
+const ServerSection = React.memo(
+  ({
+    section,
+    setIsExpanded,
+    removeTag,
+    browsedTags,
+    addTag,
+    isExpanded,
+    server,
+    tags,
+    handleInputChange,
+    updateTagProperties,
+    updateServer,
+    globalTags,
+    toggleExpand,
+    browseTags,
+    serverInfo,
+  }) => (
+    <div>
+      <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  isExpanded ? setIsExpanded(false) : setIsExpanded(true);
+                }}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronUp className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className={`p-4`}>
+            <div className={`mb-3`}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4"></div>
+
+              <div className="mb-4">
+                <h6 className="text-sm font-semibold text-gray-700 mb-2">
+                  Tags
+                </h6>
+
+                {(tags || []).map((tag) => (
+                  <div
+                    key={tag.id}
+                    className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-2"
+                  >
+                      {['type', 'db', 'offset', 'bit'].map((field) =>
+                          field === 'type' ? (
+                            <div>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                            <select
+                              key={field}
+                              value={tag[field]}
+                              onChange={(e)=>handleInputChange('tag',tag.id,field,e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            >
+                              {Datatypes.map((fc) => (
+                                <option key={fc} value={fc}>
+                                  {fc}
+                                </option>
+                              ))}
+                            </select>
+                            </div>
+                          ) : (
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                            <input
+                              key={field}
+                              placeholder={field}
+                              value={tag[field]}
+                              onChange={(e)=>handleInputChange('tag',tag.id,field,e.target.value)}
+                              className="px-3 py-2 border border-gray-300 rounded text-sm"
+                            />
+                           </div>
+                          )
+                        )}
+                    <button
+                      className="text-sm text-red-600 hover:underline"
+                      onClick={() => {
+                        removeTag("tag", tag.id);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    addTag("tag");
+                  }}
+                  className="text-blue-600 text-sm hover:underline mt-1"
+                >
+                  + Add Tag
+                </button>
+
+                <div className="mt-4">
+                  <h6 className="text-sm font-semibold text-gray-700 mb-2">
+                    Global Tags
+                  </h6>
+                  {(globalTags || []).map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-2"
+                    >
+                      {['type', 'area', 'offset', 'bit'].map((field) =>
+                          field === 'type' ? (
+                             <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                            <select
+                              key={field}
+                              value={tag[field]}
+                              onChange={(e)=>handleInputChange('globalTag',tag.id,'type',e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            >
+                              {Datatypes.map((fc) => (
+                                <option key={fc} value={fc}>
+                                  {fc}
+                                </option>
+                              ))}
+                            </select>
+                             </div>
+                          ) : (
+                             <div>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                            <input
+                              key={field}
+                              placeholder={field}
+                              value={tag[field]}
+                              onChange={(e)=>handleInputChange('globalTag',tag.id,field,e.target.value)}
+                              
+                              className="px-3 py-2 border border-gray-300 rounded text-sm"
+                            />
+                             </div>
+                          )
+                        )}
+
+                      <button
+                        onClick={() => {
+                          removeTag("globalTag", tag.id);
+                        }}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      addTag("globalTag");
+                    }}
+                    className="text-blue-600 text-sm hover:underline mt-1"
+                  >
+                    + Add Global Tag
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <div className="w-full px-5">
+            <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
+            {browsedTags.length > 0 ? (
+              <div className="overflow-x-auto border border-gray-200 rounded-md">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Address
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Datatype
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Scaling
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Value
+                      </th>
+                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {browseTags.map((tag) => (
+                      <tr key={tag.address} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            onClick={(e) =>
+                              updateTagProperties(server.id, tag.address, {
+                                status: e.target.checked ? "pass" : "fail",
+                              })
+                            }
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={tag.name}
+                            onChange={(e) =>
+                              updateTagProperties(server.id, tag.address, {
+                                name: e.target.value,
+                              })
+                            }
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                          {tag.address}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                          {tag.Datatype}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={tag.scaling}
+                            onChange={(e) =>
+                              updateTagProperties(server.id, tag.address, {
+                                scaling: e.target.value,
+                              })
+                            }
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                          {applyScaling(tag?.scaling || "", tag.value)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
+                <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">
+                  No tags available. Click "Browse Tags" to load tags from the
+                  server.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+);
+
+export const SimensTagsConfig = () => {
+  const [tags, setTags] = useState([
+    {
+      id: 1,
+      type: "INT",
+      db: 0,
+      offset: 0,
+      bit: 0,
+    },
+  ]);
+  const [globalTags, setGlobalTags] = useState([
+    {
+      id: 1,
+      type: "INT",
+      area: "",
+      offset: 0,
+      bit: 0,
+    },
+  ]);
+  const [browsedTags, setBrowsedTags] = useState([]);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [count,setCount]=useState(0);
+  const serverInfo = JSON.parse(localStorage.getItem("Server"));
+
+  const handleInputChange = (name, id, field, value) => {
+  // Define fields that should always be integers
+  const intFields = ['offset', 'bit', 'db'];
+
+  const updateField = (prevTags) =>
+    prevTags.map(tag =>
+      tag.id === id
+        ? {
+            ...tag,
+            [field]: intFields.includes(field) ? parseInt(value || 0, 10) : value,
+          }
+        : tag
+    );
+
+  if (name === 'tag') {
+    console.log(field,value)
+    setTags(updateField);
+  } else if (name === 'globalTag') {
+    setGlobalTags(updateField);
+  }
+};
+
+
+
+  const addTag = (name) => {
+    if (name === "tag") {
+      let last = tags[tags.length - 1].id;
+      const newTag = {
+        id: ++last,
+        type: "",
+        db: 0,
+        offset: 0,
+        bit: 0,
+      };
+      setTags((prev) => [...prev, newTag]);
+    } else {
+      let last = globalTags[globalTags.length - 1].id;
+      const newTag = {
+        id: ++last,
+        type: "",
+        area: "",
+        offset: 0,
+        bit: 0,
+      };
+      setGlobalTags((prev) => [...prev, newTag]);
+    }
+    console.log(tags);
+  };
+
+  const removeTag = (name, id) => {
+    const removeById = (tags) =>
+      tags.length > 1 ? tags.filter((tag) => tag.id !== id) : tags;
+
+    if (name === "tag") {
+      setTags(removeById);
+    } else {
+      setGlobalTags(removeById);
+    }
+  };
+
+  const disConnectServer = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_GATEWAY_URL}/simens/Disconnect`
+      );
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const saveTags = () => {
+    try {
+    } catch (e) {
+      alert("Failed to save Tags");
+    }
+  };
+
+  function updateTagProperties(serverId, address, updatedFields) {}
+
+  const browseTags = async () => {
+    try{
+        const payload={
+            serverInfo,
+            result:{tags,global_tags:globalTags}
+        }
+        console.log(payload)
+        const response=await axios.post(`http://100.123.97.82:8001/start-background-read/`,payload)
+    }catch(e){
+        console.log(e);
+    }
+  };
+
+
+
+
+
+
+
+  useEffect(() => {
+      const ws = new WebSocket('ws://localhost:3001'); // replace with your backend IP if needed
+  
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+      };
+  
+      ws.onmessage = (event) => {
+        // console.log(event)
+         const data=JSON.parse(event.data)
+         const name=data.stream;
+        try {
+          if(name==='Siemen_stream'){
+            setBrowsedTags(data.data)
+            console.log(data)
+          }
+        } catch (err) {
+          console.error('Error parsing WebSocket data', err);
+        }
+      };
+  
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
+  
+      ws.onclose = () => {
+        console.log('WebSocket closed');
+      };
+  
+      return () => ws.close();
+    }, [count]);
+  return (
+    <div>
+      <div className="flex justify-end">
+        <button
+          onClick={() => {
+            disConnectServer();
+          }}
+          type="button"
+          className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium 
+                    rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
+        >
+          Disconnect Server
+        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => browseTags()}
+            className="flex items-center  px-3 py-1 max-h-10 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+          >
+            <Play className="w-4 h-4" />
+            Browse Tags
+          </button>
+          <button
+            onClick={() => saveTags()}
+            className="flex items-center  px-3 py-1 max-h-10 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+          >
+            <Play className="w-4 h-4" />
+            Save Tags
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-1 gap-6">
+        <ServerSection
+          serverInfo={serverInfo}
+          tags={tags}
+          removeTag={removeTag}
+          addTag={addTag}
+          setIsExpanded={setIsExpanded}
+          browsedTags={browsedTags}
+          isExpanded={isExpanded}
+          globalTags={globalTags}
+          updateTagProperties={updateTagProperties}
+          handleInputChange={handleInputChange}
+          browseTags={browseTags}
+        />
+      </div>
+    </div>
+  );
+};

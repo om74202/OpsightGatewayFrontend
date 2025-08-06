@@ -22,7 +22,7 @@ export const SimensInputForm=()=>{
         frequency:1,
         slot:1
     })
-    const [connected,setConnected]=useState(true)
+    const [connected,setConnected]=useState(false)
     const [showSuccessMessage,setShowSuccessMessage]=useState(false);
     const [error,setError]=useState("")
     const [showInputForm , setShowInputForm]=useState(false)
@@ -137,7 +137,7 @@ const handleEdit = (name="",value="") => {
   };
 
     return (
-        <div>
+        <div className="transition-all duration-500 ">
             {
             !showInputForm 
             && 
@@ -156,7 +156,7 @@ const handleEdit = (name="",value="") => {
 
           { showInputForm &&  
                       (
-                        <div className="flex justify-center">
+                        <div className="flex justify-center   ">
                            <div className="bg-gray-50  w-2/3 p-5 rounded-md">
                         <h2 className="text-2xl flex justify-center mb-4">Simens Configuration</h2>
                    
@@ -201,12 +201,7 @@ const handleEdit = (name="",value="") => {
               </div>
               )
             }
-                        </div>
-          
-          
-                        
-          
-                        
+                        </div>              
                       </div>
                         </div>
                       )}
@@ -336,7 +331,7 @@ const handleEdit = (name="",value="") => {
                         
                       localStorage.setItem('Server',JSON.stringify(server))
 
-                      // navigate('/gateway/simens/ConfigTags')
+                      navigate('/gateway/simens/ConfigTags')
                     }}
                       
                       className="p-2 text-gray-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -376,9 +371,6 @@ const handleEdit = (name="",value="") => {
         </div>
       </div>
     </div>
-            
-
-
         </div>
     )
 }

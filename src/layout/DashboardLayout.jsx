@@ -7,10 +7,11 @@ const pageTitles = {
   "/gateway": "Gateway Dashboard",
   "/gateway/edge-connection/opcua": "OPCUA Config",
   "/gateway/edge-connection/modbus": "Modbus ",
-
   "/gateway/database-management":"Database Management",
   "/gateway/health-monitoring":"Health Monitoring ",
   "/gateway/modbus/ConfigTags":"Modbus Tags Configuration",
+  "/gateway/simens/ConfigTags":"Simens Tags Configuration",
+  "/gateway/opcua/ConfigTags":"OPC UA Tags Configuration",
   "/gateway/edge-connection/s-7":"Simens",
   };
 

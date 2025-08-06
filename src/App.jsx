@@ -7,7 +7,11 @@ import { LayoutDashboard } from "lucide-react";
 import { HealthMonitoring } from "./pages/HealthMonitoring";
 import { DatabaseHandling } from "./pages/DatabaseHandling";
 import { EdgeConnectivity } from "./pages/EdgeConnectivity";
-import { ModbusConfigTags } from "./pages/EdgeConnectivityComponents/ModbusConfigTags";
+
+import { SimensTagsConfig } from "./pages/EdgeConnectivityComponents/SimensTagsConfig";
+import { ModbusConfigTags } from "./pages/modbus/ModbusConfigTags";
+import { ModbusFormulaConfig } from "./pages/modbus/ModbusFormulaConfigPage";
+import { OpcuaTagsConfig } from "./pages/opcua/OpcuaTagsConfig";
 
 
 
@@ -30,6 +34,11 @@ function App() {
         <Route path="database-management" element={<DatabaseHandling/>}></Route>
         <Route path="edge-connection/:tab" element={<EdgeConnectivity/>}></Route>
         <Route path="modbus/ConfigTags" element={<ModbusConfigTags/>}></Route>
+        <Route path="simens/ConfigTags" element={<SimensTagsConfig/>}></Route>
+        <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
+        <Route path="opcua/ConfigTags" element={<OpcuaTagsConfig/>}></Route>
+
+
         
 
 

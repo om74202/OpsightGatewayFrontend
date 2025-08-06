@@ -326,10 +326,6 @@ const submitServer=async()=>{
     )
   }
               </div>
-
-
-              
-
               
             </div>
               </div>
