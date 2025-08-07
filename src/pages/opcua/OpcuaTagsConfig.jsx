@@ -99,7 +99,7 @@ const ServerSection = React.memo(({  updateTagProperties, setIsExpanded,isExpand
             ) : (
               <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
                 <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No tags available. Click "Browse Tags" to load tags from the server.</p>
+                <p className="text-sm">No tags available. Double Click "Browse Tags" to load tags from the server.</p>
               </div>
             )}
           </div>
@@ -158,11 +158,43 @@ export const OpcuaTagsConfig = () => {
     );
   };
 
-  const saveTags=()=>{
+  const saveTags=async()=>{
     try{
-      console.log(subscribedNodes)
+      const payload = subscribedNodes
+  .filter(node => node.status === 'pass')
+  .map(({ name, dataType, scaling, nodeId }) => ({
+    name,
+    dataType,
+    scaling,
+    nodeId,
+    serverId: serverInfo.serverId
+  }));
+
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/saveTags`,payload) 
+      if(response.data.status!=="success"){
+        alert(response.data.message || "failed to add Tags")
+      }
     }catch(e){
       console.log(e);
+      
+    }
+  }
+
+  const deleteTag=(id)=>{
+    try{
+
+    }catch(e){
+      console.log(e);
+      alert("Tag deletion failed , Internal Server error")
+    }
+  }
+
+  const updateTag=()=>{
+    try{
+      
+    }catch(e){
+      console.log(e);
+      alert("Tag updation failed , Internal Server error")
     }
   }
   const disConnectServer=async()=>{
@@ -314,6 +346,13 @@ export const OpcuaTagsConfig = () => {
     );
   };
 
+
+
+
+
+
+
+
   return (
     <div className="">
     <div className='flex justify-end'>
@@ -342,7 +381,7 @@ export const OpcuaTagsConfig = () => {
         ))}
         
       </div>
-      <div>
+      <div className="w-full">
         <ServerSection
               serverInfo={serverInfo}
               updateTagProperties={updateNodeProperties}

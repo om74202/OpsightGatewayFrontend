@@ -10,9 +10,10 @@ const pageTitles = {
   "/gateway/database-management":"Database Management",
   "/gateway/health-monitoring":"Health Monitoring ",
   "/gateway/modbus/ConfigTags":"Modbus Tags Configuration",
-  "/gateway/simens/ConfigTags":"Simens Tags Configuration",
+  "/gateway/siemens/ConfigTags":"Siemens Tags Configuration",
   "/gateway/opcua/ConfigTags":"OPC UA Tags Configuration",
-  "/gateway/edge-connection/s-7":"Simens",
+  "/gateway/edge-connection/s-7":"Siemens",
+  "/gateway/iiot" : "IIOT Configuration"
   };
 
 export function DashboardLayout() {

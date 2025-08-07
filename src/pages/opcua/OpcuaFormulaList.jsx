@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Save, RotateCcw, Edit2, Trash2, Plus, X } from 'lucide-react';
+import axios from 'axios';
 
-export const ModbusFormulaConfig = () => {
+export const FormulaConfig = () => {
   const [variables, setVariables] = useState(['A', 'B', 'C']);
   const [formulaInput, setFormulaInput] = useState('');
   const [formulaName, setFormulaName] = useState('');
@@ -13,6 +14,7 @@ export const ModbusFormulaConfig = () => {
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [newVariableName, setNewVariableName] = useState('');
+  const [count,setCount]=useState(0)
   const inputRef = useRef(null);
 
   // Add new variable
@@ -35,6 +37,19 @@ export const ModbusFormulaConfig = () => {
       });
     }
   };
+
+    const getTags=async()=>{
+    try{
+        const response=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getTags`)
+        const variables=response.data.tags.map((v)=>v.name)
+        setVariables(variables)
+    }catch(e){
+        console.log(e)
+    }
+  }
+  useEffect(()=>{
+    getTags()
+  },[count])
 
   // Parse and validate formula
   const parseFormula = (input) => {
@@ -263,32 +278,17 @@ export const ModbusFormulaConfig = () => {
   const formulaStatus = getFormulaStatus();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">      
+    <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
+      
+      {/* Variables Management Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Variables</h2>
         
-        {/* Add New Variable */}
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            placeholder="Variable name (e.g., variable1, temp, price)"
-            value={newVariableName}
-            onChange={(e) => setNewVariableName(e.target.value)}
-            onKeyPress={handleNewVariableKeyPress}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={addVariable}
-            disabled={!newVariableName.trim() || variables.includes(newVariableName.trim())}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
-          >
-            <Plus size={16} /> Add
-          </button>
-        </div>
+        
         
         {/* Current Variables */}
         <div className="mb-4">
-          <label className="font-medium block mb-2">Current Variables:</label>
+          <label className="font-medium block mb-2">Current tags:</label>
           <div className="flex flex-wrap gap-2">
             {variables.map(variable => (
               <div key={variable} className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -366,7 +366,7 @@ export const ModbusFormulaConfig = () => {
         </div>
 
         {/* Helper Text */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+        {/* <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
           <h3 className="font-medium text-blue-800 mb-2">Quick Guide:</h3>
           <ul className="text-sm text-blue-700 space-y-1">
             <li>• Type variable names ({variables.join(', ')}) - suggestions will appear</li>
@@ -376,7 +376,7 @@ export const ModbusFormulaConfig = () => {
             <li>• Use Tab or Enter to accept suggestions</li>
             <li>• Variable names can be multi-letter (e.g., variable1, temperature, price)</li>
           </ul>
-        </div>
+        </div> */}
 
         {/* Control Buttons */}
         <div className="flex gap-2 mb-4">

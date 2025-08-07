@@ -12,6 +12,8 @@ import { SimensTagsConfig } from "./pages/EdgeConnectivityComponents/SimensTagsC
 import { ModbusConfigTags } from "./pages/modbus/ModbusConfigTags";
 import { ModbusFormulaConfig } from "./pages/modbus/ModbusFormulaConfigPage";
 import { OpcuaTagsConfig } from "./pages/opcua/OpcuaTagsConfig";
+import { IIOT } from "./pages/IIOT";
+import { OpcuaMain } from "./pages/opcua/Main";
 
 
 
@@ -34,9 +36,12 @@ function App() {
         <Route path="database-management" element={<DatabaseHandling/>}></Route>
         <Route path="edge-connection/:tab" element={<EdgeConnectivity/>}></Route>
         <Route path="modbus/ConfigTags" element={<ModbusConfigTags/>}></Route>
-        <Route path="simens/ConfigTags" element={<SimensTagsConfig/>}></Route>
+        <Route path="siemens/ConfigTags" element={<SimensTagsConfig/>}></Route>
         <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
-        <Route path="opcua/ConfigTags" element={<OpcuaTagsConfig/>}></Route>
+        <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
+        <Route path="iiot" element={<IIOT/>}></Route>
+        
+
 
 
         

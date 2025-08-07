@@ -44,7 +44,7 @@ export const SimensInputForm=()=>{
     }
 
 const getServerList=async()=>{
-    const url=`${process.env.REACT_APP_API_URL}/simens/getServers`;
+    const url=`${process.env.REACT_APP_API_URL}/siemens/getServers`;
 
     try{
         const response = await axios.get(url);
@@ -81,7 +81,7 @@ const getServerList=async()=>{
 
     const submitServer=async()=>{
         try{
-          const response=await axios.post(`${process.env.REACT_APP_API_URL}/simens/saveServer`,{
+          const response=await axios.post(`${process.env.REACT_APP_API_URL}/siemens/saveServer`,{
             ip:formConfig.ip,
             rack:parseInt(formConfig.rack),
             slot:parseInt(formConfig.slot),
@@ -98,7 +98,7 @@ const getServerList=async()=>{
     
     const handleDelete = async(id) => {
       if (window.confirm('Are you sure you want to delete this server?')) {
-        const url=`${process.env.REACT_APP_API_URL}/simens/deleteServer/${id}`
+        const url=`${process.env.REACT_APP_API_URL}/siemens/deleteServer/${id}`
         try{
           const response=await axios.delete(url);
           setCount(count+1);
@@ -118,7 +118,7 @@ const handleEdit = (name="",value="") => {
   
 
   const handleSaveEdit = async(id) => {
-      const url=`${process.env.REACT_APP_API_URL}/simens/updateServer/${id}`
+      const url=`${process.env.REACT_APP_API_URL}/siemens/updateServer/${id}`
     try{
       const payload={};
         const response=await axios.post(url,editConfig)
@@ -158,7 +158,7 @@ const handleEdit = (name="",value="") => {
                       (
                         <div className="flex justify-center   ">
                            <div className="bg-gray-50  w-2/3 p-5 rounded-md">
-                        <h2 className="text-2xl flex justify-center mb-4">Simens Configuration</h2>
+                        <h2 className="text-2xl flex justify-center mb-4">Siemens Configuration</h2>
                    
           
                        
@@ -331,7 +331,7 @@ const handleEdit = (name="",value="") => {
                         
                       localStorage.setItem('Server',JSON.stringify(server))
 
-                      navigate('/gateway/simens/ConfigTags')
+                      navigate('/gateway/siemens/ConfigTags')
                     }}
                       
                       className="p-2 text-gray-600 hover:bg-blue-50 rounded-lg transition-colors"

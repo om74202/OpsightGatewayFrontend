@@ -16,21 +16,16 @@ import axios from "axios";
 const Datatypes = ["INT","DINT", "REAL", "BOOL"];
 const ServerSection = React.memo(
   ({
-    section,
     setIsExpanded,
     removeTag,
-    browsedTags,
+    browsedTags=[],
     addTag,
     isExpanded,
     server,
     tags,
     handleInputChange,
     updateTagProperties,
-    updateServer,
     globalTags,
-    toggleExpand,
-    browseTags,
-    serverInfo,
   }) => (
     <div>
       <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
@@ -192,10 +187,13 @@ const ServerSection = React.memo(
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                        Check
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Address
+                        Id
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Datatype
@@ -210,36 +208,32 @@ const ServerSection = React.memo(
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {browseTags.map((tag) => (
-                      <tr key={tag.address} className="hover:bg-gray-50">
+                    {browsedTags.map((tag) => (
+                      <tr key={tag.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
                             onClick={(e) =>
-                              updateTagProperties(server.id, tag.address, {
-                                status: e.target.checked ? "pass" : "fail",
-                              })
+                              updateTagProperties(tag.id,'status',e.target.checked ? 'pass':'fail')
                             }
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                           />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                          {tag.id}
                         </td>
                         <td className="px-4 py-3">
                           <input
                             type="text"
                             value={tag.name}
                             onChange={(e) =>
-                              updateTagProperties(server.id, tag.address, {
-                                name: e.target.value,
-                              })
+                              updateTagProperties(tag.id,'name',e.target.value)
                             }
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                           />
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {tag.address}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {tag.Datatype}
+                          {tag.id?.split('_')[0] || ""}
                         </td>
 
                         <td className="px-4 py-3">
@@ -247,9 +241,7 @@ const ServerSection = React.memo(
                             type="text"
                             value={tag.scaling}
                             onChange={(e) =>
-                              updateTagProperties(server.id, tag.address, {
-                                scaling: e.target.value,
-                              })
+                              updateTagProperties(tag.id, 'scaling',e.target.value)
                             }
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                           />
@@ -280,13 +272,7 @@ const ServerSection = React.memo(
 
 export const SimensTagsConfig = () => {
   const [tags, setTags] = useState([
-    {
-      id: 1,
-      type: "INT",
-      db: 0,
-      offset: 0,
-      bit: 0,
-    },
+    
   ]);
   const [globalTags, setGlobalTags] = useState([
     {
@@ -322,13 +308,14 @@ export const SimensTagsConfig = () => {
   } else if (name === 'globalTag') {
     setGlobalTags(updateField);
   }
-};
+  };
+
 
 
 
   const addTag = (name) => {
     if (name === "tag") {
-      let last = tags[tags.length - 1].id;
+      let last = tags[tags.length - 1]?.id || 0;
       const newTag = {
         id: ++last,
         type: "",
@@ -365,21 +352,70 @@ export const SimensTagsConfig = () => {
   const disConnectServer = async () => {
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_GATEWAY_URL}/simens/Disconnect`
+        `http://100.123.97.82:8001/disconnect`
       );
     } catch (e) {
       console.log(e);
     }
   };
 
-  const saveTags = () => {
-    try {
-    } catch (e) {
-      alert("Failed to save Tags");
-    }
-  };
+  const saveTags=async()=>{
+    try{
+      console.log(browsedTags)
+      const payload = browsedTags
+  .filter(node => node.status === 'pass')
+  .map(({ name, scaling="", id }) => ({
+    name,
+    dataType:id?.split('_')[0],
+    scaling,
+    address:id,
+    serverId: serverInfo.id
+  }));
 
-  function updateTagProperties(serverId, address, updatedFields) {}
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/siemens/saveTags`,payload) 
+      if(response.data.status!=="success"){
+        alert(response.data.message || "failed to add Tags")
+      }
+    }catch(e){
+      console.log(e);
+      
+    }
+  }
+
+  const deleteTag=(id)=>{
+    try{
+
+    }catch(e){
+      console.log(e);
+      alert("Tag deletion failed , Internal Server error")
+    }
+  }
+
+  const updateTag=()=>{
+    try{
+      
+    }catch(e){
+      console.log(e);
+      alert("Tag updation failed , Internal Server error")
+    }
+  }
+
+  function updateTagProperties(id, field, value) {
+    setBrowsedTags((prev) => {
+      const index = prev.findIndex((tag) => tag.id === id);
+
+      if (index !== -1) {
+        // Update existing tag
+        return prev.map((tag) =>
+          tag.id === id ? { ...tag, [field]: value } : tag
+        );
+      } else {
+        // Add new tag
+        return [...prev, { id, [field]: value }];
+      }
+    });
+  }
+
 
   const browseTags = async () => {
     try{
@@ -400,37 +436,57 @@ export const SimensTagsConfig = () => {
 
 
 
-  useEffect(() => {
-      const ws = new WebSocket('ws://localhost:3001'); // replace with your backend IP if needed
-  
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-      };
-  
-      ws.onmessage = (event) => {
-        // console.log(event)
-         const data=JSON.parse(event.data)
-         const name=data.stream;
-        try {
-          if(name==='Siemen_stream'){
-            setBrowsedTags(data.data)
-            console.log(data)
-          }
-        } catch (err) {
-          console.error('Error parsing WebSocket data', err);
-        }
-      };
-  
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-      };
-  
-      ws.onclose = () => {
-        console.log('WebSocket closed');
-      };
-  
-      return () => ws.close();
-    }, [count]);
+useEffect(() => {
+  const ws = new WebSocket('ws://localhost:3001');
+
+  ws.onopen = () => {
+    console.log('WebSocket connected');
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      const name = data.stream;
+
+      if (name === 'Siemen_stream') {
+        const transformedData = Object.entries(data?.data || {}).map(
+          ([id, value]) => ({ id, value })
+        );
+
+        setBrowsedTags((prevTags) => {
+          const updatedTags = [...prevTags];
+
+          transformedData.forEach((newTag) => {
+            const index = updatedTags.findIndex((tag) => tag.id === newTag.id);
+
+            if (index !== -1) {
+              // If tag exists, update its value
+              updatedTags[index] = { ...updatedTags[index], value: newTag.value };
+            } else {
+              // If tag is new, add it
+              updatedTags.push({...newTag,name:newTag.id});
+            }
+          });
+
+          return updatedTags;
+        });
+      }
+    } catch (err) {
+      console.error('Error parsing WebSocket data', err);
+    }
+  };
+
+  ws.onerror = (err) => {
+    console.error('WebSocket error:', err);
+  };
+
+  ws.onclose = () => {
+    console.log('WebSocket closed');
+  };
+
+  return () => ws.close();
+}, [count]);
+
   return (
     <div>
       <div className="flex justify-end">

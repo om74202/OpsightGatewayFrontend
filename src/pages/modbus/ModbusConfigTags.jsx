@@ -13,6 +13,8 @@ const functionCodes = [
   { value: '4', label: 'Input' }
 ];
 
+const streamNames=['modbus_stream:Device_1','modbus_stream:Device_2']
+
 const ServerSection = React.memo(({ server, updateServer, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
@@ -502,8 +504,10 @@ useEffect(() => {
     ws.onmessage = (event) => {
        
       try {
-       servers.map((server)=>{
+      if(streamNames.includes(event.stream)){
+         servers.map((server)=>{
          const msg = JSON.parse(event.data);
+         
         const deviceName = msg.stream.split(':')[1];
         const dataEntries = Object.entries(msg.data)
           .filter(([key]) => key !== `connection_Holding_slave_1`) // filter out metadata
@@ -520,6 +524,7 @@ useEffect(() => {
         console.log(dataEntries)
         updateTagValue(server.id,dataEntries)
        })
+      }
         
       } catch (err) {
         console.error('Error parsing WebSocket data', err);

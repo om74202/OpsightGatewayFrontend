@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { BarChart4, ChevronLeft, ChevronRight, User, Wrench } from "lucide-react";
+import { BarChart4, ChevronLeft, ChevronRight, icons, User, Wrench } from "lucide-react";
 import {
   LayoutDashboard,
   LineChart,
@@ -30,6 +30,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     ]
      },
      { name: "Database Management", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/database-management"},
+     {name:"IIOT Configuration", icon:<LayoutDashboard className="w-5 h-5 mr-3"/> , path:"/gateway/iiot"},
      { name: "Health Monitoring", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/health-monitoring"},
   ];
 
