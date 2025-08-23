@@ -64,7 +64,7 @@ const getServerList=async()=>{
         return
       }
    try{
-     const response=await axios.post(`http://100.123.97.82:8001/siemen-plc/test-connection`,{
+     const response=await axios.post(`http://100.107.186.122:8001/siemen-plc/test-connection`,{
     ip:formConfig.ip
     ,rack:parseInt(formConfig.rack),
     slot:parseInt(formConfig.slot)

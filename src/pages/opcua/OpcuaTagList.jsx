@@ -2,8 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Edit2, Trash2, Save, X, Database, Tag } from 'lucide-react';
 import axios from 'axios';
 import { applyScaling } from "../../functions/tags";
+import DatabaseSelector from './database';
 
-
+let databases=[];
 export const TagsList = () => {
   // Sample data based on your structure
   const [tags, setTags] = useState([
@@ -52,6 +53,13 @@ export const TagsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [isConnected,setIsConnected]=useState(true)
+  const [databaseConfig,setDatabaseConfig]=useState({
+    db:"",
+    bucketName:"",
+    measurementName:""
+  })
+  const serverInfo = JSON.parse(localStorage.getItem("Server"));
   const [count,setCount]=useState(0);
 
   // Filter tags based on search term
@@ -60,6 +68,35 @@ export const TagsList = () => {
       tag.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [tags, searchTerm]);
+
+  const connectToDatabase=async()=>{
+    try{
+      const payload={...serverInfo,connectionId:"2"}
+        const connected=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/connectServer`,payload);
+        if(connected.data.status==="Success"){            
+            const sendData=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData`,{...databaseConfig,action:"start",connectionId:"2"});
+            if(sendData.data.status==="Success"){
+              setIsConnected(true)
+            }
+        }
+      setIsConnected(true);
+    }catch(e){
+      console.log(e);
+    }
+  }
+  const disconnectToDatabase=async()=>{
+    try{
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData`,{action:"stop",connectionId:"2"})
+      if(response.data.status==="Success"){
+        const response2=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"2"});
+        if(response.data.status==="Success"){
+          setIsConnected(false);
+        }
+      }
+    }catch(e){
+      console.log(e);
+    }
+  }
 
   // Start editing a tag
   const startEditing = (tag) => {
@@ -80,12 +117,27 @@ export const TagsList = () => {
     try{
         const response=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getTags`)
         setTags(response.data?.tags || [])
+        const databaseList=response.data?.databases || [];
+        databases=databaseList;
     }catch(e){
         console.log(e)
     }
   }
+    const getConnectionStatus=async()=>{
+    try{
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/getConnectionStatus`,{connectionId:"2"})
+      if(response.data.connected && response.data.status==="Success"){
+        setIsConnected(true);
+      }else{
+        setIsConnected(false);
+      }
+    }catch(e){
+      console.log(e);
+    }
+  }
   useEffect(()=>{
     getTags()
+    getConnectionStatus()
   },[count])
 
   // Save edited tag
@@ -134,15 +186,14 @@ export const TagsList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 ">
       <div className="max-w-full mx-auto">
        
 
         {/* Search Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-2 mb-2">
-          <div className="flex items-center gap-2 mb-1">
-            <Search className="text-gray-600" size={16} />
-            <h2 className="text-xl font-semibold text-gray-800">Search Tags</h2>
+        <div className="bg-white flex items-center justify-between rounded-lg shadow-sm p-2 mb-2">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
             <span className="text-sm text-gray-500">({filteredTags.length} of {tags.length} tags shown)</span>
           </div>
           
@@ -155,6 +206,27 @@ export const TagsList = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+          </div>
+          <div className='flex items-center'>
+            <div>
+                          <button onClick={isConnected?disconnectToDatabase:connectToDatabase} type="button" className={`focus:outline-none text-white ${!isConnected?" bg-green-700 hover:bg-green-800":"bg-red-600 hover:bg-red-800"}  font-medium rounded-lg 
+            text-sm px-5 py-2.5 me-2 `}>{isConnected?"Disconnect from Database":"Connect to Database"}</button>
+            </div>
+             <div>
+            <DatabaseSelector 
+              onChange={(db, bucket, measurement) => {
+                setDatabaseConfig((prev) => ({
+                  ...prev,               // keep old values
+                  db: db,                // update db
+                  bucketName: bucket,    // update bucket
+                  measurementName: measurement // update measurement
+                }));
+              }} 
+              databases={databases} 
+            />
+
+            </div>
           </div>
         </div>
 
@@ -231,13 +303,6 @@ export const TagsList = () => {
                         )}
                       </div>
                     </td>
-                    
-                    {/* Server ID */}
-                    {/* <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-xs font-mono text-gray-600 max-w-32 truncate" title={tag.serverId}>
-                        {tag.serverId}
-                      </div>
-                    </td> */}
                     
                     {/* Actions */}
                     <td className="px-4 py-4 whitespace-nowrap">

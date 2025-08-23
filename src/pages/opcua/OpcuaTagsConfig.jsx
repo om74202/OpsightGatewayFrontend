@@ -46,7 +46,6 @@ const ServerSection = React.memo(({  updateTagProperties, setIsExpanded,isExpand
 
     <div>
        <div className='w-full px-5'>
-            <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
             {subscribedNodes.length > 0 ? (
               <div className="overflow-x-auto border border-gray-200 rounded-md">
                 <table className="w-full">
@@ -208,10 +207,6 @@ export const OpcuaTagsConfig = () => {
   }
 
 
-  useEffect(() => {
-    // saveTags()
-     getStaticTags();
-   }, []);
 
    
 
@@ -237,6 +232,7 @@ export const OpcuaTagsConfig = () => {
 
   useEffect(()=>{
     browseTags();
+    getStaticTags();
   },[nodeIds])
 
   const getStaticTags = async () => {

@@ -313,7 +313,7 @@ export const ModbusConfigTags = () => {
 
     const disConnectServer=async ()=>{
       try{
-        const response=await axios.post(`http://100.123.97.82:8000/Disconnect`);
+        const response=await axios.post(`http://100.107.186.122:8000/Disconnect`);
         
       }catch(e){
         console.log(e);
@@ -482,7 +482,7 @@ if (!result[name][type]) {
   
 
 
-   const response=await axios.post(`http://100.123.97.82:8000/start-rtu-reading/`,payload)
+   const response=await axios.post(`http://100.107.186.122:8000/start-rtu-reading/`,payload)
     console.log(response.data)
     setCount(count+1);
     }catch(e){

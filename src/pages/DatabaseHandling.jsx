@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Database, Wifi, Settings, Power, PowerOff, ArrowLeft, Check, X, Plus, Minus } from 'lucide-react';
 import axios from 'axios';
 
+const user=JSON.parse(localStorage.getItem('user'))
+
 export const DatabaseHandling = () => {
   const [currentPage, setCurrentPage] = useState('main');
   const [activeDatabase, setActiveDatabase] = useState(null);
@@ -16,6 +18,11 @@ export const DatabaseHandling = () => {
 
   // InfluxDB configuration state
   const [influxConfig, setInfluxConfig] = useState({
+    package:'',
+    cloudUrl:'',
+    cloudToken:'',
+    cloudOrgName:'',
+    cloudBuckets:[],
     url: '',
     token: '',
     org: '',
@@ -23,22 +30,31 @@ export const DatabaseHandling = () => {
   });
 
 
-  const getAllDatabases=async()=>{
-    try{
-      const response=await axios.get(`${process.env.REACT_APP_API_URL}/database/getAll`);
-      const data=response.data || [];
-      data.map((data)=>{
-        if(data.type==="Influx"){
-          setInfluxConfig(data.data);
-        }else if(data.type==="MQTT"){
-          setMqttConfig(data.data);
-        }
-      })
-      console.log(data);
-    }catch(e){
-      console.log(e);
-    }
+const getAllDatabases = async () => {
+  try {
+    const response = await axios.get(`${process.env.REACT_APP_API_URL}/database/getAll`);
+    const data = response.data || [];
+
+    data.forEach((item) => {
+      if (item.type === "Influx") {
+        setInfluxConfig((prev) => ({
+          ...prev,
+          ...item.data // merge backend data into existing state
+        }));
+      } else if (item.type === "MQTT") {
+        setMqttConfig((prev) => ({
+          ...prev,
+          ...item.data
+        }));
+      }
+    });
+
+    console.log(data);
+  } catch (e) {
+    console.log(e);
   }
+};
+
 
   useEffect(()=>{
     getAllDatabases();
@@ -77,27 +93,51 @@ export const DatabaseHandling = () => {
     }
   }
 
-    const handleAddBucket = () => {
-    setInfluxConfig(prev => ({
+    const handleAddBucket = (type="local") => {
+      if(type==="local"){
+           setInfluxConfig(prev => ({
       ...prev,
       buckets: [...prev.buckets, { name: '', measurements: [''] }]
     }));
+      }else{
+           setInfluxConfig(prev => ({
+      ...prev,
+      cloudBuckets: [...prev.cloudBuckets, { name: '', measurements: [''] }]
+    }));
+      }
   };
-  const handleRemoveBucket = (bucketIndex) => {
-  setInfluxConfig(prev => ({
+  const handleRemoveBucket = (bucketIndex,type="local") => {
+    if(type==="local"){
+        setInfluxConfig(prev => ({
     ...prev,
     buckets: prev.buckets.filter((_, i) => i !== bucketIndex)
   }));
+    }else{
+        setInfluxConfig(prev => ({
+    ...prev,
+    cloudBuckets: prev.cloudBuckets.filter((_, i) => i !== bucketIndex)
+  }));
+    }
   };
 
-  const handleRemoveMeasurement = (bucketIndex, measurementIndex) => {
-  const updatedBuckets = [...influxConfig.buckets];
+  const handleRemoveMeasurement = (bucketIndex, measurementIndex,type="local") => {
+    if(type==="local"){
+        const updatedBuckets = [...influxConfig.buckets];
   updatedBuckets[bucketIndex].measurements = updatedBuckets[bucketIndex].measurements.filter((_, i) => i !== measurementIndex);
 
   setInfluxConfig(prev => ({
     ...prev,
     buckets: updatedBuckets
     }));
+    }else{
+        const updatedBuckets = [...influxConfig.cloudBuckets];
+  updatedBuckets[bucketIndex].measurements = updatedBuckets[bucketIndex].measurements.filter((_, i) => i !== measurementIndex);
+
+  setInfluxConfig(prev => ({
+    ...prev,
+    cloudBuckets: updatedBuckets
+    }));
+    }
   };
 
 
@@ -105,22 +145,40 @@ export const DatabaseHandling = () => {
 
   
 
-  const handleAddMeasurement = (bucketIndex) => {
-    const updatedBuckets = [...influxConfig.buckets];
+  const handleAddMeasurement = (bucketIndex,type="local") => {
+    if(type==="local"){
+          const updatedBuckets = [...influxConfig.buckets];
     updatedBuckets[bucketIndex].measurements.push('');
     setInfluxConfig(prev => ({ ...prev, buckets: updatedBuckets }));
+    }else{
+          const updatedBuckets = [...influxConfig.cloudBuckets];
+    updatedBuckets[bucketIndex].measurements.push('');
+    setInfluxConfig(prev => ({ ...prev, cloudBuckets: updatedBuckets }));
+    }
   };
 
-  const handleBucketNameChange = (index, value) => {
-    const updatedBuckets = [...influxConfig.buckets];
+  const handleBucketNameChange = (index, value,type="local") => {
+    if(type==="local"){
+          const updatedBuckets = [...influxConfig.buckets];
     updatedBuckets[index].name = value;
     setInfluxConfig(prev => ({ ...prev, buckets: updatedBuckets }));
+    }else{
+          const updatedBuckets = [...influxConfig.cloudBuckets];
+    updatedBuckets[index].name = value;
+    setInfluxConfig(prev => ({ ...prev, cloudBuckets: updatedBuckets }));
+    }
   };
 
-  const handleMeasurementChange = (bucketIndex, measIndex, value) => {
-    const updatedBuckets = [...influxConfig.buckets];
+  const handleMeasurementChange = (bucketIndex, measIndex, value,type="local") => {
+    if(type==="local"){
+          const updatedBuckets = [...influxConfig.buckets];
     updatedBuckets[bucketIndex].measurements[measIndex] = value;
     setInfluxConfig(prev => ({ ...prev, buckets: updatedBuckets }));
+    }else{
+          const updatedBuckets = [...influxConfig.cloudBuckets];
+    updatedBuckets[bucketIndex].measurements[measIndex] = value;
+    setInfluxConfig(prev => ({ ...prev, cloudBuckets: updatedBuckets }));
+    }
   };
 
   const handleConfigPage=(name,value)=>{
@@ -150,10 +208,6 @@ export const DatabaseHandling = () => {
   const renderMainPage = () => (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-100 to-gray-200 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-2">Database Management</h1>
-          <p className="text-gray-600">Choose your data streaming destination</p>
-        </div>
 
         {/* Active Connection Status */}
         {activeDatabase && (
@@ -201,7 +255,7 @@ export const DatabaseHandling = () => {
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
               >
                 <Settings className="w-4 h-4" />
-                <span>{connectionStatus.influx ? 'Connected' : 'Configure'}</span>
+                <span>{'Configure'}</span>
               </button>
             {
                 showConfigPage.influx
@@ -214,7 +268,22 @@ export const DatabaseHandling = () => {
        <div className="bg-gray-100 backdrop-blur-md rounded-xl p-6 border border-gray-600">
       <div className="space-y-4">
         {/* URL */}
-        <div>
+            <div>
+            <label className="block font-medium">Select Package</label>
+            <select
+              value={influxConfig.package}
+              onChange={(e) => setInfluxConfig(prev => ({ ...prev, package: e.target.value }))}
+              className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+            >
+              <option value="Your Cloud + Local Storage">Your Cloud + Local Storage</option>
+              <option value="Opsight Cloud + Local Storage">Opsight Cloud + Local Storage</option>
+              <option value="Your Cloud">Your Cloud</option>
+            </select>
+          </div>
+        {influxConfig.package!=="Your Cloud" && 
+        (
+          <div>
+            <div>
           <label className="block font-medium">Server URL</label>
           <input
             type="text"
@@ -254,7 +323,7 @@ export const DatabaseHandling = () => {
           <div className="flex items-center justify-between">
             <label className="block font-medium">Buckets</label>
             <button
-              onClick={handleAddBucket}
+              onClick={()=>handleAddBucket()}
               className="flex items-center space-x-1 text-sm text-blue-600 hover:underline"
             >
               <Plus size={16} />
@@ -319,6 +388,163 @@ export const DatabaseHandling = () => {
             </div>
           ))}
         </div>
+          </div>
+        )}
+
+        {
+          (influxConfig.package==="Your Cloud + Local Storage" || (influxConfig.package==="Opsight Cloud + Local Storage" && user?.role==="SuperAdmin")) && (
+            <div>
+                 <div>
+          <label className="block font-medium">Cloud Server URL</label>
+          <input
+            type="text"
+            value={influxConfig.cloudUrl}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudUrl: e.target.value }))}
+            placeholder="http://192.168.1.1:8086"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Token */}
+        <div>
+          <label className="block font-medium">Cloud Token</label>
+          <input
+            type="password"
+            value={influxConfig.cloudToken}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudToken: e.target.value }))}
+            placeholder="your-influxdb-token"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Organization */}
+        <div>
+          <label className="block font-medium">Cloud Organization</label>
+          <input
+            type="text"
+            value={influxConfig.cloudOrgName}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudOrgName: e.target.value }))}
+            placeholder="my-org"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+            </div>
+          )
+        }
+
+        {
+          influxConfig.package==="Your Cloud" && (
+            
+            <div>
+              {console.log(influxConfig)}
+                 <div>
+          <label className="block font-medium">Cloud Server URL</label>
+          <input
+            type="text"
+            value={influxConfig.cloudUrl}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudUrl: e.target.value }))}
+            placeholder="http://192.168.1.1:8086"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Token */}
+        <div>
+          <label className="block font-medium">Cloud Token</label>
+          <input
+            type="password"
+            value={influxConfig.cloudToken}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudToken: e.target.value }))}
+            placeholder="your-influxdb-token"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {/* Organization */}
+        <div>
+          <label className="block font-medium">Cloud Organization</label>
+          <input
+            type="text"
+            value={influxConfig.cloudOrgName}
+            onChange={(e) => setInfluxConfig(prev => ({ ...prev, cloudOrgName: e.target.value }))}
+            placeholder="my-org"
+            className="w-full border border-black rounded-lg px-2 py-1 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        
+                  <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="block font-medium">Buckets</label>
+            <button
+              onClick={()=>handleAddBucket("cloud")}
+              className="flex items-center space-x-1 text-sm text-blue-600 hover:underline"
+            >
+              <Plus size={16} />
+              <span>Bucket</span>
+            </button>
+            
+          </div>
+
+          {influxConfig.cloudBuckets.map((bucket, bucketIndex) => (
+            <div key={bucketIndex} className="border p-3 rounded-lg bg-white shadow-sm space-y-2">
+              <input
+                type="text"
+                value={bucket.name}
+                onChange={(e) => handleBucketNameChange(bucketIndex, e.target.value,"cloud")}
+                placeholder="Bucket name"
+                className="w-full border border-black rounded px-2 py-1 text-sm"
+              />
+
+              <div className="flex items-center justify-between mt-2">
+                <label className="text-sm font-medium">Measurements</label>
+                <button
+              onClick={()=>handleRemoveBucket(bucketIndex,"cloud")}
+              className="flex items-center space-x-1 text-sm text-red-600 hover:underline"
+            >
+              <Minus size={16} />
+              <span>Bucket</span>
+            </button>
+                
+              </div>
+
+              {bucket.measurements.map((measurement, measIndex) => (
+                <div>
+                  
+                  <input
+                  key={measIndex}
+                  type="text"
+                  value={measurement}
+                  onChange={(e) =>
+                    handleMeasurementChange(bucketIndex, measIndex, e.target.value,"cloud")
+                  }
+                  placeholder={`Measurement ${measIndex + 1}`}
+                  className="w-full border border-gray-400 rounded px-2 py-1 text-xs mt-1"
+                />
+                <div className='flex justify-between'>
+                  <button
+                  onClick={() => handleRemoveMeasurement(bucketIndex,measIndex,"cloud")}
+                  className="flex items-center space-x-1 text-xs text-red-600 hover:underline"
+                >
+                  <Minus size={14} />
+                  <span> Measurement</span>
+                </button>
+                <button
+                  onClick={() => handleAddMeasurement(bucketIndex,"cloud")}
+                  className="flex items-center space-x-1 text-xs text-green-600 hover:underline"
+                >
+                  <Plus size={14} />
+                  <span> Measurement</span>
+                </button>
+                </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+            </div>
+          )
+        }
       </div>
 
       {/* Buttons */}

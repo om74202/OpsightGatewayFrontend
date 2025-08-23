@@ -22,11 +22,12 @@ const Login = () => {
         e.preventDefault();
         setError("");
         try {
-            // const response=await axios.post(`http://localhost:3001/gateway/login`,credentials)
+            const response=await axios.post(`http://localhost:3001/api/v1/gateway/login`,credentials)
+            console.log(response.data.user);
+
             
-            if ( true) {
-               localStorage.setItem("Email",credentials.username);
-               localStorage.setItem("Password",credentials.password);
+            if ( response.data?.status==="success") {
+               localStorage.setItem("user",JSON.stringify(response.data?.user));
                 navigate("/gateway"); // or any page you want to redirect to
             } else {
                 setError(  "Login failed");

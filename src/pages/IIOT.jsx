@@ -2,11 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, Database } from 'lucide-react';
 import axios from 'axios';
 
-const protocolArray=[
-  {"opcua":`${process.env.REACT_APP_API_URL}/opcua/updateTag`},
-  {"modbus":`${process.env.REACT_APP_API_URL}/modbus/updateTag`},
-  {"siemens":`${process.env.REACT_APP_API_URL}/siemens/updateTag`}
-]
 
 export const IIOT = () => {
   // Sample data - you can replace this with your actual tags array
@@ -27,20 +22,36 @@ export const IIOT = () => {
     database: ''
   });
 
-  const databaseOptions = ['Influx', 'MQTT', 'Sql','None'];
+  const handleMeasurementSelect = (tag, value) => {
+  // value format is "bucket/measurement"
+  console.log(`Selected ${value} for tag: ${tag.name}`);
+
+
+  // Example: Save to backend or update local state
+  handleDatabaseChange(tag,`Influx/${value}`);
+};
+
+  ;
   const protocols = [...new Set(tags.map(tag => tag.protocol))];
   const [count,setCount]=useState(0);
+  const [databaseOptions,setDatabaseOptions]=useState([]);
 
   // Filter tags based on search criteria
   const filteredTags = useMemo(() => {
     return tags.filter(tag => {
       const nameMatch = tag.name.toLowerCase().includes(filters.name.toLowerCase());
       const protocolMatch = !filters.protocol || tag.protocol === filters.protocol;
-      const databaseMatch = !filters.database || tag.database === filters.database;
-      
+    
+      const databaseMatch =
+        !filters.database || 
+        tag.database === filters.database ||
+        (filters.database === 'Influx' && tag.database?.startsWith('Influx'));
+    
       return nameMatch && protocolMatch && databaseMatch;
     });
   }, [tags, filters]);
+
+  const [databases,setDatabases]=useState([])
 
   // Handle filter changes
   const handleFilterChange = (filterType, value) => {
@@ -53,7 +64,10 @@ export const IIOT = () => {
   const getAllTags=async()=>{
     try{
       const response=await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`);
-      setTags(response.data.tags)
+      setTags(response.data.tags.sort((a,b)=>a.id-b.id))
+      setDatabases(response.data?.databases)
+      const names=response.data?.databases.map((d)=>d.type);
+      setDatabaseOptions(names)
     }catch(e){
       console.log(e);
     }
@@ -177,16 +191,66 @@ export const IIOT = () => {
                       <div className="text-sm text-gray-900 font-mono">{tag.protocol!=='opcua'?tag.address:tag.nodeId}</div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <select
-                        value={tag.database===null ? 'None':tag.database}
-                        onChange={(e) => handleDatabaseChange(tag, e.target.value)}
-                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        {databaseOptions.map(db => (
-                          <option key={db} value={db}>{db}</option>
-                        ))}
-                      </select>
-                    </td>
+                    <div className="flex flex-col gap-1">
+                    {/* Database Dropdown */}
+                    <select
+                      value={
+                        tag.database === null
+                          ? 'None'
+                          : databases.find(db => db.type === tag.database) // Known type
+                          ? tag.database
+                          : '__custom__'
+                      }
+                      onChange={(e) => handleDatabaseChange(tag, e.target.value)}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="None">None</option>
+                      {databases.map(db => (
+                        <option key={db.id} value={db.type}>
+                          {db.type}
+                        </option>
+                      ))                  }
+
+                      {/* If tag.database is unknown, show it explicitly */}
+                      {tag.database &&
+                        !databases.some(db => db.type === tag.database) && (
+                          <option value="__custom__" disabled>
+                            {tag.database}
+                          </option>
+                        )}
+                    </select>
+
+                    {/* Measurement Dropdown shown only if Influx is selected */}
+                    {(() => {
+                      const selectedDb = databases.find(d => d.type === tag.database);
+                      if (selectedDb?.type === 'Influx') {
+                        const selectedValue = tag.database.includes('/') ? tag.database : '';
+                        return (
+                          <select
+                            value={selectedValue}
+                            onChange={(e) => handleMeasurementSelect(tag, e.target.value)}
+                            className="text-sm border border-blue-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="">Select Measurement</option>
+                            {selectedDb.data.buckets.flatMap(bucket =>
+                              bucket.measurements.map(measurement => {
+                                const value = `${bucket.name}/${measurement}`;
+                                return (
+                                  <option key={value} value={value}>
+                                    {bucket.name} → {measurement}
+                                  </option>
+                                );
+                              })
+                            )}
+                          </select>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
+                  </td>
+                    
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900 font-mono">{tag.scaling}</div>
                     </td>

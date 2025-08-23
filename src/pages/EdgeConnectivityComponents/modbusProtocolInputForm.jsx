@@ -57,7 +57,7 @@ export const ModbusProtocolInputForm=()=>{
 const [count,setCount]=useState(0);
 
 //Input form  and submit
-  const [apiUrl,setApiUrl]=useState('http://100.123.97.82:8000/modbus-rtu/test-connection')
+  const [apiUrl,setApiUrl]=useState('http://100.107.186.122:8000/modbus-rtu/test-connection')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -80,9 +80,9 @@ const [count,setCount]=useState(0);
 
   useEffect(()=>{
     if(registerType==="tcpip"){
-      setApiUrl("http://100.123.97.82:8000/modbus-tcp/test-connection")
+      setApiUrl("http://100.107.186.122:8000/modbus-tcp/test-connection")
     }else{
-      setApiUrl("http://100.123.97.82:8000/modbus-rtu/test-connection")
+      setApiUrl("http://100.107.186.122:8000/modbus-rtu/test-connection")
     }
   },[registerType])
 
@@ -158,7 +158,7 @@ const testConnection=async()=>{
     "expression":"2*5*10",
     "baudrate":modbusConfig.baudRate,
     "parity":modbusConfig.parity,
-    "IP":modbusConfig.modbusIpAddress,
+    "ip":modbusConfig.modbusIpAddress,
     "stopbit":parseInt(modbusConfig.stopBits),        
     "bytesize":parseInt(modbusConfig.byteSize)
 })
@@ -172,6 +172,19 @@ const testConnection=async()=>{
     
 } 
 
+useEffect(()=>{
+  console.log("registertype changes")
+ try{
+  if(registerType==='TCP'){
+    setApiUrl(`http://100.107.186.122:8002/modbus-tcp/test-connection`)
+  }else{
+    setApiUrl(`http://100.107.186.122:8000/modbus-rtu/test-connection`)
+  }
+ }catch(e){
+  console.log(e);
+ }
+},[registerType])
+
 
 const submitServer=async()=>{
   console.log(modbusConfig)
@@ -184,7 +197,7 @@ const submitServer=async()=>{
     frequency:parseInt(modbusConfig.frequency),
     baudrate:parseInt(modbusConfig.baudRate),
     parity:modbusConfig.parity,
-    IP:modbusConfig.modbusIpAddress,
+    ip:modbusConfig.modbusIpAddress,
     stopbit:parseInt(modbusConfig.stopBits),        
     bytesize:parseInt(modbusConfig.byteSize)
         })
