@@ -53,11 +53,12 @@ export const TagsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
-  const [isConnected,setIsConnected]=useState(true)
+  const [isConnected,setIsConnected]=useState(false)
   const [databaseConfig,setDatabaseConfig]=useState({
     db:"",
     bucketName:"",
-    measurementName:""
+    measurementName:"",
+    topic:""
   })
   const serverInfo = JSON.parse(localStorage.getItem("Server"));
   const [count,setCount]=useState(0);
@@ -74,7 +75,7 @@ export const TagsList = () => {
       const payload={...serverInfo,connectionId:"2"}
         const connected=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/connectServer`,payload);
         if(connected.data.status==="Success"){            
-            const sendData=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData`,{...databaseConfig,action:"start",connectionId:"2"});
+            const sendData=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/${databaseConfig.db}`,{...databaseConfig,action:"start",connectionId:"2"});
             if(sendData.data.status==="Success"){
               setIsConnected(true)
             }
@@ -86,7 +87,9 @@ export const TagsList = () => {
   }
   const disconnectToDatabase=async()=>{
     try{
-      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData`,{action:"stop",connectionId:"2"})
+      console.log(databaseConfig)
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/${databaseConfig.db}`,{...databaseConfig,
+        action:"stop",connectionId:"2"})
       if(response.data.status==="Success"){
         const response2=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"2"});
         if(response.data.status==="Success"){
@@ -117,6 +120,7 @@ export const TagsList = () => {
     try{
         const response=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getTags`)
         setTags(response.data?.tags || [])
+        localStorage.setItem("tags",JSON.stringify(response.data?.tags || []))
         const databaseList=response.data?.databases || [];
         databases=databaseList;
     }catch(e){
@@ -126,8 +130,14 @@ export const TagsList = () => {
     const getConnectionStatus=async()=>{
     try{
       const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/getConnectionStatus`,{connectionId:"2"})
-      if(response.data.connected && response.data.status==="Success"){
+      if(response.data.data.connected && response.data.status==="Success"){
         setIsConnected(true);
+        const data=response.data.database;
+        setDatabaseConfig((prev)=>({
+          ...prev,
+          db:data?.name || "",
+        topic:data?.topic || ""}))
+
       }else{
         setIsConnected(false);
       }
@@ -214,17 +224,19 @@ export const TagsList = () => {
             text-sm px-5 py-2.5 me-2 `}>{isConnected?"Disconnect from Database":"Connect to Database"}</button>
             </div>
              <div>
-            <DatabaseSelector 
-              onChange={(db, bucket, measurement) => {
-                setDatabaseConfig((prev) => ({
-                  ...prev,               // keep old values
-                  db: db,                // update db
-                  bucketName: bucket,    // update bucket
-                  measurementName: measurement // update measurement
-                }));
-              }} 
-              databases={databases} 
-            />
+<DatabaseSelector
+  databases={databases}
+  initialState={databaseConfig}
+  onChange={(dbType, bucket, measurement, topic) => {
+    setDatabaseConfig({
+      db: dbType,   // now always a string, never undefined
+      bucket,
+      measurement,
+      topic,
+    });
+  }}
+/>
+
 
             </div>
           </div>

@@ -67,7 +67,7 @@ const getAllDatabases = async () => {
     clientId: '',
     username: '',
     password: '',
-    topic: '',
+    topics:'',
     qos: '0'
   });
 
@@ -188,14 +188,7 @@ const getAllDatabases = async () => {
     }))
   }
 
-  const connectDatabase = (dbType) => {
-    // Simulate connection
-    setConnectionStatus(prev => ({
-      ...prev,
-      [dbType]: true
-    }));
-    setActiveDatabase(dbType);
-  };
+
 
   const disconnectDatabase = (dbType) => {
     setConnectionStatus(prev => ({
@@ -625,8 +618,6 @@ const getAllDatabases = async () => {
                 (
                      <div className=" bg-gradient-to-br from-white via-gray-100 to-gray-200 p-2">
       <div className="max-w-2xl mx-auto">
-       
-
         <div className="bg-gray-100 backdrop-blur-md rounded-xl p-6 border border-gray-600">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -690,12 +681,12 @@ const getAllDatabases = async () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block  ">Topic</label>
+                <label className="block  ">Topics</label>
                 <input
                   type="text"
-                  value={mqttConfig.topic}
-                  onChange={(e) => setMqttConfig(prev => ({ ...prev, topic: e.target.value }))}
-                  placeholder="sensors/data"
+                  value={mqttConfig.topics}
+                  onChange={(e) => setMqttConfig(prev => ({ ...prev, topics: e.target.value}))}
+                  placeholder="seperated by ,"
                   className="w-full  border border-black rounded-lg px-2 py-1 focus:border-green-800 focus:outline-none"
                 />
               </div>
@@ -723,7 +714,7 @@ const getAllDatabases = async () => {
               className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
             >
               <Power className="w-4 h-4" />
-              <span>Connect</span>
+              <span>Save</span>
             </button>
             
             <button

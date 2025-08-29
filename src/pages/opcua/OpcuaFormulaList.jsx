@@ -3,8 +3,10 @@ import { Save, RotateCcw, Edit2, Trash2, Plus, X } from 'lucide-react';
 import axios from 'axios';
 
 export const FormulaConfig = () => {
-  const [variables, setVariables] = useState(['A', 'B', 'C']);
-  const [formulaInput, setFormulaInput] = useState('');
+  const serverInfo = JSON.parse(localStorage.getItem("Server"));
+  const tags= JSON.parse(localStorage.getItem("tags")) || [];
+  const [variables, setVariables] = useState(tags.map(tag=>tag.name));
+  const [expression, setExpression] = useState('');
   const [formulaName, setFormulaName] = useState('');
   const [savedFormulas, setSavedFormulas] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -38,19 +40,24 @@ export const FormulaConfig = () => {
     }
   };
 
-    const getTags=async()=>{
+
+
+
+
+
+    const getFormulas=async()=>{
     try{
-        const response=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getTags`)
-        const variables=response.data.tags.map((v)=>v.name)
-        setVariables(variables)
+        const response=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getFormulas`)
+        const variables =response.data?.formulas || []
+        setSavedFormulas(variables)
     }catch(e){
         console.log(e)
     }
   }
-  useEffect(()=>{
-    getTags()
-  },[count])
 
+  useEffect(()=>{
+    getFormulas()
+  },[count])
   // Parse and validate formula
   const parseFormula = (input) => {
     try {
@@ -106,7 +113,7 @@ export const FormulaConfig = () => {
   const handleInputChange = (e) => {
     const value = e.target.value;
     const position = e.target.selectionStart;
-    setFormulaInput(value);
+    setExpression(value);
     setCursorPosition(position);
     
     // Get current word at cursor position
@@ -154,14 +161,14 @@ export const FormulaConfig = () => {
 
   // Apply selected suggestion
   const applySuggestion = (suggestion) => {
-    const currentWordInfo = getCurrentWord(formulaInput, cursorPosition);
+    const currentWordInfo = getCurrentWord(expression, cursorPosition);
     
-    const beforeWord = formulaInput.substring(0, currentWordInfo.start);
-    const afterWord = formulaInput.substring(currentWordInfo.end);
+    const beforeWord = expression.substring(0, currentWordInfo.start);
+    const afterWord = expression.substring(currentWordInfo.end);
     
     const newValue = beforeWord + suggestion + afterWord;
     
-    setFormulaInput(newValue);
+    setExpression(newValue);
     setShowSuggestions(false);
     
     // Set cursor position after the suggestion
@@ -173,7 +180,7 @@ export const FormulaConfig = () => {
 
   // Clear formula
   const clearFormula = () => {
-    setFormulaInput('');
+    setExpression('');
     setShowSuggestions(false);
   };
 
@@ -200,10 +207,11 @@ export const FormulaConfig = () => {
   };
 
   // Save formula
-  const saveFormula = () => {
-    if (!formulaName.trim() || !formulaInput.trim()) return;
+  const saveFormula = async() => {
+    try{
+     if (!formulaName.trim() || !expression.trim()) return;
     
-    const parseResult = parseFormula(formulaInput);
+    const parseResult = parseFormula(expression);
     if (!parseResult.isValid) {
       alert(`Invalid formula: ${parseResult.error}`);
       return;
@@ -212,41 +220,54 @@ export const FormulaConfig = () => {
     const newFormula = {
       id: editingId || Date.now(),
       name: formulaName,
-      formula: formulaInput.trim(),
-      variables: [...variables]
+      expression: expression.trim(),
+      variables: [...variables],
+      serverId:serverInfo.serverId
     };
+    console.log(newFormula)
 
     if (editingId) {
-      setSavedFormulas(prev => prev.map(f => f.id === editingId ? newFormula : f));
+      const response = await axios.put(`${process.env.REACT_APP_API_URL}/opcua/updateFormula/${editingId}`, newFormula);
       setEditingId(null);
     } else {
-      setSavedFormulas(prev => [...prev, newFormula]);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/saveFormula`, newFormula);
+      console.log(response.data);
     }
+    getFormulas();
 
     setFormulaName('');
-    setFormulaInput('');
-    setShowSuggestions(false);
+    setExpression('');
+    setShowSuggestions(false); 
+    }catch(e){
+      console.log(e)
+    }
   };
 
   // Edit formula
   const editFormula = (savedFormula) => {
     setFormulaName(savedFormula.name);
-    setFormulaInput(savedFormula.formula);
-    setVariables([...savedFormula.variables]);
+    setExpression(savedFormula.expression);
     setEditingId(savedFormula.id);
     setShowSuggestions(false);
   };
 
   // Delete formula
-  const deleteFormula = (id) => {
-    setSavedFormulas(prev => prev.filter(f => f.id !== id));
-  };
+// Delete
+const deleteFormula = async (id) => {
+  try {
+    await axios.delete(`${process.env.REACT_APP_API_URL}/opcua/deleteFormula/${id}`);
+    getFormulas();
+  } catch (err) {
+    console.error("Failed to delete formula:", err);
+    alert("Error deleting formula");
+  }
+};
 
   // Cancel editing
   const cancelEdit = () => {
     setEditingId(null);
     setFormulaName('');
-    setFormulaInput('');
+    setExpression('');
     setShowSuggestions(false);
   };
 
@@ -260,8 +281,8 @@ export const FormulaConfig = () => {
 
   // Get formula validation status
   const getFormulaStatus = () => {
-    if (!formulaInput.trim()) return { isValid: true, message: '' };
-    const result = parseFormula(formulaInput);
+    if (!expression.trim()) return { isValid: true, message: '' };
+    const result = parseFormula(expression);
     return {
       isValid: result.isValid,
       message: result.isValid ? 'Valid formula' : result.error
@@ -281,12 +302,10 @@ export const FormulaConfig = () => {
     <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
       
       {/* Variables Management Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Variables</h2>
+      {/* <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         
         
         
-        {/* Current Variables */}
         <div className="mb-4">
           <label className="font-medium block mb-2">Current tags:</label>
           <div className="flex flex-wrap gap-2">
@@ -308,40 +327,37 @@ export const FormulaConfig = () => {
         </div>
         
         <div className="flex gap-2 mb-4">
-          <input
+          
+        </div>
+      </div> */}
+
+      {/* Formula Input Section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-4 ">        
+        <div className='flex justify-between items-center'>
+                  <div className="">
+          <div className="flex flex-col">
+            <input
             type="text"
             placeholder="Formula name"
             value={formulaName}
             onChange={(e) => setFormulaName(e.target.value)}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
-      </div>
-
-      {/* Formula Input Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Build Formula</h2>
-        
-        <div className="mb-4">
-          <label className="font-medium block mb-2">
-            Type your formula (use +, -, *, / and parentheses):
-          </label>
-          <div className="relative">
             <input
               ref={inputRef}
               type="text"
-              value={formulaInput}
+              value={expression}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Example: variable1 + price * (temp - 2) / count"
-              className={`w-full px-4 py-3 text-lg font-mono border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formulaInput && !formulaStatus.isValid ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              className={`px-3 py-2  font-mono border-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                expression && !formulaStatus.isValid ? 'border-red-300 bg-red-50' : 'border-gray-300'
               }`}
             />
             
             {/* Suggestions Dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1">
+              <div className=" left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1">
                 {suggestions.map((suggestion, index) => (
                   <div
                     key={suggestion}
@@ -358,28 +374,15 @@ export const FormulaConfig = () => {
           </div>
           
           {/* Formula Status */}
-          {formulaInput && (
+          {expression && (
             <div className={`mt-2 text-sm ${formulaStatus.isValid ? 'text-green-600' : 'text-red-600'}`}>
               {formulaStatus.message}
             </div>
           )}
         </div>
 
-        {/* Helper Text */}
-        {/* <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-          <h3 className="font-medium text-blue-800 mb-2">Quick Guide:</h3>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Type variable names ({variables.join(', ')}) - suggestions will appear</li>
-            <li>• Use operators: + (add), - (subtract), * (multiply), / (divide)</li>
-            <li>• Use parentheses ( ) for grouping</li>
-            <li>• Numbers can be typed directly</li>
-            <li>• Use Tab or Enter to accept suggestions</li>
-            <li>• Variable names can be multi-letter (e.g., variable1, temperature, price)</li>
-          </ul>
-        </div> */}
-
         {/* Control Buttons */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 ">
           <button
             onClick={clearFormula}
             className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors flex items-center gap-1"
@@ -394,48 +397,21 @@ export const FormulaConfig = () => {
               Cancel Edit
             </button>
           )}
-        </div>
-
-        {/* Save Button */}
+                  {/* Save Button */}
         <button
           onClick={saveFormula}
-          disabled={!formulaName.trim() || !formulaInput.trim() || !formulaStatus.isValid}
+          disabled={!formulaName.trim() || !expression.trim() || !formulaStatus.isValid}
           className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
           <Save size={16} /> {editingId ? 'Update Formula' : 'Save Formula'}
         </button>
+        </div>
+        </div>
+
+
       </div>
 
-      {/* Test Formula Section */}
-      {formulaInput.trim() && formulaStatus.isValid && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Test Current Formula</h2>
-          <div className="mb-4">
-            <div className="bg-gray-100 p-3 rounded-md font-mono text-lg mb-4">
-              {formulaInput}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            {variables.map((variable) => (
-              <div key={variable} className="flex flex-col">
-                <label className="font-medium mb-1">{variable}:</label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  onChange={(e) => updateTestValue(variable, e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <strong>Result: </strong>
-            <span className="text-lg font-mono">
-              {evaluateFormula(formulaInput, testValues)}
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* Saved Formulas Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -445,6 +421,7 @@ export const FormulaConfig = () => {
         ) : (
           <div className="space-y-4">
             {savedFormulas.map((savedFormula) => (
+              
               <div key={savedFormula.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-medium text-lg">{savedFormula.name}</h3>
@@ -466,11 +443,9 @@ export const FormulaConfig = () => {
                   </div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-md mb-2">
-                  <div className="font-mono text-lg">{savedFormula.formula}</div>
+                  <div className="font-mono text-lg">{savedFormula.expression}</div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  Variables: {savedFormula.variables.join(', ')}
-                </div>
+
               </div>
             ))}
           </div>

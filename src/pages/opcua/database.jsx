@@ -1,46 +1,62 @@
 import { useEffect, useState } from "react";
 
+const DatabaseSelector = ({ databases = [], onChange, initialState = {} }) => {
+  const [selectedDbType, setSelectedDbType] = useState(initialState.db || "");
+  const [selectedBucket, setSelectedBucket] = useState(initialState.bucket || "");
+  const [selectedMeasurement, setSelectedMeasurement] = useState(initialState.measurement || "");
+  const [selectedTopic, setSelectedTopic] = useState(initialState.topic || "");
 
-const DatabaseSelector = ({ databases=[],onChange }) => {
-  const [selectedDbId, setSelectedDbId] = useState(null);
-  const [selectedBucket, setSelectedBucket] = useState("");
-  const [selectedMeasurement, setSelectedMeasurement] = useState("");
+  const selectedDb = databases.find((db) => db.type === selectedDbType);
 
-  const selectedDb = databases.find(db => db.id === selectedDbId);
-
+  // 🔹 Sync state when parent updates initialState
   useEffect(() => {
+    if (initialState.db !== undefined) setSelectedDbType(initialState.db);
+    if (initialState.bucket !== undefined) setSelectedBucket(initialState.bucket);
+    if (initialState.measurement !== undefined) setSelectedMeasurement(initialState.measurement);
+    if (initialState.topic !== undefined) setSelectedTopic(initialState.topic);
+    console.log(initialState)
+  }, [initialState]);
+
+  // 🔹 Notify parent whenever something changes
+useEffect(() => {
   if (onChange) {
-    onChange(selectedDb, selectedBucket, selectedMeasurement);
+    onChange(
+      selectedDbType,   // just the type string
+      selectedBucket,
+      selectedMeasurement,
+      selectedTopic
+    );
   }
-}, [selectedDb, selectedBucket, selectedMeasurement]);
+}, [selectedDbType, selectedBucket, selectedMeasurement, selectedTopic]);
 
   return (
-    <div className="p-4 flex items-center ">
+    <div className="p-4 flex items-center space-x-4">
       {/* Database Dropdown */}
       <div>
-        <label className="block font-medium ">Select Database</label>
+        <label className="block font-medium">Select Database</label>
         <select
           className="border rounded px-1 py-2 w-full"
-          value={selectedDbId || ""}
+          value={selectedDbType}
           onChange={(e) => {
-            setSelectedDbId(Number(e.target.value));
+            setSelectedDbType(e.target.value);
             setSelectedBucket("");
             setSelectedMeasurement("");
+            setSelectedTopic("");
           }}
         >
           <option value="">-- Choose Database --</option>
           {databases.map((db) => (
-            <option key={db.id} value={db.id}>
+            <option key={db.type} value={db.type}>
               {db.type}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Bucket Dropdown (only for Influx) */}
+      {/* Bucket Dropdown (Influx only) */}
       {selectedDb?.type === "Influx" && (
         <div>
-          <label className="block font-medium ">Select Bucket</label>
+          <label className="block font-medium">Select Bucket</label>
           <select
             className="border rounded px-1 py-2 w-full"
             value={selectedBucket}
@@ -59,10 +75,29 @@ const DatabaseSelector = ({ databases=[],onChange }) => {
         </div>
       )}
 
-      {/* Measurement Dropdown (only after bucket chosen) */}
+      {/* Topic Dropdown (MQTT only) */}
+      {selectedDb?.type === "MQTT" && (
+        <div>
+          <label className="block font-medium">Select Topic</label>
+          <select
+            className="border rounded px-1 py-2 w-full"
+            value={selectedTopic}
+            onChange={(e) => setSelectedTopic(e.target.value)}
+          >
+            <option value="">-- Choose Topic --</option>
+            {selectedDb.data.topics.split(",").map((topic, idx) => (
+              <option key={idx} value={topic}>
+                {topic}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Measurement Dropdown (Influx only after bucket chosen) */}
       {selectedDb?.type === "Influx" && selectedBucket && (
         <div>
-          <label className="block font-medium ">Select Measurement</label>
+          <label className="block font-medium">Select Measurement</label>
           <select
             className="border rounded px-1 py-2 w-full"
             value={selectedMeasurement}
@@ -79,8 +114,6 @@ const DatabaseSelector = ({ databases=[],onChange }) => {
           </select>
         </div>
       )}
-
-     
     </div>
   );
 };
