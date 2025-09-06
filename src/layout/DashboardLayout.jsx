@@ -5,15 +5,22 @@ import { useState } from 'react';
 
 const pageTitles = {
   "/gateway": "Gateway Dashboard",
+  "/gateway/userManagement":"User Management",
   "/gateway/edge-connection/opcua": "OPCUA Config",
-  "/gateway/edge-connection/modbus": "Modbus ",
-  "/gateway/database-management":"Database Management",
+  "/gateway/edge-connection/modbus-rtu": "Modbus RTU",
+  "/gateway/edge-connection/modbus-tcp": "Modbus TCP",
+  "/gateway/database-management/opcua":"Database Management - OPCUA ",
+  "/gateway/database-management/influx":"Database Management - InfluxDB",
+  "/gateway/database-management/postgresql":"Database Management - PostgreSQL",
+  "/gateway/database-management/mqtt":"Database Management - MQTT",
   "/gateway/health-monitoring":"Health Monitoring ",
   "/gateway/modbus/ConfigTags":"Modbus Tags Configuration",
   "/gateway/siemens/ConfigTags":"Siemens Tags Configuration",
   "/gateway/opcua/ConfigTags":"OPC UA Tags Configuration",
   "/gateway/edge-connection/s-7":"Siemens",
-  "/gateway/iiot" : "IIOT Configuration"
+  "/gateway/iiot/browseTags" : "IIOT Configuration - Browse Tags",
+  "/gateway/iiot/tags" : "IIOT Configuration - Tags",
+  "/gateway/iiot/customTags" : "IIOT Configuration - Custom Tags",
   };
 
 export function DashboardLayout() {

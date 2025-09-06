@@ -1,7 +1,8 @@
 import { useParams, useSearchParams } from "react-router-dom"
 import { OpcuaInputForm } from "./EdgeConnectivityComponents/OpcuaInputForm"
-import { ModbusProtocolInputForm } from "./EdgeConnectivityComponents/modbusProtocolInputForm"
 import { SimensInputForm } from "./EdgeConnectivityComponents/simensInputForm"
+import { ModbusTCPConfig } from "./EdgeConnectivityComponents/modbusTCPInputFrom"
+import { ModbusRTUConfig } from "./EdgeConnectivityComponents/modbusRTUInputForm"
 
 export const EdgeConnectivity=()=>{
      const {tab} = useParams()
@@ -16,10 +17,17 @@ export const EdgeConnectivity=()=>{
             }   
 
             {
-                (tab==="modbus")
+                (tab==="modbus-tcp")
                 && 
                 <div>
-                    <ModbusProtocolInputForm/>
+                    <ModbusTCPConfig/>
+                </div>
+            }
+                        {
+                (tab==="modbus-rtu")
+                && 
+                <div>
+                    <ModbusRTUConfig/>
                 </div>
             }
             {

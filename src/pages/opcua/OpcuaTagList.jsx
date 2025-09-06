@@ -230,8 +230,8 @@ export const TagsList = () => {
   onChange={(dbType, bucket, measurement, topic) => {
     setDatabaseConfig({
       db: dbType,   // now always a string, never undefined
-      bucket,
-      measurement,
+      bucketName:bucket,
+      measurementName:measurement,
       topic,
     });
   }}

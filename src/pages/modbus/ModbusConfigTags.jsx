@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Play, RefreshCw, Save, CheckCircle, Wifi, WifiOff, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
@@ -12,8 +12,8 @@ const functionCodes = [
   { value: '3', label: 'Holding' },
   { value: '4', label: 'Input' }
 ];
-
-const streamNames=['modbus_stream:Device_1','modbus_stream:Device_2']
+const selectedServer=localStorage.getItem("Server") ? JSON.parse(localStorage.getItem("Server")) : {}
+const streamNames=['modbus_stream:Device_1','modbus_stream:Device_2','modbus_stream:Device_3','TCP:Device_1']
 
 const ServerSection = React.memo(({ server, updateServer, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
   <div>
@@ -56,9 +56,10 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
 
     {server.isExpanded && (
   <div className={`p-4`}>
-    <div className={`mb-3`}>
-      <h4 className="text-md font-medium text-gray-700 mb-3">Connection Configuration</h4>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+    <div className={``}>
+      <h4 className="text-md  font-medium text-gray-700 ">Connection Configuration</h4>
+      <div className='flex'>
+        <div className="grid grid-cols-1 lg:grid-cols-1 mx-5">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Slave ID</label>
           <input
@@ -71,12 +72,10 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
      
       </div>
 
-      <div className="mb-4">
-        <h5 className="text-sm font-medium text-gray-700 mb-2">Register Address Ranges</h5>
-        <h4 className="text-md font-medium text-gray-700 mb-3">Function Configurations</h4>
+      <div className=" mx-2 ">
 
 {(server.functionConfigs || []).map((funcCfg, fcIndex) => (
-  <div key={fcIndex} className="border p-3 rounded-md mb-4 bg-gray-50">
+  <div key={fcIndex} className="border p-3 rounded-md mb-2 bg-gray-50">
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Function Code</label>
@@ -201,6 +200,7 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
 </button>
 
       </div>
+      </div>
     </div>
   </div>
 )}
@@ -269,8 +269,9 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
   </div>
 ));
 
-export const ModbusConfigTags = () => {
+export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"}) => {
   const [serverInfo,setServerInfo]=useState(JSON.parse(localStorage.getItem("Server")))
+  const wsRef = useRef(null);
 
   const [servers, setServers] = useState([  {
      id: 1,
@@ -313,7 +314,13 @@ export const ModbusConfigTags = () => {
 
     const disConnectServer=async ()=>{
       try{
-        const response=await axios.post(`http://100.107.186.122:8000/Disconnect`);
+        // setServers(prev=>prev.map((server)=>{
+        //   return {...server,tags:[],isConnected:false}
+        // }))
+
+        alert("Server Disconnected Successfully")
+                wsRef.current.close();
+        const response=await axios.post(`${api}/Disconnect`);
         
       }catch(e){
         console.log(e);
@@ -322,6 +329,7 @@ export const ModbusConfigTags = () => {
 
     const saveTags=()=>{
       try{
+        console.log(servers)
         servers.map(async (server)=>{
           try{
             const allowedKeys = ['name', 'scaling', 'address', 'serverId'];
@@ -426,10 +434,12 @@ function updateTagProperties(serverId, address, updatedFields) {
 
   servers.forEach(device => {
     const {
+      
       name,
       slaveId,
       functionConfigs,
     } = device;
+    console.log(device,"this is device ")
 
     // Convert functionCode
   
@@ -444,6 +454,7 @@ const type = found ? found.label : null;
     if (!result[name]) {
   result[name] = {
     slave: parseInt(slaveId),
+    conversion:functionConfig.conversion || "",
   };
 }
 
@@ -467,22 +478,22 @@ if (!result[name][type]) {
 
    
     
-   const payload={
-    serverInfo:{
-      IP:serverInfo.serverIp,
-      port:serverInfo.serverPort,
-      baudrate:serverInfo.serverBaudrate,
-      stopbit:serverInfo.serverStopBit,
-      bytesize:serverInfo.serverByteSize,
-      parity:serverInfo.serverParity,
-    },
-    result
-   }
+const payload = {
+  serverInfo: {
+    ip: serverInfo.serverIp,
+    port: serverInfo.serverPort,
+    baudrate: serverInfo.serverBaudrate,
+    stopbit: serverInfo.serverStopBit,
+    bytesize: serverInfo.serverByteSize,
+    parity: serverInfo.serverParity,
+  },
+  [serverInfo.serverName || serverInfo.name]: result
+};
    console.log(payload)
   
 
 
-   const response=await axios.post(`http://100.107.186.122:8000/start-rtu-reading/`,payload)
+   const response=await axios.post(`${api}/start-${type}-reading/`,payload)
     console.log(response.data)
     setCount(count+1);
     }catch(e){
@@ -494,60 +505,142 @@ if (!result[name][type]) {
 
 
 
-useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3001'); // replace with your backend IP if needed
+// useEffect(() => {
+//   const ws = new WebSocket("ws://localhost:3001"); // change IP if backend is remote
+//   wsRef.current = ws;
+
+//   ws.onopen = () => {
+//     console.log("WebSocket connected");
+//   };
+
+//   ws.onmessage = (event) => {
+//     try {
+//       const msg = JSON.parse(event.data);
+
+//       // only handle streams you care about
+//       if (!streamNames.includes(msg.stream)) return;
+
+//       // find matching server (by stream/device name)
+//       const deviceName = msg.stream.split(":")[1];
+//       const matchedServer = servers.find(
+//         (s) => (s.name || s.serverName) === deviceName
+//       );
+
+//       if (!matchedServer) {
+//         console.warn("No matching server found for stream:", msg.stream);
+//         return;
+//       }
+
+//       const dataEntries = Object.entries(msg.data)
+//         .filter(([key]) => key !== "connection_Holding_slave_1" || key!=="input read at slave_1")
+//         .map(([key, value]) => ({
+//           serverId: selectedServer.serverId || selectedServer.id,
+//           name: key,
+//           address: key,
+//           value,
+//           id: msg.id,
+//           timestamp: new Date(
+//             parseInt(msg.id.split("-")[0])
+//           ).toLocaleString(),
+//         }));
+
+//       console.log("Processed entries:", dataEntries);
+
+//       updateTagValue(matchedServer.serverId || matchedServer.id, dataEntries);
+//     } catch (err) {
+//       console.error("Error parsing WebSocket data", err);
+//     }
+//   };
+
+//   ws.onerror = (err) => {
+//     console.error("WebSocket error:", err);
+//   };
+
+//   ws.onclose = () => {
+//     console.log("WebSocket closed");
+//   };
+
+//   return () => ws.close();
+// }, [servers, streamNames, count]);
+
+
+  useEffect(() => {
+    if (count <= 0) {
+      // If count is 0, close the connection if it exists
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      return;
+    }
+
+    // Prevent duplicate connection
+    if (wsRef.current) return;
+
+    const ws = new WebSocket("ws://localhost:3001");
+    wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log("WebSocket connected");
     };
 
     ws.onmessage = (event) => {
-       
       try {
-      if(streamNames.includes(event.stream)){
-         servers.map((server)=>{
-         const msg = JSON.parse(event.data);
-         
-        const deviceName = msg.stream.split(':')[1];
+        const msg = JSON.parse(event.data);
+
+        if (!streamNames.includes(msg.stream)) return;
+
+        const deviceName = msg.stream.split(":")[1];
+        const matchedServer = servers.find(
+          (s) => (s.name || s.serverName) === deviceName
+        );
+
+        if (!matchedServer) {
+          console.warn("No matching server found for stream:", msg.stream);
+          return;
+        }
+
         const dataEntries = Object.entries(msg.data)
-          .filter(([key]) => key !== `connection_Holding_slave_1`) // filter out metadata
+          .filter(([key]) => key !== "connection_Holding_slave_1" && key !== "input read at slave_1")
           .map(([key, value]) => ({
-            serverId:serverInfo.serverId,
-            name:key,
+            serverId: selectedServer.serverId || selectedServer.id,
+            name: key,
             address: key,
             value,
             id: msg.id,
-            timestamp: new Date(parseInt(msg.id.split('-')[0])).toLocaleString()
+            timestamp: new Date(parseInt(msg.id.split("-")[0])).toLocaleString(),
           }));
 
-            // console.log(msg.id.split('-'))
-        console.log(dataEntries)
-        updateTagValue(server.id,dataEntries)
-       })
-      }
-        
+        console.log("Processed entries:", dataEntries);
+        updateTagValue(matchedServer.serverId || matchedServer.id, dataEntries);
       } catch (err) {
-        console.error('Error parsing WebSocket data', err);
+        console.error("Error parsing WebSocket data", err);
       }
     };
 
     ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
+      console.error("WebSocket error:", err);
     };
 
     ws.onclose = () => {
-      console.log('WebSocket closed');
+      console.log("WebSocket closed");
+      wsRef.current = null;
     };
 
-    return () => ws.close();
-  }, [count]);
-
+    // Cleanup when count changes or unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [servers, count,selectedServer]);
 
 
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 max-w-7xl">
       <div className='flex justify-end'>
         <button 
         onClick={()=>{disConnectServer()}}
@@ -572,7 +665,7 @@ useEffect(() => {
           
         </div>
       </div>
-        <div className="grid grid-cols-1 xl:grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-1 gap-2">
           {servers.map(server => (
             <ServerSection
               key={server.id}
@@ -608,3 +701,7 @@ useEffect(() => {
     </div>
   );
 };
+
+
+
+

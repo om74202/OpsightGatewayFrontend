@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   Play,
   RefreshCw,
@@ -274,6 +274,7 @@ export const SimensTagsConfig = () => {
   const [tags, setTags] = useState([
     
   ]);
+    const wsRef = useRef(null);
   const [globalTags, setGlobalTags] = useState([
     {
       id: 1,
@@ -425,6 +426,7 @@ export const SimensTagsConfig = () => {
         }
         console.log(payload)
         const response=await axios.post(`http://100.107.186.122:8001/start-background-read/`,payload)
+        setCount(count+1)
     }catch(e){
         console.log(e);
     }
@@ -437,10 +439,23 @@ export const SimensTagsConfig = () => {
 
 
 useEffect(() => {
-  const ws = new WebSocket('ws://localhost:3001');
+  if (count <= 0) {
+    // Close existing connection if count goes to 0
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    return;
+  }
+
+  // Prevent duplicate connection
+  if (wsRef.current) return;
+
+  const ws = new WebSocket("ws://localhost:3001");
+  wsRef.current = ws;
 
   ws.onopen = () => {
-    console.log('WebSocket connected');
+    console.log("WebSocket connected");
   };
 
   ws.onmessage = (event) => {
@@ -448,7 +463,7 @@ useEffect(() => {
       const data = JSON.parse(event.data);
       const name = data.stream;
 
-      if (name === 'Siemen_stream') {
+      if (name === "Siemen_stream") {
         const transformedData = Object.entries(data?.data || {}).map(
           ([id, value]) => ({ id, value })
         );
@@ -464,7 +479,7 @@ useEffect(() => {
               updatedTags[index] = { ...updatedTags[index], value: newTag.value };
             } else {
               // If tag is new, add it
-              updatedTags.push({...newTag,name:newTag.id});
+              updatedTags.push({ ...newTag, name: newTag.id });
             }
           });
 
@@ -472,20 +487,28 @@ useEffect(() => {
         });
       }
     } catch (err) {
-      console.error('Error parsing WebSocket data', err);
+      console.error("Error parsing WebSocket data", err);
     }
   };
 
   ws.onerror = (err) => {
-    console.error('WebSocket error:', err);
+    console.error("WebSocket error:", err);
   };
 
   ws.onclose = () => {
-    console.log('WebSocket closed');
+    console.log("WebSocket closed");
+    wsRef.current = null; // cleanup ref
   };
 
-  return () => ws.close();
+  // Cleanup if count changes or component unmounts
+  return () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
 }, [count]);
+
 
   return (
     <div>
