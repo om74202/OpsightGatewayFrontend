@@ -7,6 +7,7 @@ import {
   X,
   Plus,
   Minus,
+  CrossIcon,
 } from "lucide-react";
 import axios from "axios";
 
@@ -27,7 +28,7 @@ export const InfluxConfigPage = () => {
     targetMeasurement:"",
   });
 
-  const [connectionStatus, setConnectionStatus] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(localStorage.getItem("LoggingServer")==="Influx");
   const [loading, setLoading] = useState(false);
 
   // Fetch existing config
@@ -51,6 +52,9 @@ export const InfluxConfigPage = () => {
   }, []);
 
   const saveInfluxConfig = async () => {
+        if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
+      return; // run your function only if user clicks OK
+    }
     try {
       setLoading(true);
       const payload = {
@@ -70,12 +74,18 @@ export const InfluxConfigPage = () => {
           return;
         }
 
-        const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
-        const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"start",bucketName:influxConfig.targetBucket?.name,measurementName:influxConfig.targetMeasurement})
+        const logResponseTCP=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
+        const logResponseRTU=await axios.post(`http://100.107.186.122:8000/data-flush`,loggingPayload)
+
+        try{
+          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"start",bucketName:influxConfig.targetBucket?.name,measurementName:influxConfig.targetMeasurement})
               await axios.post(
         `${process.env.REACT_APP_API_URL}/database/save`,
         payload
       );
+        }catch(e){
+          console.log("fail at opcua")
+        }
             await axios.post(
         `${process.env.REACT_APP_API_URL}/database/save`,
         payload
@@ -84,6 +94,7 @@ export const InfluxConfigPage = () => {
         //   alert("Failed to Start Logging Data");
         //   setLoading(false);
         // }
+        localStorage.setItem("LoggingServer","Influx")
 
       setConnectionStatus(true);
       setLoading(false);
@@ -115,9 +126,15 @@ export const InfluxConfigPage = () => {
       }catch(e){
         console.log(e)
       }finally{
-        const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"stop"});
-      
+        try{
+          const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"stop"});
+          
+        }catch(e){
+          console.log(e)
+        }
+        localStorage.setItem("LoggingServer","");
         setConnectionStatus(false);
+        alert("Data Logging to Influx Stopped ")
       
       setLoading(false);
       }
@@ -126,9 +143,7 @@ export const InfluxConfigPage = () => {
     }
   }
 
-  const handleCancel = () => {
-    console.log("Cancel configuration");
-  };
+
 
   // --- Bucket & Measurement Handlers ---
   const handleAddBucket = (type = "local") => {
@@ -494,23 +509,22 @@ export const InfluxConfigPage = () => {
 
 
           {/* Footer Buttons */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-between">
-            <button
-              onClick={handleCancel}
-              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end">
+            {/* <button
+              onClick={DisconnectServer}
+              className="px-6 py-2 text-white bg-red-600 border border-gray-300 rounded-lg hover:bg-red-800 flex items-center space-x-2"
             >
-              <X className="w-4 h-4" />
-              <span>Cancel</span>
-            </button>
-            <div className="flex space-x-3">
-              <button
+              <span>Disconnect</span>
+            </button> */}
+            <div className="flex  space-x-3">
+              {/* <button
                 onClick={testConnection}
                 disabled={loading}
                 className="px-6 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg flex items-center space-x-2"
               >
                 <Wifi className="w-4 h-4" />
                 <span>{loading ? "Testing..." : "Test Connection"}</span>
-              </button>
+              </button> */}
               <button
                 onClick={()=>connectionStatus ? DisconnectServer() : saveInfluxConfig()}
                 disabled={loading}

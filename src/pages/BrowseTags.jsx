@@ -3,10 +3,11 @@ import { OpcuaTagsConfig } from "./opcua/OpcuaTagsConfig";
 import { ModbusConfigTags } from "./modbus/ModbusConfigTags";
 import { SimensTagsConfig } from "./EdgeConnectivityComponents/SimensTagsConfig";
 import axios from "axios";
+import { SlmpBrowseTags } from "./slmpBrowseTags";
 
 
 
-export default function BrowseTagsPage() {
+export default function BrowseTagsPage(){
   const [protocol, setProtocol] = useState("");
   const [servers,setServers]=useState([]);
   const [selectedServer,setSelectedServer]=useState({});
@@ -36,6 +37,8 @@ export default function BrowseTagsPage() {
         return <ModbusConfigTags type="tcp" api="http://100.107.186.122:8002"/>;
       case "siemens":
         return <SimensTagsConfig />;
+        case "SLMP":
+        return <SlmpBrowseTags />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-40 text-center text-gray-500">
@@ -93,7 +96,7 @@ export default function BrowseTagsPage() {
               (s) => s.name === e.target.value || s.serverName === e.target.value
             );
             if (selected) {
-              setProtocol(selected.protocol);
+              setProtocol(selected.protocol || selected.type);
               setSelectedServer(selected);
               localStorage.setItem("Server",JSON.stringify(selected))
               console.log(selected)

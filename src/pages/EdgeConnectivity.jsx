@@ -3,6 +3,7 @@ import { OpcuaInputForm } from "./EdgeConnectivityComponents/OpcuaInputForm"
 import { SimensInputForm } from "./EdgeConnectivityComponents/simensInputForm"
 import { ModbusTCPConfig } from "./EdgeConnectivityComponents/modbusTCPInputFrom"
 import { ModbusRTUConfig } from "./EdgeConnectivityComponents/modbusRTUInputForm"
+import { SLMPConfig } from "./SlmpInputForm"
 
 export const EdgeConnectivity=()=>{
      const {tab} = useParams()
@@ -35,6 +36,13 @@ export const EdgeConnectivity=()=>{
                 && 
                 <div>
                     <SimensInputForm/>
+                </div>
+            }
+                        {
+                (tab==="slmp")
+                && 
+                <div>
+                    <SLMPConfig/>
                 </div>
             }
 

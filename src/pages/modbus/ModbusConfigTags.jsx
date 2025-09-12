@@ -5,7 +5,6 @@ import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
 import { applyScaling } from '../../functions/tags';
 
-const dataTypes = ['INT16', 'UINT16', 'INT32', 'UINT32', 'FLOAT32', 'BOOL', 'STRING'];
 const functionCodes = [
   { value: '1', label: 'Coils' },
   { value: '2', label: 'Input_status' },
@@ -13,7 +12,7 @@ const functionCodes = [
   { value: '4', label: 'Input' }
 ];
 const selectedServer=localStorage.getItem("Server") ? JSON.parse(localStorage.getItem("Server")) : {}
-const streamNames=['modbus_stream:Device_1','modbus_stream:Device_2','modbus_stream:Device_3','TCP:Device_1']
+const streamNames=['RTU:Device1','TCP:Device1']
 
 const ServerSection = React.memo(({ server, updateServer, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
   <div>
@@ -275,7 +274,7 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
 
   const [servers, setServers] = useState([  {
      id: 1,
-     name:"Device_1",
+     name:"Device 1",
       slaveId: '',
       conversion:"",
       functionConfigs:[{functionCode:'3',ranges:[],}],
@@ -290,7 +289,7 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
       const last=servers[servers.length-1];
       const newServer={
      id: last.id++,
-     name:`Device_${last.id++}`,
+     name:`Device ${last.id++}`,
       slaveId: '',
       conversion:"",
       functionConfigs:[{functionCode:'3',ranges:[],}],
@@ -381,10 +380,12 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
   }, []);
 
  
-function updateTagValue(serverId, newEntries) {
+function updateTagValue(matchedServer, newEntries) {
+  console.log(matchedServer,servers)
   setServers(prevServers =>
     prevServers.map(server => {
-      if (server.id !== serverId) return server;
+      if (server.id !== parseInt(matchedServer.slice(-1))) return server;
+
 
       // First time: initialize tags
       if (!server.tags || server.tags.length === 0) {
@@ -439,7 +440,6 @@ function updateTagProperties(serverId, address, updatedFields) {
       slaveId,
       functionConfigs,
     } = device;
-    console.log(device,"this is device ")
 
     // Convert functionCode
   
@@ -451,16 +451,16 @@ const type = found ? found.label : null;
       console.log(type);
       return;
     } // skip unknown functionCodes
-    if (!result[name]) {
-  result[name] = {
+    if (!result[name.replace(/\s/g, "")]) {
+  result[name.replace(/\s/g, "")] = {
     slave: parseInt(slaveId),
     conversion:functionConfig.conversion || "",
   };
 }
 
 // ✅ Add this to safely initialize type-level register array
-if (!result[name][type]) {
-  result[name][type] = {
+if (!result[name.replace(/\s/g, "")][type]) {
+  result[name.replace(/\s/g, "")][type] = {
     register: [],
   };
 }
@@ -468,7 +468,7 @@ if (!result[name][type]) {
     console.log(result)
       functionConfig.ranges.map((range)=>{
         console.log(name,result)
-        result[name][type].register.push(
+        result[name.replace(/\s/g, "")][type].register.push(
           range
     );
           })
@@ -481,13 +481,14 @@ if (!result[name][type]) {
 const payload = {
   serverInfo: {
     ip: serverInfo.serverIp,
+    name:serverInfo.serverName,
     port: serverInfo.serverPort,
     baudrate: serverInfo.serverBaudrate,
     stopbit: serverInfo.serverStopBit,
     bytesize: serverInfo.serverByteSize,
     parity: serverInfo.serverParity,
   },
-  [serverInfo.serverName || serverInfo.name]: result
+  result:result
 };
    console.log(payload)
   
@@ -504,64 +505,6 @@ const payload = {
 
 
 
-
-// useEffect(() => {
-//   const ws = new WebSocket("ws://localhost:3001"); // change IP if backend is remote
-//   wsRef.current = ws;
-
-//   ws.onopen = () => {
-//     console.log("WebSocket connected");
-//   };
-
-//   ws.onmessage = (event) => {
-//     try {
-//       const msg = JSON.parse(event.data);
-
-//       // only handle streams you care about
-//       if (!streamNames.includes(msg.stream)) return;
-
-//       // find matching server (by stream/device name)
-//       const deviceName = msg.stream.split(":")[1];
-//       const matchedServer = servers.find(
-//         (s) => (s.name || s.serverName) === deviceName
-//       );
-
-//       if (!matchedServer) {
-//         console.warn("No matching server found for stream:", msg.stream);
-//         return;
-//       }
-
-//       const dataEntries = Object.entries(msg.data)
-//         .filter(([key]) => key !== "connection_Holding_slave_1" || key!=="input read at slave_1")
-//         .map(([key, value]) => ({
-//           serverId: selectedServer.serverId || selectedServer.id,
-//           name: key,
-//           address: key,
-//           value,
-//           id: msg.id,
-//           timestamp: new Date(
-//             parseInt(msg.id.split("-")[0])
-//           ).toLocaleString(),
-//         }));
-
-//       console.log("Processed entries:", dataEntries);
-
-//       updateTagValue(matchedServer.serverId || matchedServer.id, dataEntries);
-//     } catch (err) {
-//       console.error("Error parsing WebSocket data", err);
-//     }
-//   };
-
-//   ws.onerror = (err) => {
-//     console.error("WebSocket error:", err);
-//   };
-
-//   ws.onclose = () => {
-//     console.log("WebSocket closed");
-//   };
-
-//   return () => ws.close();
-// }, [servers, streamNames, count]);
 
 
   useEffect(() => {
@@ -589,11 +532,13 @@ const payload = {
         const msg = JSON.parse(event.data);
 
         if (!streamNames.includes(msg.stream)) return;
+        
 
         const deviceName = msg.stream.split(":")[1];
-        const matchedServer = servers.find(
-          (s) => (s.name || s.serverName) === deviceName
+        const matchedServer = streamNames.find(
+          (s) => s === msg.stream
         );
+        console.log(matchedServer)
 
         if (!matchedServer) {
           console.warn("No matching server found for stream:", msg.stream);
@@ -611,8 +556,9 @@ const payload = {
             timestamp: new Date(parseInt(msg.id.split("-")[0])).toLocaleString(),
           }));
 
-        console.log("Processed entries:", dataEntries);
-        updateTagValue(matchedServer.serverId || matchedServer.id, dataEntries);
+        // console.log(matchedServer,servers)
+        console.log(dataEntries)
+        updateTagValue(matchedServer, dataEntries);
       } catch (err) {
         console.error("Error parsing WebSocket data", err);
       }
@@ -634,7 +580,7 @@ const payload = {
         wsRef.current = null;
       }
     };
-  }, [servers, count,selectedServer]);
+  }, [selectedServer,count]);
 
 
 

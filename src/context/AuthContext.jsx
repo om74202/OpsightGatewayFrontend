@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     setAuthUser(userData);
     axios.defaults.headers.common["Authorization"] = userData.token;
     localStorage.setItem("authUser", JSON.stringify(userData));
-    localStorage.setItem("OrgId", userData.user.organizationId)
   };
 
   const logout = () => {

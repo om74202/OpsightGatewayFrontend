@@ -9,6 +9,7 @@ const pageTitles = {
   "/gateway/edge-connection/opcua": "OPCUA Config",
   "/gateway/edge-connection/modbus-rtu": "Modbus RTU",
   "/gateway/edge-connection/modbus-tcp": "Modbus TCP",
+  "/gateway/edge-connection/slmp": "Seamless Message Protocol",
   "/gateway/database-management/opcua":"Database Management - OPCUA ",
   "/gateway/database-management/influx":"Database Management - InfluxDB",
   "/gateway/database-management/postgresql":"Database Management - PostgreSQL",

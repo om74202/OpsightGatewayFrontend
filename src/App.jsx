@@ -3,15 +3,12 @@ import { DashboardLayout } from './layout/DashboardLayout';
 
 
 import Login from "./pages/Login";
-import { LayoutDashboard } from "lucide-react";
 import { HealthMonitoring } from "./pages/HealthMonitoring";
-import { DatabaseHandling } from "./pages/DatabaseHandling";
 import { EdgeConnectivity } from "./pages/EdgeConnectivity";
 import { ModbusFormulaConfig} from "./pages/modbus/ModbusFormulaConfigPage";
 import { IIOT } from "./pages/IIOT";
 import { OpcuaMain } from "./pages/opcua/Main";
 import { SiemensMain } from "./pages/siemens/SiemensMain";
-import { ModbusMain } from "./pages/modbus/modbusMain";
 import { FormulaConfig } from "./pages/opcua/OpcuaFormulaList";
 import BrowseTagsPage from "./pages/BrowseTags";
 import {InfluxConfigPage} from "./pages/dataLogging /influxLogging";
@@ -19,6 +16,11 @@ import { MQTTConfigPage } from "./pages/dataLogging /mqttLogging";
 import { SQLConfigPage } from "./pages/dataLogging /sqlLogging";
 import { OPCUAConfigPage } from "./pages/dataLogging /opcuaLogging";
 import { UserManagement } from "./pages/userManagement";
+import { FirewallPortConfiguration } from "./pages/PortConfig";
+import { WifiConnections } from "./pages/wifiConfig";
+import { StaticIPConfiguration } from "./pages/IpConfiguration";
+import OpSightDashboard from "./pages/GatewayDashboard";
+import ProtectedRoute from "./pages/routes/protectedRoutes";
 
 
 
@@ -31,13 +33,19 @@ function App() {
 
         {/* Protected Routes */}
         <Route
-          path="/"
+          path="/login"
           element={
               <Login />
           }
         />
-        <Route path="/gateway/*" element={<DashboardLayout/>}>
+        <Route path="/gateway/*" element={<ProtectedRoute>
+          <DashboardLayout/>
+        </ProtectedRoute>}>
+        <Route path="" element={<OpSightDashboard/>}></Route>
         <Route path="health-monitoring" element={<HealthMonitoring/>}></Route>
+        <Route path="portConfiguration" element={<FirewallPortConfiguration/>}></Route>
+        <Route path="wifiConfiguration" element={<WifiConnections/>}></Route>
+        <Route path="ipConfiguration" element={<StaticIPConfiguration/>}></Route>
         <Route path="database-management/influx" element={<InfluxConfigPage/>}></Route>
         <Route path="database-management/postgresql" element={<SQLConfigPage/>}></Route>
         <Route path="database-management/opcua" element={<OPCUAConfigPage/>}></Route>

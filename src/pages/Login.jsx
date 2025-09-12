@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Login = () => {
     username: "",
     password: "",
   });
+  const {login}=useAuth()
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
@@ -19,13 +21,16 @@ const Login = () => {
     setError("");
     try {
       const response = await axios.post(
-        `http://localhost:3001/api/v1/gateway/login`,
+        `http://localhost:3001/api/v1/gateway/user/login`,
         credentials
       );
       console.log(response.data.user);
 
       if (response.data?.status === "success") {
-        localStorage.setItem("user", JSON.stringify(response.data?.user));
+        login({
+          user:response.data.user,
+          token:response.data?.token
+        })        
         navigate("/gateway"); // redirect after login
       } else {
         setError("Login failed");

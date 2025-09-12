@@ -9,15 +9,29 @@ import {
   ChevronDown,
   LogOut,
   User,
+  HdmiPort,
+  HdmiPortIcon,
+  Wifi,
+  ActivityIcon,
+  EthernetPort,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState({});
+  const {authUser,logout}=useAuth();
 
   const navItems = [
     { name: "Gateway Dashboard", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway", end: true },
     { name: "User Management", icon: <User className="w-5 h-5 mr-3" />, path: "/gateway/userManagement", end: true },
+    { name: "Port Management", icon: <HdmiPortIcon className="w-5 h-5 mr-3" />, path: "/gateway/portConfiguration", end: true },
+    { name: "Wifi Configuration", icon: <Wifi className="w-5 h-5 mr-3" />, path: "/gateway/wifiConfiguration", end: true },
+    { name: "IP Configuration", icon: <EthernetPort className="w-5 h-5 mr-3" />, path: "/gateway/ipConfiguration", end: true },
+
+
+
+
     {
       name: "Edge-Connection",
       icon: <LayoutDashboard className="w-5 h-5 mr-3" />,
@@ -27,6 +41,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "Modbus RTU", path: "/gateway/edge-connection/modbus-rtu", tab: "Modbus RTU" },
         { name: "Modbus TCP", path: "/gateway/edge-connection/modbus-tcp", tab: "Modbus TCP" },
         { name: "Simens", path: "/gateway/edge-connection/s-7", tab: "Simens" },
+        { name: "SLMP", path: "/gateway/edge-connection/slmp", tab: "Seamless Message Protocol" },
       ],
     },
     { name: "IIOT Configuration", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/database-management" ,
@@ -53,6 +68,10 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       [name]: !prev[name],
     }));
   };
+  const handleLogout=()=>{
+    logout();
+    navigate('/login')
+  }
 
   return (
     <aside
@@ -153,11 +172,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       <div>
         <div className="p-4 border-t border-gray-500">
           <button
+          onClick={()=>handleLogout()}
             className={`w-full flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors duration-200 ${
               isCollapsed ? "justify-center" : ""
             }`}
           >
-            <LogOut className={`w-5 h-5 ${isCollapsed ? "" : "mr-3"}`} />
+            <LogOut  className={`w-5 h-5 ${isCollapsed ? "" : "mr-3"}`} />
             {!isCollapsed && "Logout"}
           </button>
         </div>

@@ -36,6 +36,9 @@ export const MQTTConfigPage = () => {
   };
 
   const saveMQTTConfig = async () => {
+    if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
+      return; // run your function only if user clicks OK
+    }
     try {
       setLoading(true);
       const payload = {
@@ -54,12 +57,11 @@ export const MQTTConfigPage = () => {
           topic: mqttConfig.targetTopic
         }
       }
-
         const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
+        try{
         const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"start",topic:mqttConfig.targetTopic})
-        if(logOpcuaResponse.data.status==="Fail"){
-          alert(logOpcuaResponse.data.Message);
-          setLoading(false);
+        }catch(e){
+          console.log(e);
         }
         
 
@@ -67,6 +69,7 @@ export const MQTTConfigPage = () => {
       console.log("Saving MQTT configuration:", payload);
       setLoading(false);
       setConnectionStatus(true)
+      alert("Data Logging to MQTT Started ");
       getAllMQTTConfig();
       // Handle success - maybe show a toast notification
     } catch (e) {
@@ -98,10 +101,6 @@ export const MQTTConfigPage = () => {
     setMqttConfig(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCancel = () => {
-    // Navigate back or reset form
-    console.log("Cancel configuration");
-  };
   const DisconnectServer=async()=>{
     try{
       setLoading(true);
@@ -111,11 +110,15 @@ export const MQTTConfigPage = () => {
       }catch(e){
         console.log(e);
       }finally{
-
-      const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"stop"});
+        try{
+      const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"stop",topic:mqttConfig.targetTopic});
+        }catch(e){
+          console.log(e);
+        }
       if(response.status===200){
         setConnectionStatus(false);
       }
+      alert("Data Logging to MQTT Stopped")
       setLoading(false);
       }
     }catch(e){
@@ -274,23 +277,17 @@ export const MQTTConfigPage = () => {
           {/* Action Buttons */}
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
             <div className="flex justify-between space-x-4">
-              <button
-                onClick={handleCancel}
-                className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-              >
-                <X className="w-4 h-4" />
-                <span>Cancel</span>
-              </button>
 
               <div className="flex space-x-3">
-                <button
+                {/* <button
                   onClick={testConnection}
                   disabled={loading}
                   className="px-6 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center space-x-2"
                 >
+                    
                   <Wifi className="w-4 h-4" />
                   <span>{loading ? 'Testing...' : 'Test Connection'}</span>
-                </button>
+                </button> */}
 
               <button
                 onClick={()=>connectionStatus ? DisconnectServer() : saveMQTTConfig()}

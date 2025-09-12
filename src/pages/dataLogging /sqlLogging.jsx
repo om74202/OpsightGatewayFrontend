@@ -33,6 +33,9 @@ export const SQLConfigPage = () => {
   };
 
   const saveSQLConfig = async () => {
+        if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
+      return; // run your function only if user clicks OK
+    }
     try {
       setLoading(true);
       const payload = {
@@ -46,7 +49,11 @@ export const SQLConfigPage = () => {
 
 
         const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
-        const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"start",})
+        try{
+          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"start",})
+        }catch(e){
+          console.log(e);
+        }
 
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/database/save`, payload);
       console.log("Saving SQL configuration:", payload);
@@ -75,6 +82,7 @@ export const SQLConfigPage = () => {
   };
 
     const DisconnectServer=async()=>{
+
     try{
       setLoading(true);
       let response;
@@ -83,10 +91,13 @@ export const SQLConfigPage = () => {
       }catch(e){
         console.log(e)
       }finally{
+        try{
         const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"stop"});
-      
+        }catch(e){
+          console.log(e);
+        }
         setConnectionStatus(false);
-      
+        alert("Data Logging to Postgresql Stopped ")
       setLoading(false);
       }
     }catch(e){
@@ -102,9 +113,6 @@ export const SQLConfigPage = () => {
     setSqlConfig(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCancel = () => {
-    console.log("Cancel SQL configuration");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -205,6 +213,18 @@ export const SQLConfigPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
+                            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Table Name
+                </label>
+                <input
+                  type="text"
+                  value={sqlConfig.targetTable}
+                  onChange={(e) => handleInputChange('targetTable', e.target.value)}
+                  placeholder="Enter Target Table"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
             </div>
 
             {/* SQL Fields */}
@@ -225,23 +245,8 @@ export const SQLConfigPage = () => {
           {/* Action Buttons */}
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
             <div className="flex justify-between space-x-4">
-              <button
-                onClick={handleCancel}
-                className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-              >
-                <X className="w-4 h-4" />
-                <span>Cancel</span>
-              </button>
 
               <div className="flex space-x-3">
-                <button
-                  onClick={testConnection}
-                  disabled={loading}
-                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center space-x-2"
-                >
-                  <Wifi className="w-4 h-4" />
-                  <span>{loading ? 'Testing...' : 'Test Connection'}</span>
-                </button>
 
               <button
                 onClick={()=>connectionStatus ? DisconnectServer() : saveSQLConfig()}
