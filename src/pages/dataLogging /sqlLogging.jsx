@@ -48,9 +48,9 @@ export const SQLConfigPage = () => {
       
 
 
-        const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
+        // const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
         try{
-          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"start",})
+          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"start",tableName:sqlConfig.targetTable})
         }catch(e){
           console.log(e);
         }
@@ -226,20 +226,6 @@ export const SQLConfigPage = () => {
                 />
               </div>
             </div>
-
-            {/* SQL Fields */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                SQL Fields
-              </label>
-              <textarea
-                value={sqlConfig.sqlFields}
-                onChange={(e) => handleInputChange('sqlFields', e.target.value)}
-                placeholder="Enter SQL queries or field specifications..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                rows={4}
-              />
-            </div> */}
           </div>
 
           {/* Action Buttons */}

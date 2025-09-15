@@ -24,7 +24,9 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
   const navItems = [
     { name: "Gateway Dashboard", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway", end: true },
-    { name: "User Management", icon: <User className="w-5 h-5 mr-3" />, path: "/gateway/userManagement", end: true },
+        ...(authUser.user.role === "SuperAdmin"
+    ? [{ name: "User Management", icon: <User className="w-5 h-5 mr-3" />, path: "/gateway/userManagement", end: true },]
+    : []),
     { name: "Port Management", icon: <HdmiPortIcon className="w-5 h-5 mr-3" />, path: "/gateway/portConfiguration", end: true },
     { name: "Wifi Configuration", icon: <Wifi className="w-5 h-5 mr-3" />, path: "/gateway/wifiConfiguration", end: true },
     { name: "IP Configuration", icon: <EthernetPort className="w-5 h-5 mr-3" />, path: "/gateway/ipConfiguration", end: true },

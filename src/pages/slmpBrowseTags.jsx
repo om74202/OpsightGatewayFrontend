@@ -13,10 +13,13 @@ const deviceTypes = [
   { key: 'counter (coil)', value: 'CC' },
   { key: 'counter (switch)', value: 'CS' },
   { key: 'word', value: 'D' },
-  { key: 'Bit', value: 'M' }
+  { key: 'Bit', value: 'M' },
+  {key:'Input' , value:'X'},
+  {key:'Word' , value:'W'},
+  {key:'Output' , value:'Y'},
 ];
 const selectedServer=localStorage.getItem("Server") ? JSON.parse(localStorage.getItem("Server")) : {}
-const streamNames=['']
+const streamNames=['slmp:stream']
 
 const ServerSection = React.memo(({dataType,setAddresses ,setDataType,addresses=[], tags=[],isConnected,updateTagProperties }) => (
   <div>
@@ -173,7 +176,7 @@ const ServerSection = React.memo(({dataType,setAddresses ,setDataType,addresses=
   </div>
 ));
 
-export const SlmpBrowseTags = ({type="rtu",api="http://100.107.186.122:8000"}) => {
+export const SlmpBrowseTags = ({api="http://100.107.186.122:8000"}) => {
   const [serverInfo,setServerInfo]=useState(JSON.parse(localStorage.getItem("Server")))
   const wsRef = useRef(null);
   const [dataType,setDataType]=useState(deviceTypes[0]);
@@ -197,8 +200,12 @@ export const SlmpBrowseTags = ({type="rtu",api="http://100.107.186.122:8000"}) =
       }
     }
 
-    const saveTags=()=>{
-
+    const saveTags=async()=>{
+      try{
+        const response=await axios.put(`${process.env.REACT_APP_API_URL}/allServers/tags/${serverInfo.id}`,{data:tags})
+      }catch(e){
+        console.log(e);
+      }
     }
 
 
@@ -384,6 +391,7 @@ const browseTags = useCallback(async () => {
         <div className="grid grid-cols-1 xl:grid-cols-1 gap-2">
             <ServerSection
               serverInfo={serverInfo}
+              updateTagProperties={updateTagProperties}
               dataType={dataType}
               setAddresses={setAddresses}
               tags={tags}

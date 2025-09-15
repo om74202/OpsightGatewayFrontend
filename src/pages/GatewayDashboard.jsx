@@ -9,7 +9,7 @@ const OpSightDashboard = () => {
     tagConfiguration: { configured: 0 },
     systemStatus: {
       connectionStatus: 'Online',
-      activeConnections: "0/5",
+      activeConnections: {value:0,names:[]},
       configuredDatabases:{value:0,names:[]},
       configuredTags: {value:0,names:[]},
     }
@@ -24,11 +24,20 @@ const OpSightDashboard = () => {
 
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`);
+      const response2 = await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllServers`);
+      const connectedServerNames =
+  (response2.data?.servers || [])
+    .filter(v => v.status === "Connected")
+    .map(v => v.name || v.serverName);
+
+console.log(connectedServerNames);
+
+
       const tagNames=response.data?.tags.map((t)=>t.name)
       const databaseNames=response.data?.databases.map((t)=>t.type)
       setDashboardData((prev)=>({
         ...prev,
-        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:response.data?.tags?.length || 0,names:tagNames},configuredDatabases:{value:response.data?.databases?.length || 0,names:databaseNames} }
+        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:response.data?.tags?.length || 0,names:tagNames},configuredDatabases:{value:response.data?.databases?.length || 0,names:databaseNames},activeConnections:{value:connectedServerNames.length,names:connectedServerNames} }
       }))
     } catch (e) {
       console.log(e);
@@ -206,7 +215,8 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
           <div className="space-y-2">
             <SystemStatusItem
               label="Active Connections"
-              value={`${dashboardData.systemStatus.activeConnections} Connected`}
+              tags={dashboardData.systemStatus.activeConnections.names}
+              value={`${dashboardData.systemStatus.activeConnections.value} Connected`}
               color="blue"
             />
             <SystemStatusItem

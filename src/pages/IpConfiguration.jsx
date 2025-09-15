@@ -35,9 +35,9 @@ export const StaticIPConfiguration = () => {
     if (profile) {
       setFormData({
         name:profile.name,
-        staticIP: profile.staticIP,
+        staticIP: profile.ipAddress,
         routerIP: profile.routerIP,
-        dnsServer: profile.dnsServer,
+        dnsServer: profile.dnsServers[0],
       });
     } else {
       setFormData({name:"", staticIP: "", routerIP: "", dnsServer: ""});
@@ -140,12 +140,14 @@ export const StaticIPConfiguration = () => {
                 <td className="py-2 px-4 border-b">{p.routerIP}</td>
                 <td className="py-2 px-4 border-b">{p.dnsServers[0]}</td>
                 <td className="py-2 px-4 border-b text-right space-x-2">
-                  <button
+                  {p.device!==null && (
+                    <button
                     className="p-1 text-blue-500 hover:text-blue-700"
                     onClick={() => openModal(type, p)}
                   >
                     <Edit className="w-5 h-5" />
                   </button>
+                  )}
                   {!(type === "ethernet" && p.name === "static_eth0") && (
                     <button
                       className="p-1 text-red-500 hover:text-red-700"

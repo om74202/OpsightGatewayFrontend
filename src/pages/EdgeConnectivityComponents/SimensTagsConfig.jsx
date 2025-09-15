@@ -272,7 +272,13 @@ const ServerSection = React.memo(
 
 export const SimensTagsConfig = () => {
   const [tags, setTags] = useState([
-    
+        {
+      id: 1,
+      type: "INT",
+      db:"",
+      offset: 0,
+      bit: 0,
+    },
   ]);
     const wsRef = useRef(null);
   const [globalTags, setGlobalTags] = useState([

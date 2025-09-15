@@ -76,6 +76,8 @@ export const InfluxConfigPage = () => {
 
         const logResponseTCP=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
         const logResponseRTU=await axios.post(`http://100.107.186.122:8000/data-flush`,loggingPayload)
+        const logSiemens=await axios.post(`http://100.107.186.122:8001/data-flush`,loggingPayload)
+
 
         try{
           const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"start",bucketName:influxConfig.targetBucket?.name,measurementName:influxConfig.targetMeasurement})
