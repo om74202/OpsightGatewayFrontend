@@ -69,7 +69,7 @@ export const WifiConnections = () => {
   };
 
   return (
-    <div className="flex justify-center items-start mt-10 h-screen p-4">
+    <div className="flex justify-center items-start h-screen ">
       <div className="bg-white shadow-lg rounded-2xl w-full max-w-4xl overflow-hidden">
         {/* Header */}
         <div className="bg-gray-900 text-white flex justify-between items-center py-4 px-6">
@@ -112,7 +112,7 @@ export const WifiConnections = () => {
         )}
 
         {/* Table */}
-        <div className="p-6 overflow-x-auto">
+        <div className="p-4 overflow-x-auto">
           {wifiList.length === 0 && !isLoading ? (
             <p className="text-gray-500 text-center">No Wi-Fi networks found.</p>
           ) : (

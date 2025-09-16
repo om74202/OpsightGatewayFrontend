@@ -21,6 +21,7 @@ import { WifiConnections } from "./pages/wifiConfig";
 import { StaticIPConfiguration } from "./pages/IpConfiguration";
 import OpSightDashboard from "./pages/GatewayDashboard";
 import ProtectedRoute from "./pages/routes/protectedRoutes";
+import { Main } from "./pages/emailNotification/main";
 
 
 
@@ -55,6 +56,7 @@ function App() {
         <Route path="userManagement" element={<UserManagement/>}></Route>
         <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
         <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
+        <Route path="emailNotification" element={<Main/>}></Route>
         <Route path="iiot/tags" element={<IIOT/>}></Route>
         <Route path="iiot/browseTags" element={<BrowseTagsPage/>}></Route>
         <Route path="iiot/customTags" element={<FormulaConfig/>}></Route>

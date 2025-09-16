@@ -14,8 +14,19 @@ import {
   Wifi,
   ActivityIcon,
   EthernetPort,
+  Mail,
+  Cable,
+  Database,
+  Tags,
+  Stethoscope,
+  HeartIcon,
+  HeartCrack,
+  HeartPlus,
+  LucideLayoutDashboard,
+  LayoutDashboardIcon,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { DashboardLayout } from "./DashboardLayout";
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const navigate = useNavigate();
@@ -23,11 +34,12 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const {authUser,logout}=useAuth();
 
   const navItems = [
-    { name: "Gateway Dashboard", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway", end: true },
+    { name: "Gateway Dashboard", icon: <LayoutDashboardIcon className="w-5 h-5 mr-3" />, path: "/gateway", end: true },
         ...(authUser.user.role === "SuperAdmin"
     ? [{ name: "User Management", icon: <User className="w-5 h-5 mr-3" />, path: "/gateway/userManagement", end: true },]
     : []),
     { name: "Port Management", icon: <HdmiPortIcon className="w-5 h-5 mr-3" />, path: "/gateway/portConfiguration", end: true },
+    { name: "Health Monitoring", icon: <Stethoscope className="w-5 h-5 mr-3" />, path: "/gateway/health-monitoring" },
     { name: "Wifi Configuration", icon: <Wifi className="w-5 h-5 mr-3" />, path: "/gateway/wifiConfiguration", end: true },
     { name: "IP Configuration", icon: <EthernetPort className="w-5 h-5 mr-3" />, path: "/gateway/ipConfiguration", end: true },
 
@@ -36,7 +48,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
     {
       name: "Edge-Connection",
-      icon: <LayoutDashboard className="w-5 h-5 mr-3" />,
+      icon: <Cable className="w-5 h-5 mr-3" />,
       path: "/gateway/edge-connection",
       children: [
         { name: "OPC UA", path: "/gateway/edge-connection/opcua", tab: "OPCUA" },
@@ -46,7 +58,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "SLMP", path: "/gateway/edge-connection/slmp", tab: "Seamless Message Protocol" },
       ],
     },
-    { name: "IIOT Configuration", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/database-management" ,
+    { name: "IIOT Configuration", icon: <Database className="w-5 h-5 mr-3" />, path: "/gateway/database-management" ,
       children: [
         { name: "OPC UA", path: "/gateway/database-management/opcua", tab: "OPCUA" },
         { name: "InfluxDB", path: "/gateway/database-management/influx", tab: "InfluxDB" },
@@ -54,14 +66,15 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "MQTT", path: "/gateway/database-management/mqtt", tab: "MQTT" },
       ]
     },
-    { name: "Tags Configuration", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/iiot" ,
+    { name: "Tags Configuration", icon: <Tags className="w-5 h-5 mr-3" />, path: "/gateway/iiot" ,
       children: [
         { name: "Browse Tags", path: "/gateway/iiot/browseTags", tab: "Browse Tags" },
         { name: "Tags", path: "/gateway/iiot/tags", tab: "Tags" },
         { name: "Custom Tags", path: "/gateway/iiot/customTags", tab: "Custom Tags" },
       ]
     },
-    { name: "Health Monitoring", icon: <LayoutDashboard className="w-5 h-5 mr-3" />, path: "/gateway/health-monitoring" },
+    { name: "Email Notification", icon: <Mail className="w-5 h-5 mr-3" />, path: "/gateway/emailNotification", end: true },
+
   ];
 
   const toggleSubMenu = (name) => {
