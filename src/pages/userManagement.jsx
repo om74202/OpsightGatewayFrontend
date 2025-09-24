@@ -41,11 +41,7 @@ export const UserManagement = () => {
         console.log('Updating user:', { ...formData, id: editingUser.id });
         
         // Mock update
-        setUsers(prev => prev.map(user => 
-          user.id === editingUser.id 
-            ? { ...user, username: formData.username, email: formData.email }
-            : user
-        ));
+        fetchUsers()
         
         setEditingUser(null);
       } else {
@@ -80,11 +76,11 @@ export const UserManagement = () => {
 
     try {
       setLoading(true);
-      await axios.delete(`${process.env.REACT_APP_API_URL}/gateway/user/${userId}`);
+      await axios.delete(`${process.env.REACT_APP_API_URL}/gateway/user/delete/${userId}`);
       console.log('Deleting user:', userId);
       
       // Mock delete
-      setUsers(prev => prev.filter(user => user.id !== userId));
+      fetchUsers()
       setLoading(false);
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -119,7 +115,7 @@ export const UserManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">User Management</h1>

@@ -11,10 +11,11 @@ const functionCodes = [
   { value: '3', label: 'Holding' },
   { value: '4', label: 'Input' }
 ];
-const selectedServer=localStorage.getItem("Server") ? JSON.parse(localStorage.getItem("Server")) : {}
-const streamNames=['RTU:Device1','TCP:Device1']
 
-const ServerSection = React.memo(({ server, updateServer, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
+
+
+
+const ServerSection = React.memo(({ server, updateServer,loading, updateTagProperties, toggleExpand, browseTags,serverInfo }) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
     
@@ -60,7 +61,7 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
       <div className='flex'>
         <div className="grid grid-cols-1 lg:grid-cols-1 mx-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Slave ID</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Slave ID<span className="text-red-500">*</span></label>
           <input
             type="text"
             value={server.slaveId}
@@ -77,7 +78,7 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
   <div key={fcIndex} className="border p-3 rounded-md mb-2 bg-gray-50">
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Function Code</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Function Code<span className="text-red-500">*</span></label>
         <select
           value={funcCfg.functionCode}
           onChange={(e) => {
@@ -111,7 +112,7 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
     {(funcCfg.ranges || []).map((range, rIndex) => (
       <div key={rIndex} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Addresses</label>
+          <label className="block text-sm text-gray-600 mb-1">Addresses<span className="text-red-500">*</span></label>
           <input
             type="text"
             value={range.addresses}
@@ -205,71 +206,100 @@ const ServerSection = React.memo(({ server, updateServer, updateTagProperties, t
 )}
 
     <div>
-       <div className='w-full px-5'>
-            <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
-            {server.tags.length > 0 ? (
-              <div className="overflow-x-auto border border-gray-200 rounded-md">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">check</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {server.tags.map((tag) => (
-                      <tr key={tag.address} className="hover:bg-gray-50">
-                         <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                           
-                            onClick={(e)=>updateTagProperties(server.id,tag.address,{ status: e.target.checked ? 'pass' : 'fail' })}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={tag.name}
-                            onChange={(e) => updateTagProperties(server.id, tag.address, {'name': e.target.value})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.address}</td>
-                        <td className="px-4 py-3">
-                           <input
-                            type="text"
-                            value={tag.scaling}
-                            onChange={(e) => updateTagProperties(server.id, tag.address,{ 'scaling':e.target.value})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{applyScaling(tag?.scaling || "",tag.value)}</td>
-                       
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
-                <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No tags available. Click "Browse Tags" to load tags from the server.</p>
-              </div>
-            )}
-          </div>
+<div className='w-full px-5'>
+  <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
+
+  {loading ? (
+    // Skeleton loader
+    <div className="overflow-x-auto border border-gray-200 rounded-md">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            {['check', 'Name', 'Address', 'Scaling', 'Value'].map((col) => (
+              <th
+                key={col}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {[...Array(5)].map((_, i) => (
+            <tr key={i} className="hover:bg-gray-50">
+              {[...Array(5)].map((_, j) => (
+                <td key={j} className="px-4 py-3">
+                  <div className="h-4 bg-gray-300 rounded animate-pulse w-full"></div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : server.tags.length > 0 ? (
+    // Actual table
+    <div className="overflow-x-auto border border-gray-200 rounded-md">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">check</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {server.tags.map((tag) => (
+            <tr key={tag.address} className="hover:bg-gray-50">
+              <td className="px-4 py-3">
+                <input
+                  type="checkbox"
+                  onClick={(e)=>updateTagProperties(server.id,tag.address,{ status: e.target.checked ? 'pass' : 'fail' })}
+                  className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </td>
+              <td className="px-4 py-3">
+                <input
+                  type="text"
+                  value={tag.name}
+                  onChange={(e) => updateTagProperties(server.id, tag.address, {'name': e.target.value})}
+                  className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.address}</td>
+              <td className="px-4 py-3">
+                 <input
+                  type="text"
+                  value={tag.scaling}
+                  onChange={(e) => updateTagProperties(server.id, tag.address,{ 'scaling':e.target.value})}
+                  className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-900 font-mono">{applyScaling(tag?.scaling || "",tag.value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
+      <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+      <p className="text-sm">No tags available. Click "Browse Tags" to load tags from the server.</p>
+    </div>
+  )}
+</div>
+
     </div>
   </div>
     
   </div>
 ));
 
-export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"}) => {
-  const [serverInfo,setServerInfo]=useState(JSON.parse(localStorage.getItem("Server")))
+export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000",selectedServer,streamNames=['TCP:Device1']}) => {
+  const [serverInfo,setServerInfo]=useState(selectedServer)
   const wsRef = useRef(null);
 
   const [servers, setServers] = useState([  {
@@ -277,13 +307,14 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
      name:"Device 1",
       slaveId: '',
       conversion:"",
-      functionConfigs:[{functionCode:'3',ranges:[],}],
+      functionConfigs:[{functionCode:'3',ranges:[{ addresses: '', count: 0 }],}],
       isConnected: false,
       isExpanded: true,
       tags: []
   },
     ]);
     const [count,setCount]=useState(0)
+    const [loading,setLoading]=useState(false)
 
     const addDevice=()=>{
       const last=servers[servers.length-1];
@@ -351,8 +382,8 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
 
             // 3. Submit to backend
             const response = await axios.post(
-              `${process.env.REACT_APP_API_URL}/modbus/saveTags`,
-              tags
+              `${process.env.REACT_APP_API_URL}/allServers/tags/add`,
+              {tags}
             );
             alert("Tags Saved Successfully")
           }catch(e){
@@ -381,29 +412,23 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000"})
 
  
 function updateTagValue(matchedServer, newEntries) {
-  console.log(matchedServer,servers)
   setServers(prevServers =>
     prevServers.map(server => {
       if (server.id !== parseInt(matchedServer.slice(-1))) return server;
 
-
-      // First time: initialize tags
-      if (!server.tags || server.tags.length === 0) {
-        return { ...server, tags: newEntries };
-      }
-
-      // Subsequent updates: only update values by address
-      const updatedTags = server.tags.map(tag => {
-        const matchingNewEntry = newEntries.find(entry => entry.address === tag.address);
-        return matchingNewEntry
-          ? { ...tag, value: matchingNewEntry.value, timestamp: matchingNewEntry.timestamp }
-          : tag;
+      // Build updated tags only from newEntries
+      const updatedTags = newEntries.map(newEntry => {
+        const existingTag = server.tags?.find(tag => tag.address === newEntry.address);
+        return existingTag
+          ? { ...existingTag, value: newEntry.value, timestamp: newEntry.timestamp }
+          : newEntry; // brand new tag
       });
 
       return { ...server, tags: updatedTags };
     })
   );
 }
+
 function updateTagProperties(serverId, address, updatedFields) {
   setServers(prevServers =>
     prevServers.map(server => {
@@ -430,8 +455,23 @@ function updateTagProperties(serverId, address, updatedFields) {
   }, []);
 
   const browseTags = useCallback(async() => {
+
     try{
   const result = {};
+  console.log(servers)
+    if(servers[0].slaveId===''){
+      alert("Please enter a SlaveId")
+      return;
+    }
+    
+        if(servers[0].functionConfigs?.length===0 || servers[0].functionConfigs[0]?.ranges.address==="" || servers[0].functionConfigs[0]?.ranges.count===0){
+      alert("Please enter the Registers with Address and counts")
+      return
+    }
+    setLoading(true)
+
+        
+    
 
   servers.forEach(device => {
     const {
@@ -440,6 +480,9 @@ function updateTagProperties(serverId, address, updatedFields) {
       slaveId,
       functionConfigs,
     } = device;
+
+    console.log(functionConfigs)
+
 
     // Convert functionCode
   
@@ -480,13 +523,8 @@ if (!result[name.replace(/\s/g, "")][type]) {
     
 const payload = {
   serverInfo: {
-    ip: serverInfo.serverIp,
-    name:serverInfo.serverName,
-    port: serverInfo.serverPort,
-    baudrate: serverInfo.serverBaudrate,
-    stopbit: serverInfo.serverStopBit,
-    bytesize: serverInfo.serverByteSize,
-    parity: serverInfo.serverParity,
+    ...selectedServer,
+    ...selectedServer.data
   },
   result:result
 };
@@ -496,9 +534,11 @@ const payload = {
 
    const response=await axios.post(`${api}/start-${type}-reading/`,payload)
     console.log(response.data)
+    setLoading(false)
     setCount(count+1);
     }catch(e){
       console.log(e)
+      setLoading(false)
     }
   }, [servers]);
 
@@ -520,7 +560,7 @@ const payload = {
     // Prevent duplicate connection
     if (wsRef.current) return;
 
-    const ws = new WebSocket("ws://localhost:3001");
+    const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -548,7 +588,7 @@ const payload = {
         const dataEntries = Object.entries(msg.data)
           .filter(([key]) => key !== "connection_Holding_slave_1" && key !== "input read at slave_1")
           .map(([key, value]) => ({
-            serverId: selectedServer.serverId || selectedServer.id,
+            serverId: selectedServer.id,
             name: key,
             address: key,
             value,
@@ -616,6 +656,7 @@ const payload = {
             <ServerSection
               key={server.id}
               serverInfo={serverInfo}
+              loading={loading}
               server={server}
               updateServer={updateServer}
               updateTagProperties={updateTagProperties}

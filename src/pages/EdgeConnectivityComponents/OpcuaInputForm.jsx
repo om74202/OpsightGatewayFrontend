@@ -1,255 +1,7 @@
-// import { useState, useEffect } from "react";
-// import { useNavigate } from "react-router-dom";
-// import Dropdown from "../../Components/Dropdown";
-// import AutocompleteInput from "../../Components/AutoCompleteInput";
-// import { Edit, Plus, Server, Tags, Trash2, Wifi, WifiOff } from "lucide-react";
-// import axios from "axios";
 
-// const securityPolicies = ["None", "Basic128Rsa15", "Basic256", "Basic256Sha256", "Aes128_Sha256_RsaOaep"];
-// const securityModes = ["None", "Sign", "Sign and Encrypt"];
-// const AuthOptions = ["None", "Username and Password", "Certificate"];
-
-// export const OpcuaInputForm = () => {
-//   const navigate = useNavigate();
-
-//   const [formConfig, setFormConfig] = useState({
-//     ip: "",
-//     port: "",
-//     securityMode: "",
-//     securityPolicy: "",
-//     name: "",
-//     frequency: "",
-//     certificate: "",
-//     username: null,
-//     password: null,
-//   });
-
-//   const [auth, setAuth] = useState("Username and Password");
-//   const [connected, setConnected] = useState(false);
-//   const [count, setCount] = useState(0);
-//   const [showInputForm, setShowInputForm] = useState(false);
-//   const [editingId, setEditingId] = useState(null);
-//   const [serverList, setServerList] = useState([]);
-//   const [editConfig, setEditConfig] = useState({});
-//   const [successMessage, setSuccessMessage] = useState("");
-
-//   const handleSelect = (value, param) => {
-//     if (param === "auth") {
-//       setAuth(value);
-//     } else {
-//       setFormConfig((prev) => ({ ...prev, [param]: value }));
-//     }
-//   };
-
-//   const testConnection = async () => {
-//     try {
-//       const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testConnection`, formConfig);
-//       if (response.data?.status === "success") {
-//         setConnected(true);
-//         setSuccessMessage("Connection Successful");
-//       }
-//     } catch (e) {
-//       console.error("Connection failed", e);
-//     }
-//   };
-
-//   const saveServer = async () => {
-//     try {
-//       console.log(formConfig)
-//       const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/saveServer`, formConfig);
-//       if (response.data?.status === "success") {
-//         setShowInputForm(false);
-//         setCount((prev) => prev + 1);
-//         setSuccessMessage("Saved Successfully");
-//       }
-//     } catch (e) {
-//       alert("Saving failed. Try a different name.");
-//     }
-//   };
-
-//   const fetchServerList = async () => {
-//     try {
-//       const res = await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getServers`);
-//       setServerList(res.data.servers);
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchServerList();
-//   }, [count]);
-
-//   const handleEdit = (id, name = "", value = "") => {
-//     setEditingId(id);
-//     setEditConfig((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleSaveEdit = async (id) => {
-//     try {
-//       const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/updateServer/${id}`, editConfig);
-//       setEditingId(null);
-//       setCount((prev) => prev + 1);
-//     } catch (e) {
-//       console.error(e);
-//     }
-//   };
-
-//   const handleDelete = async (id) => {
-//     if (window.confirm("Are you sure you want to delete this server?")) {
-//       try {
-//         await axios.delete(`${process.env.REACT_APP_API_URL}/opcua/deleteServer/${id}`);
-//         setCount((prev) => prev + 1);
-//       } catch (e) {
-//         console.error(e);
-//       }
-//     }
-//   };
-
-//   return (
-//     <div className="p-4">
-//       {!showInputForm && (
-//         <div className="flex justify-end">
-//           <button
-//             onClick={() => setShowInputForm(true)}
-//             className="flex gap-2 bg-blue-600  text-white px-5 py-2 rounded-lg shadow"
-//           >
-//             <Plus className="w-4 h-4" />
-//             Add Server
-//           </button>
-//         </div>
-//       )}
-
-//       {showInputForm && (
-//         <div className="max-w-4xl mx-auto my-4 bg-white p-6 rounded shadow">
-//           <h2 className="text-xl font-semibold mb-4 text-center">OPCUA Configuration</h2>
-//           <div className="grid grid-cols-2 gap-4">
-//             <AutocompleteInput label="IP Address" onSelect={(val) => handleSelect(val, "ip")} />
-//             <AutocompleteInput label="Port" onSelect={(val) => handleSelect(val, "port")} />
-//             <Dropdown label="Authentication" options={AuthOptions} defaultValue={auth} onSelect={(val) => handleSelect(val, "auth")} />
-//             <Dropdown label="Security Policy" options={securityPolicies} onSelect={(val) => handleSelect(val, "securityPolicy")} />
-//             <Dropdown label="Security Mode" options={securityModes} onSelect={(val) => handleSelect(val, "securityMode")} />
-//             <AutocompleteInput label="Unique Server Name" onSelect={(val) => handleSelect(val, "name")} />
-//             <AutocompleteInput label="Frequency (in seconds)" type="number" onSelect={(val) => handleSelect(val, "frequency")} />
-//             {auth === "Username and Password" && (
-//               <>
-//                 <AutocompleteInput label="Username" onSelect={(val) => handleSelect(val, "username")} />
-//                 <AutocompleteInput label="Password" onSelect={(val) => handleSelect(val, "password")} />
-//               </>
-//             )}
-//             {auth === "Certificate" && (
-//               <div className="col-span-2">
-//                 <label className="block text-sm text-gray-600 mb-1">Certificate (.pem)</label>
-//                 <input
-//                   type="file"
-//                   accept=".pem"
-//                   onChange={(e) => handleSelect(e.target.files[0], "certificate")}
-//                   className="w-full px-3 py-2 border border-gray-300 rounded"
-//                 />
-//               </div>
-//             )}
-//           </div>
-
-//           <div className="mt-4 text-right">
-//             <button
-//               onClick={connected ? saveServer : testConnection}
-//               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-//             >
-//               {connected ? "Submit" : "Test Connection"}
-//             </button>
-//             {successMessage && <p className="text-green-600 text-sm mt-2">{successMessage}</p>}
-//           </div>
-//         </div>
-//       )}
-
-//       {/* Server list display */}
-//       <div className="max-w-4xl mx-auto bg-white mt-6 rounded-lg shadow p-6">
-//         <h3 className="text-lg font-semibold text-blue-700 mb-4">Server List</h3>
-//         {serverList.map((server) => (
-//           <div
-//             key={server.serverId}
-//             className="flex items-center justify-between p-4 border border-gray-200 rounded-lg mb-2 bg-white"
-//           >
-//             <div className="flex items-center gap-4 flex-1">
-//               <div
-//                 className={`p-2 rounded-full ${
-//                   server.status === "connected" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
-//                 }`}
-//               >
-//                 {server.status === "connected" ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
-//               </div>
-//               <div className="flex-1">
-//                 {editingId === server.serverId ? (
-//                   <div className="grid grid-cols-2 gap-4">
-//                     <input
-//                       className="border px-3 py-1 rounded"
-//                       value={editConfig.name}
-//                       onChange={(e) => handleEdit(server.serverId, "name", e.target.value)}
-//                     />
-//                     <input
-//                       className="border px-3 py-1 rounded"
-//                       value={editConfig.frequency}
-//                       onChange={(e) => handleEdit(server.serverId, "frequency", e.target.value)}
-//                     />
-//                     <button
-//                       onClick={() => handleSaveEdit(server.serverId)}
-//                       className="bg-green-500 text-white px-3 py-1 rounded"
-//                     >
-//                       Save
-//                     </button>
-//                     <button onClick={() => setEditingId(null)} className="bg-gray-500 text-white px-3 py-1 rounded">
-//                       Cancel
-//                     </button>
-//                   </div>
-//                 ) : (
-//                   <div>
-//                     <h4 className="font-semibold">{server.name}</h4>
-//                     <p className="text-sm text-gray-500">Frequency: {server.frequency}</p>
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-//             {editingId !== server.serverId && (
-//               <div className="flex items-center gap-2">
-//                 <button
-//                   onClick={() => {
-//                     localStorage.setItem("Server", JSON.stringify(server));
-//                     navigate("/gateway/opcua/ConfigTags");
-//                   }}
-//                   className="p-2 text-gray-600 hover:bg-blue-50 rounded-lg"
-//                   title="Browse Tags"
-//                 >
-//                   <Tags className="w-4 h-4" />
-//                 </button>
-//                 <button
-//                   onClick={() => {
-//                     setEditConfig(server);
-//                     setEditingId(server.serverId);
-//                   }}
-//                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-//                   title="Edit server"
-//                 >
-//                   <Edit className="w-4 h-4" />
-//                 </button>
-//                 <button
-//                   onClick={() => handleDelete(server.serverId)}
-//                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-//                   title="Delete server"
-//                 >
-//                   <Trash2 className="w-4 h-4" />
-//                 </button>
-//               </div>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Trash2, Pencil, Save, X } from "lucide-react";
+import { Trash2, Pencil, Save, X, Wifi } from "lucide-react";
 import Dropdown from "../../Components/Dropdown";
 import AutocompleteInput from "../../Components/AutoCompleteInput";
 import axios from "axios";
@@ -259,13 +11,14 @@ const securityModes = ["None", "Sign", "Sign and Encrypt"];
 const AuthOptions = ["None", "Username and Password", "Certificate"];
 
 export const OpcuaInputForm = () => {
-  const navigate = useNavigate();
+  const [correctConfig,setCorrectConfig]=useState({})
+  const [loading,setLoading]=useState(false);
 
   const [formConfig, setFormConfig] = useState({
     ip: "",
     port: "",
-    securityMode: "",
-    securityPolicy: "",
+    securityMode: "None",
+    securityPolicy: "None",
     name: "",
     frequency: "",
     certificate: "",
@@ -285,6 +38,11 @@ export const OpcuaInputForm = () => {
   const handleSelect = (value, param) => {
     if (param === "auth") {
       setAuth(value);
+      if(value==="None"){
+        setFormConfig((prev)=>({...prev,["username"]:null}))
+        setFormConfig((prev)=>({...prev,['password']:null}))
+        setFormConfig((prev)=>({...prev,['certificate']:null}))
+      }
     } else {
       setFormConfig((prev) => ({ ...prev, [param]: value }));
     }
@@ -292,36 +50,80 @@ export const OpcuaInputForm = () => {
 
   const testConnection = async () => {
     try {
+      setLoading(true);
+      if(formConfig.name===""){
+        alert("Please Enter a unique name")
+        return
+      }
+      if(formConfig.ip===""){
+        alert("Please enter a valid IP address")
+        return
+      }
+      if(formConfig.port===""){
+        alert("Please enter a valid Port")
+        return
+      }
+      if(formConfig.frequency<=0){
+        alert("Frequency should be greater than zero")
+        return
+      }
+      if(auth==="Certificate" && (formConfig.certificate==="" || formConfig.certificate===null)){
+        alert("Please provide a certificate")
+        return
+      }
+      if(auth==="Username and Password" && (formConfig.username===null || formConfig.username==="" || formConfig.password===null || formConfig.password==="")){
+        alert("Please enter valid Username and Password")
+        return
+      }
+      
+    
+      
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testConnection`, formConfig);
       if (response.data?.status === "success") {
         setConnected(true);
+        setCorrectConfig(formConfig)
         setSuccessMessage("Connection Successful");
+        setErrorMessage("")
       }else{
         setErrorMessage(response.data?.message)
       }
     } catch (e) {
       console.error("Connection failed", e);
+      
       setErrorMessage("Connection failed. Please check the details")
+    }finally{
+      setLoading(false);
     }
   };
 
   const saveServer = async () => {
+          if(formConfig!==correctConfig){
+            alert("Test the connection again as you edited the previously tested connection credentials")
+            setSuccessMessage("")
+        setConnected(false);
+        return
+      }
+      setLoading(true)
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/saveServer`, formConfig);
-      if (response.data?.status === "success") {
-        setCount((prev) => prev + 1);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/allServers/add`, {name:formConfig.name,type:"OPC UA",frequency:parseInt(formConfig.frequency),data:{ip:formConfig.ip,
+        port:formConfig.port,securityMode:formConfig.securityMode,securityPolicy:formConfig.securityPolicy,certificate:formConfig.certificate,username:formConfig.username,password:formConfig.password
+      }});
+        fetchServerList()
         setSuccessMessage("Saved Successfully");
         setConnected(false);
-      }
     } catch (e) {
       alert("Saving failed. Try a different name.");
+    }finally{
+      setLoading(false)
     }
   };
 
   const fetchServerList = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getServers`);
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/OPC UA`);
       setServerList(res.data.servers);
+      setSuccessMessage("")
+      
     } catch (err) {
       console.error(err);
     }
@@ -332,50 +134,73 @@ export const OpcuaInputForm = () => {
   }, [count]);
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this server?")) {
+    if (window.confirm("Deleting this server will also delete the tags and custom tags inside it. Do you still want to continue?")) {
       try {
-        await axios.delete(`${process.env.REACT_APP_API_URL}/opcua/deleteServer/${id}`);
-        setCount((prev) => prev + 1);
+        await axios.delete(`${process.env.REACT_APP_API_URL}/allServers/delete/${id}`);
+        fetchServerList();
       } catch (e) {
         console.error(e);
+        alert("Failed to delete Server , Make sure it doesn't contain any tags")
       }
     }
   };
 
   const startEdit = (server) => {
-    setEditingId(server.serverId);
+    setEditingId(server.id);
     setEditConfig(server);
   };
 
   const handleEditChange = (field, value) => {
-    setEditConfig((prev) => ({ ...prev, [field]: value }));
+    if(field!=="ip" && field!=="port"){
+      setEditConfig((prev) => ({ ...prev, [field]: value }));
+    }else{
+      setEditConfig((prev)=>({...prev,data:{
+        ...prev.data,
+        [field]:value
+      }}))
+    }
   };
 
   const saveEdit = async (id) => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/opcua/updateServer/${id}`, editConfig);
+      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {...editConfig , frequency:parseInt(editConfig.frequency)});
       setEditingId(null);
-      setCount((prev) => prev + 1);
+      fetchServerList()
     } catch (e) {
       console.error("Update failed", e);
     }
   };
 
   return (
-    <div className=" max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2">
+    <div className=" max-w-7xl mx-auto ">
       {/* OPC UA Config Section */}
 
       {/* Form Card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-1 mb-1">
-        <h2 className="text-md font-semibold text-gray-700 mb-1">🖧 OPCUA Connection</h2>
+              <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">OPC UA Configuration</h1>
+          <p className="text-gray-600 mt-2">
+            Configure OPC UA connection parameters.
+          </p>
+        </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-2 mb-1">
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AutocompleteInput label="Name" onSelect={(val) => handleSelect(val, "name")} />
-          <AutocompleteInput label="IP Address" onSelect={(val) => handleSelect(val, "ip")} />
-          <AutocompleteInput label="Port" onSelect={(val) => handleSelect(val, "port")} />
+
+        <div className="p-3">
+                            <div className="border-b border-gray-200 ">
+            <div className="flex items-center gap-2 ">
+              <Wifi className="w-5 h-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-800">OPC UA Connection</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 P-6">
+          <AutocompleteInput label="Connection Name " isCompulsary={true} onSelect={(val) => handleSelect(val, "name")} />
+          <AutocompleteInput label="IP Address" isCompulsary={true} onSelect={(val) => handleSelect(val, "ip")} />
+          <AutocompleteInput label="Port" isCompulsary={true}  onSelect={(val) => handleSelect(val, "port")} />
           <AutocompleteInput
             label="Frequency (in seconds)"
+            isCompulsary={true}
             type="number"
             onSelect={(val) => handleSelect(val, "frequency")}
           />
@@ -400,14 +225,14 @@ export const OpcuaInputForm = () => {
 
         {/* Auth fields */}
         {auth === "Username and Password" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <AutocompleteInput label="Username" onSelect={(val) => handleSelect(val, "username")} />
-            <AutocompleteInput label="Password" onSelect={(val) => handleSelect(val, "password")} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-6">
+            <AutocompleteInput label="Username" isCompulsary={true} onSelect={(val) => handleSelect(val, "username")} />
+            <AutocompleteInput label="Password" isCompulsary={true} onSelect={(val) => handleSelect(val, "password")} />
           </div>
         )}
         {auth === "Certificate" && (
           <div className="mt-4">
-            <label className="block text-sm text-gray-600 mb-1">Certificate (.pem)</label>
+            <label className="block text-sm text-gray-600 mb-1">Certificate<span className="text-red-500">*</span> (.pem)</label>
             <input
               type="file"
               accept=".pem"
@@ -418,42 +243,58 @@ export const OpcuaInputForm = () => {
         )}
 
         {/* Actions */}
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={connected ? saveServer : testConnection}
-            className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-lg"
-          >
-            {connected ? "Save Connection" : "Test Connection"}
-          </button>
-        </div>
+            <div className="flex justify-end mt-6">
+<button
+    disabled={loading}
+    onClick={testConnection}
+    className="bg-gray-900 mx-3 hover:bg-gray-800 text-white font-medium px-6 py-2 rounded-md transition-colors"
+  >
+    {loading && !connected ? "Testing..." : "Test Connection"}
+  </button>
+
+  {/* Save Connection Button */}
+  <button
+    disabled={loading || !connected} // disable until tested
+    onClick={saveServer}
+    className={`font-medium px-6 py-2 rounded-md transition-colors ${
+      connected
+        ? "bg-green-600 hover:bg-green-500 text-white"
+        : "bg-gray-400 text-gray-200 cursor-not-allowed"
+    }`}
+  >
+    {loading && connected ? "Saving..." : "Save Connection"}
+  </button>
+            </div>
         <div className="flex justify-end">
                   {successMessage && <p className="text-green-600 text-sm mt-2">{successMessage}</p>}
         {errorMessage && <p className="text-red-600 text-sm mt-2">{errorMessage}</p>}
         </div>
+        </div>
       </div>
 
       {/* Server List */}
-      <h3 className="text-md font-semibold text-gray-700 mb-1">OPCUA Connections</h3>
+      <h3 className="text-md font-semibold text-gray-700 mb-1">Tested OPC UA Connections</h3>
       <p className="text-sm text-gray-500 mb-4">
-        View all configured OPCUA connections. Total entries: {serverList.length}
+        View all tested OPC UA connections. Total entries: {serverList.length}
       </p>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm text-gray-700">
           <thead className="bg-gray-50 border-b border-gray-200 text-gray-600">
             <tr>
-              <th className="py-3 px-4 text-left">Name</th>
+              <th className="py-3 px-4 text-left">Connection Name</th>
               <th className="py-3 px-4 text-left">IP:Port</th>
-              <th className="py-3 px-4 text-left">Authentication</th>
               <th className="py-3 px-4 text-left">Frequency</th>
-              <th className="py-3 px-4 text-left">Status</th>
+              <th className="py-3 px-4 text-left">Authentication</th>
+              <th className="py-3 px-4 text-left">Security Policy</th>
+              <th className="py-3 px-4 text-left">Security Mode</th>
               <th className="py-3 px-4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {serverList.map((server) => (
-              <tr key={server.serverId} className="border-b border-gray-100">
-                {editingId === server.serverId ? (
+              <tr key={server.id} className="border-b border-gray-100">
+                {editingId === server.id ? (
                   <>
                     <td className="py-3 px-4">
                       <input
@@ -465,17 +306,16 @@ export const OpcuaInputForm = () => {
                     <td className="py-3 px-4">
                       <input
                         className="border px-2 py-1 rounded w-full"
-                        value={editConfig.ip}
+                        value={editConfig.data.ip}
                         onChange={(e) => handleEditChange("ip", e.target.value)}
                       />
                       :
                       <input
                         className="border px-2 py-1 rounded w-20"
-                        value={editConfig.port}
+                        value={editConfig.data.port}
                         onChange={(e) => handleEditChange("port", e.target.value)}
                       />
                     </td>
-                    <td className="py-3 px-4">{editConfig.auth}</td>
                     <td className="py-3 px-4">
                       <input
                         className="border px-2 py-1 rounded w-20"
@@ -483,16 +323,23 @@ export const OpcuaInputForm = () => {
                         onChange={(e) => handleEditChange("frequency", e.target.value)}
                       />
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4">{(editConfig.data.certificate==="" || editConfig.data.certificate===null) && editConfig.data.username==null ? "None" : (editConfig.data.certificate!=="" && editConfig.data.certificate!==null) ? "Certificate" : "Username and Password"  }
+</td>
+
+                    <td className="py-3 px-4">{editConfig.data.securityPolicy}</td>
+                    <td className="py-3 px-4">{editConfig.data.securityMode}</td>
+
+                    
+                    {/* <td className="py-3 px-4">
                       <input
                         className="border px-2 py-1 rounded w-20"
-                        value={editConfig.status}
-                        onChange={(e) => handleEditChange("status", e.target.value)}
+                        value={editConfig.loggingStatus}
+                        onChange={(e) => handleEditChange("loggingStatus", e.target.value)}
                       />
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4 flex gap-2 justify-center">
                       <button
-                        onClick={() => saveEdit(server.serverId)}
+                        onClick={() => saveEdit(server.id)}
                         className="text-green-600 hover:text-green-800"
                       >
                         <Save className="w-5 h-5 inline" />
@@ -508,15 +355,18 @@ export const OpcuaInputForm = () => {
                 ) : (
                   <>
                     <td className="py-3 px-4">{server.name}</td>
-                    <td className="py-3 px-4">{server.ip}:{server.port}</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs">
-                        {server.certificate==="" && server.username==null ? "None" : server.certificate!=="" ? "Certificate" : "Username and Password"  }
-                      </span>
-                    </td>
+                    <td className="py-3 px-4">{server.data.ip}:{server.data.port}</td>
                     <td className="py-3 px-4">{server.frequency}</td>
                     <td className="py-3 px-4">
-                      {server.status === "Connected" ? (
+                      <span className="px-2 py-1 bg-gray-100 rounded text-xs">
+                        {(server.data.certificate==="" || server.data.certificate===null) && server.data.username==null ? "None" : (server.data.certificate!=="" && server.data.certificate!==null) ? "Certificate" : "Username and Password"  }
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">{server.data?.securityPolicy}</td>
+                    <td className="py-3 px-4">{server.data?.securityMode}</td>
+
+                    {/* <td className="py-3 px-4">
+                      {server.loggingStatus === "Connected" ? (
                         <span className="px-3 py-1 cursor-pointer rounded-full text-xs bg-green-100 text-green-700">
                           Connected
                         </span>
@@ -525,7 +375,7 @@ export const OpcuaInputForm = () => {
                           Disconnected
                         </span>
                       )}
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4  flex gap-2 justify-center">
                       <button
                         onClick={() => startEdit(server)}
@@ -534,7 +384,7 @@ export const OpcuaInputForm = () => {
                         <Pencil className="w-5 h-5 inline" />
                       </button>
                       <button
-                        onClick={() => handleDelete(server.serverId)}
+                        onClick={() => handleDelete(server.id)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="w-5 h-5 inline" />
@@ -554,6 +404,7 @@ export const OpcuaInputForm = () => {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 };

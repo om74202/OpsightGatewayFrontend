@@ -8,12 +8,15 @@ import {
   Plus,
   Minus,
   CrossIcon,
+  WifiOff,
 } from "lucide-react";
 import axios from "axios";
 
 const user = JSON.parse(localStorage.getItem("user"));
 
 export const InfluxConfigPage = () => {
+    const [connectionTest,setConnectionTest]=useState(false)
+  
   const [influxConfig, setInfluxConfig] = useState({
     package: "",
     cloudUrl: "",
@@ -28,7 +31,6 @@ export const InfluxConfigPage = () => {
     targetMeasurement:"",
   });
 
-  const [connectionStatus, setConnectionStatus] = useState(localStorage.getItem("LoggingServer")==="Influx");
   const [loading, setLoading] = useState(false);
 
   // Fetch existing config
@@ -42,6 +44,7 @@ export const InfluxConfigPage = () => {
       if (influxData) {
         setInfluxConfig((prev) => ({ ...prev, ...influxData.data }));
       }
+      testConnection();
     } catch (e) {
       console.log(e);
     }
@@ -52,9 +55,28 @@ export const InfluxConfigPage = () => {
   }, []);
 
   const saveInfluxConfig = async () => {
-        if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
-      return; // run your function only if user clicks OK
+    if(influxConfig.org==="" ){
+      alert("Please fill  the Organization name")
+      return;
     }
+        if(influxConfig.token==="" ){
+      alert("Please fill  the Token")
+      return;
+    }
+            if(influxConfig.buckets.length===0){
+      alert("Please Make a Bucket to proceed")
+      return;
+    }
+        if(influxConfig.targetBucket==="" ){
+      alert("Please fill  the target Bucket's  name")
+      return;
+    }
+        if(influxConfig.targetMeasurement===""){
+      alert("Please fill  the target Measurement's name")
+      return;
+    }
+
+
     try {
       setLoading(true);
       const payload = {
@@ -74,31 +96,30 @@ export const InfluxConfigPage = () => {
           return;
         }
 
-        const logResponseTCP=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
-        const logResponseRTU=await axios.post(`http://100.107.186.122:8000/data-flush`,loggingPayload)
-        const logSiemens=await axios.post(`http://100.107.186.122:8001/data-flush`,loggingPayload)
+        // const logResponseTCP=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
+        // const logSiemens=await axios.post(`http://100.107.186.122:8001/data-flush`,loggingPayload)
 
 
         try{
-          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,{action:"start",bucketName:influxConfig.targetBucket?.name,measurementName:influxConfig.targetMeasurement})
               await axios.post(
         `${process.env.REACT_APP_API_URL}/database/save`,
         payload
       );
+      alert("Influx configuration saved successfully")
+      testConnection()
         }catch(e){
           console.log("fail at opcua")
         }
-            await axios.post(
-        `${process.env.REACT_APP_API_URL}/database/save`,
-        payload
-      );
+      //       await axios.post(
+      //   `${process.env.REACT_APP_API_URL}/database/save`,
+      //   payload
+      // );
         // if(logResponse?.data?.status!==200 || logOpcuaResponse.status!==200){
         //   alert("Failed to Start Logging Data");
         //   setLoading(false);
         // }
-        localStorage.setItem("LoggingServer","Influx")
+        // localStorage.setItem("LoggingServer","Influx")
 
-      setConnectionStatus(true);
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -109,13 +130,19 @@ export const InfluxConfigPage = () => {
   const testConnection = async () => {
     try {
       setLoading(true);
-      // Mock: Replace with actual API
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/influxTestConnection`,{})
+      if(response.data.status==="success"){
+        setConnectionTest(true);
+      }else{
+        setConnectionTest(false)
+      }
       setTimeout(() => {
         // setConnectionStatus(true);
         setLoading(false);
       }, 1500);
     } catch (e) {
       console.log(e);
+      setConnectionTest(false)
       setLoading(false);
     }
   };
@@ -135,7 +162,6 @@ export const InfluxConfigPage = () => {
           console.log(e)
         }
         localStorage.setItem("LoggingServer","");
-        setConnectionStatus(false);
         alert("Data Logging to Influx Stopped ")
       
       setLoading(false);
@@ -229,15 +255,15 @@ export const InfluxConfigPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen  bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
     
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 ">
+      <div className="max-w-7xl mx-auto px-6 py-8 ">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           {/* Status */}
-          {connectionStatus && (
+          {/* {connectionStatus && (
             <div className="bg-green-50 border-b border-green-200 p-4">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -246,10 +272,19 @@ export const InfluxConfigPage = () => {
                 </span>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Form */}
-          <div className="p-6 space-y-6">
+                                <div className="p-6 border-b border-gray-200">
+                        <div className="flex items-center space-x-2">
+                                        {connectionTest && (<Wifi className="w-7 h-7 text-green-600" />)}
+              {!connectionTest && (<WifiOff className="w-7 h-7 text-red-600" />)}
+                          <h2 className="text-lg font-semibold text-gray-900">Influx Connection</h2>
+                        </div>
+                        <p className="text-gray-500 text-sm mt-1">Influx connection settings .</p>
+                      </div>
+          <div className="p-6 ">
+
             {/* Package */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -280,7 +315,7 @@ export const InfluxConfigPage = () => {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Local URL
+                    Local URL<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -294,7 +329,7 @@ export const InfluxConfigPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Token
+                    Token<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
@@ -311,7 +346,7 @@ export const InfluxConfigPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Organization
+                    Organization<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -328,7 +363,7 @@ export const InfluxConfigPage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Buckets
+                      Buckets<span className="text-red-500">*</span>
                     </label>
                     <button
                       onClick={() => handleAddBucket("local")}
@@ -401,7 +436,7 @@ export const InfluxConfigPage = () => {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cloud URL
+                    Cloud URL<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -418,7 +453,7 @@ export const InfluxConfigPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cloud Token
+                    Cloud Token<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="password"
@@ -435,7 +470,7 @@ export const InfluxConfigPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cloud Org
+                    Cloud Org<span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -456,9 +491,9 @@ export const InfluxConfigPage = () => {
           </div>
           {/* Target Selection */}
 {/* Target Bucket */}
-<div>
+<div className="mx-5">
   <label className="block text-sm font-medium text-gray-700 mb-2">
-    Select Target Bucket
+    Select Target Bucket<span className="text-red-500">*</span>
   </label>
   <select
     value={influxConfig.targetBucket?.name || ""}
@@ -485,9 +520,9 @@ export const InfluxConfigPage = () => {
 
 {/* Target Measurement */}
 {influxConfig.targetBucket?.measurements && (
-  <div>
+  <div className="mx-5">
     <label className="block text-sm font-medium text-gray-700 mb-2">
-      Select Target Measurement
+      Select Target Measurement<span className="text-red-500">*</span>
     </label>
     <select
       value={influxConfig.targetMeasurement || ""}
@@ -512,12 +547,7 @@ export const InfluxConfigPage = () => {
 
           {/* Footer Buttons */}
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end">
-            {/* <button
-              onClick={DisconnectServer}
-              className="px-6 py-2 text-white bg-red-600 border border-gray-300 rounded-lg hover:bg-red-800 flex items-center space-x-2"
-            >
-              <span>Disconnect</span>
-            </button> */}
+
             <div className="flex  space-x-3">
               {/* <button
                 onClick={testConnection}
@@ -528,12 +558,12 @@ export const InfluxConfigPage = () => {
                 <span>{loading ? "Testing..." : "Test Connection"}</span>
               </button> */}
               <button
-                onClick={()=>connectionStatus ? DisconnectServer() : saveInfluxConfig()}
+                onClick={saveInfluxConfig}
                 disabled={loading}
-                className={`px-6 py-2 ${connectionStatus ? "bg-red-600 hover:bg-red-700" :"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
+                className={`px-6 py-2 ${"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
               >
                 <Save className="w-4 h-4" />
-                <span>{connectionStatus ? "Disconnect":"Connect"}</span>
+                <span>{"Save"}</span>
               </button>
             </div>
           </div>

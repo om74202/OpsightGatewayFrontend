@@ -22,6 +22,7 @@ import { StaticIPConfiguration } from "./pages/IpConfiguration";
 import OpSightDashboard from "./pages/GatewayDashboard";
 import ProtectedRoute from "./pages/routes/protectedRoutes";
 import { Main } from "./pages/emailNotification/main";
+import { WizardMain } from "./pages/wizard/wizardMain";
 
 
 
@@ -57,6 +58,7 @@ function App() {
         <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
         <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
         <Route path="emailNotification" element={<Main/>}></Route>
+        <Route path="wizard" element={<WizardMain/>}></Route>
         <Route path="iiot/tags" element={<IIOT/>}></Route>
         <Route path="iiot/browseTags" element={<BrowseTagsPage/>}></Route>
         <Route path="iiot/customTags" element={<FormulaConfig/>}></Route>

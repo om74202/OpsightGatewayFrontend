@@ -105,10 +105,10 @@ export const StaticIPConfiguration = () => {
   };
 
   const renderTable = (profiles, type) => (
-    <div className="bg-white shadow-md rounded-lg w-full max-w-4xl mb-8">
+    <div className="bg-white shadow-md rounded-lg w-full max-w-7xl mb-8">
       <div className="flex justify-between items-center bg-gray-900 text-white py-3 px-6 rounded-t-lg">
         <h2 className="text-lg font-bold">
-          {type === "wifi" ? "Wi-Fi Static IP Profiles" : "Ethernet Static IP Profiles"}
+          {type === "wifi" ? "Static IP Profiles" : "Ethernet Static IP Profiles"}
         </h2>
         <button
           onClick={() => openModal(type)}
@@ -166,7 +166,7 @@ export const StaticIPConfiguration = () => {
   );
 
   return (
-    <div className="flex flex-col justify-center items-center mt-10 h-auto py-8">
+    <div className="flex flex-col justify-center items-center  h-auto ">
       {/* Inline Notification */}
       {message && (
         <div
@@ -179,7 +179,7 @@ export const StaticIPConfiguration = () => {
       )}
 
       {renderTable(wifiProfiles, "wifi")}
-      {renderTable(ethProfiles, "ethernet")}
+      {/* {renderTable(ethProfiles, "ethernet")} */}
 
       {/* Modal */}
       {modalType && (

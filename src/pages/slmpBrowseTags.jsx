@@ -5,6 +5,8 @@ import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
 import { applyScaling } from './../functions/tags';
 
+ const skeletonRows = Array(5).fill(0);
+
 const deviceTypes = [
   { key: 'timer', value: 'TN' },
   { key: 'timer (coil)', value: 'TC' },
@@ -18,10 +20,9 @@ const deviceTypes = [
   {key:'Word' , value:'W'},
   {key:'Output' , value:'Y'},
 ];
-const selectedServer=localStorage.getItem("Server") ? JSON.parse(localStorage.getItem("Server")) : {}
 const streamNames=['slmp:stream']
 
-const ServerSection = React.memo(({dataType,setAddresses ,setDataType,addresses=[], tags=[],isConnected,updateTagProperties }) => (
+const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresses ,setDataType,addresses=[], tags=[],isConnected,updateTagProperties }) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
     
@@ -50,24 +51,29 @@ const ServerSection = React.memo(({dataType,setAddresses ,setDataType,addresses=
 
    <div className='flex  justify-between'>
           <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Data Types</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Data Types<span className="text-red-500">*</span></label>
         <select
-        value={dataType.value}
+        value={dataType.value || ""}
         onChange={(e) => {
-    const selected = deviceTypes.find(d => d.key === e.target.value);
-    setDataType(selected);
-  }}
+  console.log("Selected key:", e.target.value);
+
+  const selected = deviceTypes.find(d => d.value === e.target.value);
+  console.log("Selected object:", selected);
+
+  setDataType(selected);
+}}
+
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
         >
           {deviceTypes.map(fc => (
-            <option key={fc.key} value={fc}>{fc.key}</option>
+            <option key={fc.key} value={fc.value}>{fc.key}</option>
           ))}
         </select>
       </div>
 
 <div className="mt-3">
   <label className="block text-sm font-medium text-gray-700 mb-1">
-    Addresses
+    Addresses<span className="text-red-500">*</span>
   </label>
 
   {addresses.map((addr, idx) => (
@@ -112,78 +118,150 @@ const ServerSection = React.memo(({dataType,setAddresses ,setDataType,addresses=
 
 
 
-    <div>
-       <div className='w-full px-5'>
-            <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
-            {tags.length > 0 ? (
-              <div className="overflow-x-auto border border-gray-200 rounded-md">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">check</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {tags.map((tag) => (
-                      <tr key={tag.address} className="hover:bg-gray-50">
-                         <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                           
-                            onClick={(e)=>updateTagProperties(tag.address,{ status: e.target.checked ? 'pass' : 'fail' })}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={tag.name}
-                            onChange={(e) => updateTagProperties( tag.address, {'name': e.target.value})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.address}</td>
-                        <td className="px-4 py-3">
-                           <input
-                            type="text"
-                            value={tag.scaling}
-                            onChange={(e) => updateTagProperties( tag.address,{ 'scaling':e.target.value})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">{applyScaling(tag?.scaling || "",tag.value)}</td>
-                       
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
-                <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No tags available. Click "Browse Tags" to load tags from the server.</p>
-              </div>
-            )}
+ <div>
+      <div className="w-full px-5">
+        <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
+
+        {isLoading ? (
+          // Skeleton loader
+          <div className="overflow-x-auto border border-gray-200 rounded-md animate-pulse">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Address
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scaling
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Value
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {skeletonRows.map((_, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        ) : tags.length > 0 ? (
+          // Actual data table
+          <div className="overflow-x-auto border border-gray-200 rounded-md">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tags.map((tag) => (
+                  <tr key={tag.address} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        onClick={(e) =>
+                          updateTagProperties(tag.address, {
+                            status: e.target.checked ? "pass" : "fail",
+                          })
+                        }
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="text"
+                        value={tag.name}
+                        onChange={(e) =>
+                          updateTagProperties(tag.address, { name: e.target.value })
+                        }
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                      {tag.address}
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="text"
+                        value={tag.scaling}
+                        onChange={(e) =>
+                          updateTagProperties(tag.address, { scaling: e.target.value })
+                        }
+                        className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 font-mono">
+                      {applyScaling(tag?.scaling || "", tag.value)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          // No tags
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
+            <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">
+              No tags available. Click "Browse Tags" to load tags from the server.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   </div>
     
   </div>
 ));
 
-export const SlmpBrowseTags = ({api="http://100.107.186.122:8000"}) => {
-  const [serverInfo,setServerInfo]=useState(JSON.parse(localStorage.getItem("Server")))
+
+export const SlmpBrowseTags = ({api="http://100.107.186.122:8000" ,selectedServer}) => {
+  
   const wsRef = useRef(null);
   const [dataType,setDataType]=useState(deviceTypes[0]);
   const [addresses,setAddresses]=useState([{
     address:""
   }])
+  const [count,setCount]=useState(0)
+  const [isLoading,setIsLoading]=useState(false)
   const [tags,setTags]=useState([])
+
+
+  useEffect(()=>{
+    setTags([])
+    setAddresses([{
+    address:""
+  }])
+  setCount(0)
+  },[selectedServer])
 
     const disConnectServer=async ()=>{
       try{
@@ -199,10 +277,13 @@ export const SlmpBrowseTags = ({api="http://100.107.186.122:8000"}) => {
         console.log(e);
       }
     }
+    console.log(dataType)
 
     const saveTags=async()=>{
       try{
-        const response=await axios.put(`${process.env.REACT_APP_API_URL}/allServers/tags/${serverInfo.id}`,{data:tags})
+        const selectedTags=tags.filter((t)=>t.status==="pass")
+        const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:selectedTags})
+        alert("Tags saved successfully")
       }catch(e){
         console.log(e);
       }
@@ -264,23 +345,28 @@ function updateTagProperties(address, updatedFields) {
 
 const browseTags = useCallback(async () => {
   try {
+    setIsLoading(true)
+    console.log(dataType)
     const newAddresses = addresses.map((a) => ({
       address: dataType.value + a.address
     }));
 
     const payload = {
-      serverInfo:{ip:serverInfo.data.ip,port:serverInfo.data.port,comm_type:serverInfo.data.communicationType},
+      serverInfo:{ip:selectedServer.data.ip,port:selectedServer.data.port,comm_type:selectedServer.data.communicationType},
       result: {
         tags: newAddresses
       }
     };
     console.log(payload);
        const response=await axios.post(`http://100.107.186.122:8003/start-background-read/`,payload)
+       setCount(count+1);
     console.log(response.data)
   } catch (e) {
     console.log(e);
+  }finally{
+    setIsLoading(false)
   }
-}, [addresses, dataType]); 
+}, [addresses, dataType,count]); 
 
 
 
@@ -289,17 +375,18 @@ const browseTags = useCallback(async () => {
 
 
   useEffect(() => {
-    //   if (wsRef.current) {
-    //     wsRef.current.close();
-    //     wsRef.current = null;
-    //   }
+
       
 
     // Prevent duplicate connection
     // if (wsRef.current) return;
 
-    const ws = new WebSocket("ws://localhost:3001");
+    const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}`);
     wsRef.current = ws;
+          if (count===0) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -357,7 +444,7 @@ const browseTags = useCallback(async () => {
         wsRef.current = null;
       }
     };
-  }, []);
+  }, [count]);
 
 
 
@@ -390,7 +477,8 @@ const browseTags = useCallback(async () => {
       </div>
         <div className="grid grid-cols-1 xl:grid-cols-1 gap-2">
             <ServerSection
-              serverInfo={serverInfo}
+            isLoading={isLoading}
+              serverInfo={selectedServer}
               updateTagProperties={updateTagProperties}
               dataType={dataType}
               setAddresses={setAddresses}

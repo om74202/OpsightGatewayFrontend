@@ -20,6 +20,7 @@ const ServerSection = React.memo(
     removeTag,
     browsedTags=[],
     addTag,
+    isLoading,
     isExpanded,
     server,
     tags,
@@ -67,7 +68,7 @@ const ServerSection = React.memo(
                       {['type', 'db', 'offset', 'bit'].map((field) =>
                           field === 'type' ? (
                             <div>
-                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}<span className="text-red-500">*</span></label>
                             <select
                               key={field}
                               value={tag[field]}
@@ -83,7 +84,7 @@ const ServerSection = React.memo(
                             </div>
                           ) : (
                            <div>
-                             <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                             <label className="block text-sm font-medium text-gray-700 mb-1">{field}<span className="text-red-500">*</span></label>
                             <input
                               key={field}
                               placeholder={field}
@@ -125,7 +126,7 @@ const ServerSection = React.memo(
                       {['type', 'area', 'offset', 'bit'].map((field) =>
                           field === 'type' ? (
                              <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">{field}<span className="text-red-500">*</span></label>
                             <select
                               key={field}
                               value={tag[field]}
@@ -141,7 +142,7 @@ const ServerSection = React.memo(
                              </div>
                           ) : (
                              <div>
-                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}</label>
+                               <label className="block text-sm font-medium text-gray-700 mb-1">{field}<span className="text-red-500">*</span></label>
                             <input
                               key={field}
                               placeholder={field}
@@ -178,104 +179,107 @@ const ServerSection = React.memo(
           </div>
         )}
 
-        <div>
-          <div className="w-full px-5">
-            <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
-            {browsedTags.length > 0 ? (
-              <div className="overflow-x-auto border border-gray-200 rounded-md">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Check
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Id
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Datatype
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Scaling
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Value
-                      </th>
-                      {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {browsedTags.map((tag) => (
-                      <tr key={tag.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            onClick={(e) =>
-                              updateTagProperties(tag.id,'status',e.target.checked ? 'pass':'fail')
-                            }
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {tag.id}
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={tag.name}
-                            onChange={(e) =>
-                              updateTagProperties(tag.id,'name',e.target.value)
-                            }
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {tag.id?.split('_')[0] || ""}
-                        </td>
+<div>
+  <div className="w-full px-5">
+    <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
 
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={tag.scaling}
-                            onChange={(e) =>
-                              updateTagProperties(tag.id, 'scaling',e.target.value)
-                            }
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {applyScaling(tag?.scaling || "", tag.value)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
-                <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">
-                  No tags available. Click "Browse Tags" to load tags from the
-                  server.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+    {isLoading ? (
+      // Skeleton loader
+      <div className="overflow-x-auto border border-gray-200 rounded-md">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              {['Check', 'Id', 'Name', 'Datatype', 'Scaling', 'Value'].map((col) => (
+                <th
+                  key={col}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {[...Array(5)].map((_, i) => (
+              <tr key={i} className="hover:bg-gray-50">
+                {[...Array(6)].map((_, j) => (
+                  <td key={j} className="px-4 py-3">
+                    <div className="h-4 bg-gray-300 rounded animate-pulse w-full"></div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : browsedTags.length > 0 ? (
+      <div className="overflow-x-auto border border-gray-200 rounded-md">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Id</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datatype</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {browsedTags.map((tag) => (
+              <tr key={tag.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    onClick={(e) => updateTagProperties(tag.id,'status', e.target.checked ? 'pass':'fail')}
+                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.id}</td>
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={tag.name}
+                    onChange={(e) => updateTagProperties(tag.id,'name', e.target.value)}
+                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 font-mono">{tag.id?.split('_')[0] || ""}</td>
+                <td className="px-4 py-3">
+                  <input
+                    type="text"
+                    value={tag.scaling}
+                    onChange={(e) => updateTagProperties(tag.id,'scaling', e.target.value)}
+                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 font-mono">{applyScaling(tag?.scaling || "", tag.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="border-2 border-dashed border-gray-300 rounded-md p-8 text-center text-gray-500">
+        <WifiOff className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+        <p className="text-sm">No tags available. Click "Browse Tags" to load tags from the server.</p>
+      </div>
+    )}
+  </div>
+</div>
+
       </div>
     </div>
   )
 );
 
-export const SimensTagsConfig = () => {
+export const SimensTagsConfig = ({serverInfo}) => {
+  const [isLoading,setIsLoading]=useState(false)
   const [tags, setTags] = useState([
         {
       id: 1,
       type: "INT",
-      db:"",
+      db:0,
       offset: 0,
       bit: 0,
     },
@@ -293,7 +297,7 @@ export const SimensTagsConfig = () => {
   const [browsedTags, setBrowsedTags] = useState([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [count,setCount]=useState(0);
-  const serverInfo = JSON.parse(localStorage.getItem("Server"));
+
 
   const handleInputChange = (name, id, field, value) => {
   // Define fields that should always be integers
@@ -367,6 +371,7 @@ export const SimensTagsConfig = () => {
   };
 
   const saveTags=async()=>{
+    
     try{
       console.log(browsedTags)
       const payload = browsedTags
@@ -379,10 +384,11 @@ export const SimensTagsConfig = () => {
     serverId: serverInfo.id
   }));
 
-      const response=await axios.post(`${process.env.REACT_APP_API_URL}/siemens/saveTags`,payload) 
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:payload}) 
       if(response.data.status!=="success"){
         alert(response.data.message || "failed to add Tags")
       }
+      alert("Tags saved successfully")
     }catch(e){
       console.log(e);
       
@@ -425,9 +431,23 @@ export const SimensTagsConfig = () => {
 
 
   const browseTags = async () => {
+            if( tags[0].db===0 || tags[0].db===""){
+      alert("Please enter the  DB of  Tags ")
+      return
+    }
+    if( globalTags[0].area===""){
+      alert("Please enter the  Area of Global Tags ")
+      return
+    }
+
+        if(globalTags[0].bit<0 || globalTags[0].offset<0 || tags[0].bit<0 || tags[0].offset<0 ){
+      alert("Please enter greater than 0 bits and offset")
+      return
+    }
+    setIsLoading(true)
     try{
         const payload={
-            serverInfo,
+            serverInfo:{name:serverInfo.name,frequency:serverInfo.frequency,...serverInfo.data},
             result:{tags,global_tags:globalTags}
         }
         console.log(payload)
@@ -435,6 +455,8 @@ export const SimensTagsConfig = () => {
         setCount(count+1)
     }catch(e){
         console.log(e);
+    }finally{
+      setIsLoading(false)
     }
   };
 
@@ -457,7 +479,7 @@ useEffect(() => {
   // Prevent duplicate connection
   if (wsRef.current) return;
 
-  const ws = new WebSocket("ws://localhost:3001");
+  const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}`);
   wsRef.current = ws;
 
   ws.onopen = () => {
@@ -519,16 +541,18 @@ useEffect(() => {
   return (
     <div>
       <div className="flex justify-end">
-        <button
-          onClick={() => {
-            disConnectServer();
-          }}
-          type="button"
-          className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium 
-                    rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
-        >
-          Disconnect Server
-        </button>
+      <button
+        onClick={() => {
+          disConnectServer();
+        }}
+        type="button"
+        className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium 
+                  rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900
+                  disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
+        disabled={browseTags.length === 0}
+      >
+        Disconnect Server
+      </button>
 
         <div className="flex gap-2">
           <button
@@ -551,6 +575,7 @@ useEffect(() => {
         <ServerSection
           serverInfo={serverInfo}
           tags={tags}
+          isLoading={isLoading}
           removeTag={removeTag}
           addTag={addTag}
           setIsExpanded={setIsExpanded}

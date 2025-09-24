@@ -70,7 +70,7 @@ export const WifiConnections = () => {
 
   return (
     <div className="flex justify-center items-start h-screen ">
-      <div className="bg-white shadow-lg rounded-2xl w-full max-w-4xl overflow-hidden">
+      <div className="bg-white shadow-lg rounded-2xl w-full max-w-7xl overflow-hidden">
         {/* Header */}
         <div className="bg-gray-900 text-white flex justify-between items-center py-4 px-6">
           <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -93,7 +93,7 @@ export const WifiConnections = () => {
         {/* Current SSID */}
         <div className="p-4 border-b">
           <p className="text-gray-700">
-            Current SSID:{" "}
+            Current WiFi Network:{" "}
             <span className="font-semibold text-blue-600">{currentSSID || "Not connected"}</span>
           </p>
         </div>
@@ -112,7 +112,7 @@ export const WifiConnections = () => {
         )}
 
         {/* Table */}
-        <div className="p-4 overflow-x-auto">
+        <div className="px-6 overflow-x-auto">
           {wifiList.length === 0 && !isLoading ? (
             <p className="text-gray-500 text-center">No Wi-Fi networks found.</p>
           ) : (
@@ -120,7 +120,7 @@ export const WifiConnections = () => {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-6 py-3 border-b">#</th>
-                  <th className="px-6 py-3 border-b">SSID Name</th>
+                  <th className="px-6 py-3 border-b">WiFi Name</th>
                   <th className="px-6 py-3 border-b text-right">Action</th>
                 </tr>
               </thead>

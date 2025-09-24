@@ -1,6 +1,8 @@
 import axios from "axios";
 import { Edit, Trash2, Server, Tags, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
+import { capitalizeFirstLetter } from './BrowseTags';
+
 
 const mockServerList = [
   {
@@ -15,6 +17,7 @@ const mockServerList = [
 ];
 
 export const SLMPConfig = () => {
+  const [loading,setLoading]=useState(false);
   const [formConfig, setFormConfig] = useState({
     name: "",
     ip: "",
@@ -30,12 +33,13 @@ export const SLMPConfig = () => {
     loggingStatus:"",
     frequency: 1
   });
+  const [correctConfig,setCorrectConfig]=useState({})
+
   const [connected, setConnected] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [serverList, setServerList] = useState(mockServerList);
-  const [count, setCount] = useState(0);
 
   const handleInputChange = (name, value) => {
     setFormConfig((prev) => ({
@@ -45,7 +49,7 @@ export const SLMPConfig = () => {
   };
 
   const getServerList = async () => {
-    const url = `${process.env.REACT_APP_API_URL}/allServers/`;
+    const url = `${process.env.REACT_APP_API_URL}/allServers/SLMP`;
     try {
       const response = await axios.get(url);
       setServerList(response?.data?.servers || []);
@@ -60,6 +64,25 @@ export const SLMPConfig = () => {
   }, []);
 
   const testConnection = async () => {
+      if(formConfig.name===""){
+        alert("Please Enter a unique name")
+        return
+      }
+
+      if(formConfig.ip===""){
+        alert("Please enter a valid IP address")
+        return
+      }
+
+      if(formConfig.port===""){
+        alert("Please enter a valid Port")
+        return
+      }
+      if(formConfig.frequency<=0){
+        alert("Frequency should be greater than zero")
+        return
+      }
+      setLoading(true)
     try {
       const response = await axios.post(
         `http://100.107.186.122:8003/mitsubishi-plc/test-connection`,
@@ -80,14 +103,24 @@ export const SLMPConfig = () => {
       );
 
         setConnected(true);
+        setCorrectConfig(formConfig)
         setSuccessMessage("Connection Successful");
       
     } catch (e) {
       setError("Connection Failed");
+    }finally{
+      setLoading(false)
     }
   };
 
   const submitServer = async () => {
+                  if(formConfig!==correctConfig){
+            alert("Test the connection again as you edited the previously tested connection credentials")
+            setSuccessMessage("")
+        setConnected(false);
+        return
+      }
+      setLoading(true)
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/allServers/add`, {
         data:{
@@ -102,6 +135,8 @@ export const SLMPConfig = () => {
       getServerList();
     } catch (e) {
       console.log(e);
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -117,7 +152,7 @@ export const SLMPConfig = () => {
   };
 
   const handleEdit = (name = "", value = "") => {
-    if(name==="ip" || name==="port"){
+    if(name==="ip" || name==="port" || name==="communicationType"){
       setEditConfig((prev)=>({
         ...prev,
         data:{
@@ -155,7 +190,7 @@ export const SLMPConfig = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-2">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800">SLMP Configuration</h1>
@@ -176,7 +211,7 @@ export const SLMPConfig = () => {
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="Enter Connection Name"
@@ -186,7 +221,7 @@ export const SLMPConfig = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">IP Address<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="Enter IP Address"
@@ -196,7 +231,7 @@ export const SLMPConfig = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Port<span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   placeholder="Enter Port"
@@ -213,12 +248,12 @@ export const SLMPConfig = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {["ascii","binary"].map((rate) => (
-                    <option key={rate} value={rate}>{rate}</option>
+                    <option key={rate} value={rate}>{capitalizeFirstLetter(rate)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Frequency (in sec)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Frequency<span className="text-red-500">*</span> (in sec)</label>
                 <input
                   type="number"
                   placeholder="Enter Frequency"
@@ -230,12 +265,26 @@ export const SLMPConfig = () => {
             </div>
 
             <div className="flex justify-end mt-6">
-              <button
-                onClick={connected ? submitServer : testConnection}
-                className="bg-gray-900 hover:bg-gray-800 text-white font-medium px-6 py-2 rounded-md transition-colors"
-              >
-                {connected ? "Submit" : "Test Connection"}
-              </button>
+<button
+    disabled={loading}
+    onClick={testConnection}
+    className="bg-gray-900 mx-3 hover:bg-gray-800 text-white font-medium px-6 py-2 rounded-md transition-colors"
+  >
+    {loading && !connected ? "Testing..." : "Test Connection"}
+  </button>
+
+  {/* Save Connection Button */}
+  <button
+    disabled={loading || !connected} // disable until tested
+    onClick={submitServer}
+    className={`font-medium px-6 py-2 rounded-md transition-colors ${
+      connected
+        ? "bg-green-600 hover:bg-green-500 text-white"
+        : "bg-gray-400 text-gray-200 cursor-not-allowed"
+    }`}
+  >
+    {loading && connected ? "Saving..." : "Save Connection"}
+  </button>
             </div>
 
             {successMessage !== "" && (
@@ -254,9 +303,9 @@ export const SLMPConfig = () => {
         {/* Connections Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="border-b border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-800">SLMP Connections</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Tested SLMP Connections</h2>
             <p className="text-sm text-gray-600 mt-1">
-              View all configured SLMP connections. Total entries: {serverList.length}
+              View all Tested SLMP connections. Total entries: {serverList.length}
             </p>
           </div>
 
@@ -264,11 +313,10 @@ export const SLMPConfig = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Name</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Connection Name</th>
                   <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">IP:Port</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Communication Type</th>
                   <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Frequency (in seconds)</th>
-                  {/* <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Created</th> */}
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Status</th>
                   <th className="text-right py-3 px-6 text-sm font-medium text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -301,6 +349,14 @@ export const SLMPConfig = () => {
                               className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
+                        </td>
+                                                <td className="py-3 px-6">
+                          <input
+                            type="text"
+                            value={editConfig.data.communicationType}
+                            onChange={(e) => handleEdit("communicationType", e.target.value)}
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </td>
                         <td className="py-3 px-6">
                           <input
@@ -342,17 +398,8 @@ export const SLMPConfig = () => {
                       <>
                         <td className="py-3 px-6 text-sm font-medium text-gray-900">{server.name}</td>
                         <td className="py-3 px-6 text-sm text-gray-600">{server?.data?.ip || ""}:{server?.data?.port || ""}</td>
+                        <td className="py-3 px-6 text-sm text-gray-600">{capitalizeFirstLetter(server?.data?.communicationType || "")} </td>
                         <td className="py-3 px-6 text-sm text-gray-600">{server?.frequency || ""} </td>
-                        {/* <td className="py-3 px-6 text-sm text-gray-600">
-                          {new Date(server.createdAt || "2025-09-02").toLocaleDateString()}
-                        </td> */}
-                        <td className="py-3 px-6">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            server.status === "Connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}>
-                            {server?.status || "Disconnected"}
-                          </span>
-                        </td>
                         <td className="py-3 px-6 text-right">
                           <div className="flex gap-1 justify-end">
                             <button

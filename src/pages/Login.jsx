@@ -21,7 +21,7 @@ const Login = () => {
     setError("");
     try {
       const response = await axios.post(
-        `http://localhost:3001/api/v1/gateway/user/login`,
+        `${process.env.REACT_APP_API_URL}/gateway/user/login`,
         credentials
       );
       console.log(response.data.user);

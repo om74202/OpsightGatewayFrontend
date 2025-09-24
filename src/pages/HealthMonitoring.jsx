@@ -69,7 +69,7 @@ export const HealthMonitoring = () => {
 
   return (
     <div className="flex flex-col justify-center items-center h-auto py-8 space-y-8">
-      <div className="bg-white shadow-lg rounded-xl w-full max-w-5xl p-6 border border-gray-200">
+      <div className="bg-white shadow-lg rounded-xl w-full max-w-7xl p-6 border border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">

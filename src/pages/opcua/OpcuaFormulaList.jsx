@@ -1,19 +1,28 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Save, RotateCcw, Edit2, Trash2, Plus, X } from 'lucide-react';
+import React, { useState, useRef, useEffect,useMemo } from 'react';
+import { Save, RotateCcw, Edit2, Trash2, Plus, X, Filter, Search, Check } from 'lucide-react';
 import axios from 'axios';
+import { capitalizeFirstLetter } from '../BrowseTags';
+
+
+const protocolOrder = {
+  "opc ua": 1,
+  modbusrtu: 2,
+  modbustcp: 3,
+  siemens: 4,
+  slmp: 5,
+};
 
 export const FormulaConfig = () => {
   // Mock data for demonstration - replace with your actual localStorage logic
-  const serverInfo = { serverId: 'server-1' };
+  const serverInfo = JSON.parse(localStorage.getItem("Server"))
+  const [loading,setLoading]=useState(false)
   
-  
+  const [tagsList,setTagsList]=useState([])
   const [variables, setVariables] = useState([]);
   const [expression, setExpression] = useState('');
   const [formulaName, setFormulaName] = useState('');
   const [savedFormulas, setSavedFormulas] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [totalFormulas,setTotalFormulas]=useState([]);
   const [testValues, setTestValues] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -25,33 +34,34 @@ export const FormulaConfig = () => {
   const [selectedServer,setSelectedServer]=useState({});
 
 
+    const [filters, setFilters] = useState({ name: "", protocol: "", serverName: "" });
+    const [count, setCount] = useState(0);
+    const [editingFormulaId, setEditingFormulaId] = useState(null);
+    const [editValues, setEditValues] = useState({ name: "", expression: "" });
 
-    useEffect(() => {
-    setVariables(selectedServer?.tags?.map((v)=>v.name) || []);
-  }, [selectedServer]);
+
+
+ 
 
 
 
   const getAllServers=async()=>{
+    setLoading(true)
         try{
-      const response=await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllServers`);
-      setServers(response.data?.servers || [])
-      
-      setTotalFormulas(
-  response.data?.formulas || []
+      const responseServers=await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
+
+      const response=await axios.get(`${process.env.REACT_APP_API_URL}/allServers/customTag/get`);
+      setVariables(
+  responseServers.data.servers.flatMap(server => server.tags.map(tag => tag.name))
 );
+
+      setServers(responseServers.data?.servers || [])
+      const c=response.data?.servers || [];
+      setSavedFormulas(response.data?.data || [])
     }catch(e){
       console.log(e);
-    }
-  }
-
-
-  const getAllFormulas=async()=>{
-        try{
-      const response=await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllFormulas`);      
-      setTotalFormulas(response.data?.formulas || [] )
-    }catch(e){
-      console.log(e);
+    }finally{
+      setLoading(false)
     }
   }
 
@@ -59,12 +69,9 @@ export const FormulaConfig = () => {
     getAllServers();
   },[])
   useEffect(()=>{
-    console.log(selectedServer)
-    setSavedFormulas(
-  totalFormulas.filter((f) => f.type === (selectedServer?.protocol)) || []
-);
-
+    setTagsList(selectedServer?.tags?.map((t)=>t.name) || [])
   },[selectedServer])
+  // filters
 
 
 
@@ -75,48 +82,75 @@ export const FormulaConfig = () => {
     try{
      if (!formulaName.trim() || !expression.trim()) return;
     
-    const parseResult = parseFormula(expression);
+    const parseResult = parseFormula(expression,tagsList);
     if (!parseResult.isValid) {
       alert(`Invalid formula: ${parseResult.error}`);
       return;
     }
 
     const newFormula = {
-      id: editingId || Date.now(),
       name: formulaName,
       type:selectedServer?.protocol,
       expression: expression.trim(),
-      variables: [...variables],
-      serverId:serverInfo.serverId
+      serverId:serverInfo.id
     };
     console.log(newFormula)
 
-    if (editingId) {
-      const response = await axios.put(`${process.env.REACT_APP_API_URL}/gateway/updateFormula/${editingId}`, newFormula);
-      setEditingId(null);
-    } else {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/gateway/saveFormula`, newFormula);
+
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/allServers/customTag/save`, newFormula);
       console.log(response.data);
-    }
-    getAllFormulas();
+    
+    alert("Custom Tags Updated")
+    getAllServers();
+
     setFormulaName('');
     setExpression('');
     setShowSuggestions(false); 
     }catch(e){
       console.log(e)
+    }finally{
     }
   };
 
+
+    const filteredFormulas = useMemo(() => {
+    return savedFormulas.filter((formula) => {
+      const nameMatch = formula.name.toLowerCase().includes(filters.name.toLowerCase());
+      const protocolMatch = !filters.protocol || formula.server.type === filters.protocol;
+      const serverMatch = !filters.serverName || formula.server.name === filters.serverName;
+      return nameMatch && protocolMatch && serverMatch;
+    });
+  }, [saveFormula, filters]);
+
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters((prev) => ({ ...prev, [filterType]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ name: "", protocol: "", serverName: "" });
+  };
+
   const deleteFormula = async (id) => {
-    setSavedFormulas(prev => prev.filter(f => f.id !== id));
+    try{
+      const response = await axios.delete(`${process.env.REACT_APP_API_URL}/allServers/customTag/delete/${id}`);
+      getAllServers()
+    }catch(e){
+      alert("Failed to delete custom tag")
+    }
+  };
+    const startEditing = (formula) => {
+    setEditingFormulaId(formula.id);
+    setEditValues({ name: formula.name, expression: formula.expression });
   };
 
 
   // Parse and validate formula
-const parseFormula = (input) => {
+const parseFormula = (input,vars=variables) => {
   try {
+    console.log(variables,vars)
     let testExpression = input;
-    const sortedVariables = variables.sort((a, b) => b.length - a.length);
+    const sortedVariables = vars.sort((a, b) => b.length - a.length);
 
     sortedVariables.forEach((variable) => {
       const regex = new RegExp(
@@ -179,7 +213,7 @@ const parseFormula = (input) => {
     const currentWord = currentWordInfo.word;
     
     if (currentWord && currentWord.length > 0 && /^[a-zA-Z]/.test(currentWord)) {
-      const matchingVars = variables.filter(variable => 
+      const matchingVars = tagsList.filter(variable => 
         variable.toLowerCase().startsWith(currentWord.toLowerCase()) &&
         variable.toLowerCase() !== currentWord.toLowerCase()
       );
@@ -260,56 +294,72 @@ const parseFormula = (input) => {
     }
   };
 
-  // Edit formula
-  const editFormula = (savedFormula) => {
-    setFormulaName(savedFormula.name);
-    setExpression(savedFormula.expression);
-    setEditingId(savedFormula.id);
-    setShowSuggestions(false);
-  };
 
   // Cancel editing
-  const cancelEdit = () => {
-    setEditingId(null);
-    setFormulaName('');
-    setExpression('');
-    setShowSuggestions(false);
+  const cancelEditing = () => {
+    setEditingFormulaId(null);
+        setEditValues({ name: "", expression: "" });
+
   };
 
   // Get formula validation status
-  const getFormulaStatus = () => {
-    if (!expression.trim()) return { isValid: true, message: '' };
-    const result = parseFormula(expression);
-    console.log(result,expression)
+  const getFormulaStatus = (exp=expression) => {
+    console.log(exp,"Testing this expression")
+    if (!exp.trim()) return { isValid: true, message: '' };
+    const result = parseFormula(exp);
+    console.log(result,exp)
     return {
       isValid: result.isValid,
       message: result.isValid ? 'Valid formula' : result.error
     };
   };
 
-  // // Insert tag into formula
-  // const insertTag = (tagName) => {
-  //   const cursorPos = inputRef.current?.selectionStart || expression.length;
-  //   const beforeCursor = expression.substring(0, cursorPos);
-  //   const afterCursor = expression.substring(cursorPos);
-  //   const newExpression = beforeCursor + tagName + afterCursor;
-  //   setExpression(newExpression);
+    const saveEdit = async (formula) => {
+    if (editValues.name.trim() === "" || editValues.expression.trim() === "") {
+      alert("Name and Expression cannot be empty");
+      return;
+    }
+    console.log(editValues.expression)
+const status=parseFormula(editValues.expression)
+
+if(!status.isValid){
+  alert(status.error)
+  return
+}
+
+
     
-  //   // Calculate result
-  //   const testResult = evaluateFormula(newExpression, testValues);
-  //   setResult(testResult);
-    
-  //   setTimeout(() => {
-  //     inputRef.current?.focus();
-  //     const newPos = cursorPos + tagName.length;
-  //     inputRef.current?.setSelectionRange(newPos, newPos);
-  //   }, 0);
-  // };
+
+    // check duplicate name
+    const nameExists = savedFormulas.some(
+      (f) => f.id !== formula.id && f.name.toLowerCase() === editValues.name.toLowerCase()
+    );
+    if (nameExists) {
+      alert("A formula with this name already exists. Please choose a unique name.");
+      return;
+    }
+
+    let api = `${process.env.REACT_APP_API_URL}/allServers/customTag/update/${formula.id}`;
+    const payload = { ...formula, name: editValues.name, expression: editValues.expression };
+
+    try {
+      await axios.put(api, payload);
+      setCount(count + 1);
+      cancelEditing();
+    } catch (e) {
+      console.log(e);
+    }finally{
+      getAllServers()
+    }
+  };
 
   const formulaStatus = getFormulaStatus();
 
+    const protocols = [...new Set(savedFormulas.map((f) => f.server.type))];
+  const serverNames = [...new Set(savedFormulas.map((f) => f.server.name))];
+
   return (
-    <div className="max-w-6xl mx-auto bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto bg-gray-50 min-h-screen">
             <div className="bg-white rounded-xl border p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
           <svg
@@ -326,10 +376,10 @@ const parseFormula = (input) => {
               d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
             />
           </svg>
-          <h2 className="font-semibold">Protocol Selection</h2>
+          <h2 className="font-semibold">Server Selection</h2>
         </div>
         <p className="text-gray-500 text-sm">
-          Select a protocol to add custom tags.
+          Select a Server to add custom tags.
         </p>
         <select
           value={selectedServer?.name || selectedServer?.serverName || ""}
@@ -339,16 +389,17 @@ const parseFormula = (input) => {
             );
             if (selected) {
               setSelectedServer(selected);
+              
               localStorage.setItem("Server",JSON.stringify(selected))
               console.log(selected)
             }
           }}
           className="border rounded-md p-2 w-64 focus:ring focus:ring-indigo-200"
         >
-          <option value="">Select Protocol</option>
+          <option value="">Select Server</option>
           {servers.map((server) => (
             <option key={server.serverId || server.id} value={server.name || server.serverName}>
-              {server.name || server.serverName}
+              {server.name || server.serverName} -> ({capitalizeFirstLetter((server.protocol || server.type))})
             </option>
           ))}
         </select>
@@ -414,7 +465,7 @@ const parseFormula = (input) => {
               disabled={!formulaName.trim() || !expression.trim() || !formulaStatus.isValid}
               className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-md hover: disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
-              Save Custom Tag
+              {loading?"Saving...":"Save Custom Tag"}
             </button>
             <button
               onClick={clearFormula}
@@ -422,14 +473,6 @@ const parseFormula = (input) => {
             >
               Clear All
             </button>
-            {editingId && (
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
-              >
-                Cancel Edit
-              </button>
-            )}
           </div>
 
 
@@ -466,55 +509,269 @@ const parseFormula = (input) => {
           Manage your custom tags. Showing {savedFormulas.length} custom tag(s).
         </p> */}
         
-        {savedFormulas.length === 0 ? (
+        {loading === true ? (
+  // 🔹 Skeleton Table
+  <div className="animate-pulse">
+    <table className="min-w-full border border-gray-200 rounded-lg">
+      <thead className="bg-gray-100"></thead>
+      <tbody>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <tr key={i} className="hover:bg-gray-50">
+            <td className="px-4 py-2 border text-center">
+              <div className="h-4 w-4 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-32 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-40 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+):
+         savedFormulas.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Plus className="w-12 h-12 mx-auto text-gray-300 mb-4" />
             <p>No custom tags created yet</p>
             <p className="text-sm">Create your first custom tag using the form above</p>
           </div>
         ) : (
-          <div className="">
-            {savedFormulas.map((savedFormula) => (
-              <div key={savedFormula.id} className="border border-gray-200 rounded-lg p-2 hover:border-gray-300 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-medium text-gray-900">{savedFormula.name}</h3>
-                      {/* <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                        Result: {evaluateFormula(savedFormula.expression, testValues)}
-                      </span> */}
-                    </div>
-                    <div className="bg-gray-50 rounded-md p-2 mb-2">
-                      <code className="text-sm text-gray-700 font-mono">{savedFormula.expression}</code>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {savedFormula.variables?.map((variable) => (
-                        <span key={variable.name} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                          {variable.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 ml-4">
-                    <button
-                      onClick={() => editFormula(savedFormula)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => deleteFormula(savedFormula.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto">
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm p-2 mb-1">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="text-gray-600" size={20} />
+            <h2 className="text-xl font-semibold text-gray-800">Formula Filters</h2>
+            <span className="text-sm text-gray-500">
+              ({filteredFormulas.length} of {saveFormula.length} formulas shown)
+            </span>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={16}
+              />
+              <input
+                type="text"
+                placeholder="Search by name..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={filters.name}
+                onChange={(e) => handleFilterChange("name", e.target.value)}
+              />
+            </div>
+
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={filters.protocol}
+              onChange={(e) => handleFilterChange("protocol", e.target.value)}
+            >
+              <option value="">All Protocols</option>
+              {protocols.map((protocol) => (
+                <option key={protocol} value={protocol}>
+                  {capitalizeFirstLetter(protocol)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={filters.serverName}
+              onChange={(e) => handleFilterChange("serverName", e.target.value)}
+            >
+              <option value="">All Servers</option>
+              {serverNames.map((server) => (
+                <option key={server} value={server}>
+                  {server}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Formulas Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Protocol
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Expression
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Server ID
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredFormulas.map((formula, index) => (
+                  <tr
+                    key={formula.id}
+                    className={`${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-blue-50 transition-colors`}
+                  >
+                    {/* Name */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {editingFormulaId === formula.id ? (
+                        <input
+                          type="text"
+                          value={editValues.name}
+                          onChange={(e) =>
+                            setEditValues((prev) => ({ ...prev, name: e.target.value }))
+                          }
+                          className="border px-2 py-1 rounded text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm font-medium text-gray-900">{formula.name}</div>
+                      )}
+                    </td>
+
+                    {/* Protocol */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        {capitalizeFirstLetter(formula.server.type)}
+                      </span>
+                    </td>
+
+                    {/* Expression */}
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
+                      {editingFormulaId === formula.id ? (
+                        <input
+                          type="text"
+                          value={editValues.expression}
+                          onChange={(e) =>
+                            setEditValues((prev) => ({
+                              ...prev,
+                              expression: e.target.value,
+                            }))
+                          }
+                          className="border px-2 py-1 rounded text-sm w-full"
+                        />
+                      ) : (
+                        formula.expression
+                      )}
+                    </td>
+
+                    {/* Server */}
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
+                      {formula.server.name}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3 whitespace-nowrap flex gap-2">
+                      {editingFormulaId === formula.id ? (
+                        <>
+                          <button
+                            onClick={() => saveEdit(formula)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEditing(formula)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteFormula(formula.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+{loading === true ? (
+  // 🔹 Skeleton Table
+  <div className="animate-pulse">
+    <table className="min-w-full border border-gray-200 rounded-lg">
+      <thead className="bg-gray-100"></thead>
+      <tbody>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <tr key={i} className="hover:bg-gray-50">
+            <td className="px-4 py-2 border text-center">
+              <div className="h-4 w-4 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-32 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-40 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+            <td className="px-4 py-2 border">
+              <div className="h-4 w-20 bg-gray-300 rounded"></div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : !loading && savedFormulas.length === 0 ? (
+  // 🔹 No Data State
+  <div className="text-center py-12">
+    <div className="text-gray-500 text-lg">
+      No custom  tags match your current filters
+    </div>
+    <button
+      onClick={clearFilters}
+      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+    >
+      Clear Filters to Show All Custom Tags
+    </button>
+  </div>
+) : (
+  // 🔹 Your real table will go here when data is present
+  <div></div>
+)}
+        </div>
+      </div>
+    </div>
         )}
       </div>
     </div>

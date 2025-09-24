@@ -5,6 +5,13 @@ import { SimensTagsConfig } from "./EdgeConnectivityComponents/SimensTagsConfig"
 import axios from "axios";
 import { SlmpBrowseTags } from "./slmpBrowseTags";
 
+export function capitalizeFirstLetter(str) {
+  if (typeof str !== 'string' || str.length === 0) {
+    return str; // Return as is if not a string or empty
+  }
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 
 
 export default function BrowseTagsPage(){
@@ -26,19 +33,19 @@ export default function BrowseTagsPage(){
   useEffect(()=>{
     getAllServers();
   },[])
-
+ const streamNames=['RTU:Device1']
   const renderProtocolComponent = () => {
     switch (protocol) {
-      case "opcua":
-        return <OpcuaTagsConfig />;
-      case "modbusRTU":
-        return <ModbusConfigTags />;
-      case "modbusTCP":
-        return <ModbusConfigTags type="tcp" api="http://100.107.186.122:8002"/>;
-      case "siemens":
-        return <SimensTagsConfig />;
+      case "OPC UA":
+        return <OpcuaTagsConfig serverInfo={selectedServer}/>;
+      case "Modbus-RTU":
+        return <ModbusConfigTags selectedServer={selectedServer} streamNames={streamNames} />;
+      case "Modbus-TCP":
+        return <ModbusConfigTags type="tcp" api="http://100.107.186.122:8002" selectedServer={selectedServer}/>;
+      case "S-7":
+        return <SimensTagsConfig  serverInfo={selectedServer}/>;
         case "SLMP":
-        return <SlmpBrowseTags />;
+        return <SlmpBrowseTags selectedServer={selectedServer}/>;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-40 text-center text-gray-500">
@@ -58,7 +65,7 @@ export default function BrowseTagsPage(){
             </svg>
             <p className="font-medium">Select a Protocol</p>
             <p className="text-sm">
-              Choose a protocol from the dropdown above to browse and configure tags.
+              Choose a Server from the dropdown above to browse and configure tags.
             </p>
           </div>
         );
@@ -66,9 +73,9 @@ export default function BrowseTagsPage(){
   };
 
   return (
-    <div className="">
+    <div className="max-w-7xl mx-auto">
       {/* Protocol selection */}
-      <div className="bg-white rounded-xl border p-4 shadow-sm mb-2">
+      <div className="bg-white rounded-xl border  p-4 shadow-sm mb-2">
         <div className="flex items-center gap-2 mb-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -84,10 +91,10 @@ export default function BrowseTagsPage(){
               d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
             />
           </svg>
-          <h2 className="font-semibold">Protocol Selection</h2>
+          <h2 className="font-semibold">Server Selection</h2>
         </div>
         <p className="text-gray-500 text-sm mb-3">
-          Select a protocol to browse and configure its tags.
+          Select a Server to browse and configure its tags.
         </p>
         <select
           value={selectedServer?.name || selectedServer?.serverName || ""}
@@ -104,10 +111,10 @@ export default function BrowseTagsPage(){
           }}
           className="border rounded-md p-2 w-64 focus:ring focus:ring-indigo-200"
         >
-          <option key={null} value="">Select Protocol</option>
+          <option key={null} value="">Select Server </option>
           {servers.map((server) => (
             <option key={server.serverId || server.id} value={server.name || server.serverName}>
-              {server.name || server.serverName}
+              {server.name || server.serverName} -> ({capitalizeFirstLetter((server.protocol || server.type))})
             </option>
           ))}
         </select>

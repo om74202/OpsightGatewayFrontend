@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Save, X, Wifi } from 'lucide-react';
+import { Database, Save, X, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 
 export const SQLConfigPage = () => {
+    const [connectionTest,setConnectionTest]=useState(false)
+  
+  
   const [sqlConfig, setSqlConfig] = useState({
     host: '',
     port: '',
@@ -14,7 +17,6 @@ export const SQLConfigPage = () => {
     sqlFields: '',
   });
 
-  const [connectionStatus, setConnectionStatus] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Fetch existing SQL config
@@ -27,14 +29,34 @@ export const SQLConfigPage = () => {
         setSqlConfig(prev => ({ ...prev, ...sqlData.data }));
       }
       console.log("Fetching SQL configuration...");
+      testConnection();
     } catch (e) {
       console.log(e);
     }
   };
 
   const saveSQLConfig = async () => {
-        if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
-      return; // run your function only if user clicks OK
+        if(sqlConfig.host===""){
+      alert("Please fill the IP Address")
+      return;
+    }
+
+            if(sqlConfig.port==="" ){
+      alert("Please enter the Port ")
+      return;
+    }
+                if(sqlConfig.database===""){
+      alert("Please enter the Database name")
+      return;
+    }
+                if(sqlConfig.username || sqlConfig.password){
+      alert("Please enter the Username and Password")
+      return;
+    }
+
+            if(sqlConfig.targetTable===""){
+      alert("Please fill the Target Table")
+      return;
     }
     try {
       setLoading(true);
@@ -49,16 +71,13 @@ export const SQLConfigPage = () => {
 
 
         // const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
-        try{
-          const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"start",tableName:sqlConfig.targetTable})
-        }catch(e){
-          console.log(e);
-        }
+
 
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/database/save`, payload);
       console.log("Saving SQL configuration:", payload);
+      alert("PSQL configuration saved successfully")
+      testConnection();
       setLoading(false);
-      setConnectionStatus(true);
       getAllSQLConfig();
     } catch (e) {
       console.log(e);
@@ -71,39 +90,21 @@ export const SQLConfigPage = () => {
     try {
       setLoading(true);
       // Replace with real test connection endpoint
+            const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testPsql`,{})
+            if(response.data.status==="success"){
+              setConnectionTest(true)
+      }else{
+        setConnectionTest(false)
+      }
       setTimeout(() => {
-        setConnectionStatus(true);
         setLoading(false);
       }, 2000);
     } catch (e) {
       console.log(e);
+      setConnectionTest(false)
       setLoading(false);
     }
   };
-
-    const DisconnectServer=async()=>{
-
-    try{
-      setLoading(true);
-      let response;
-      try{
-        response=await axios.post(`http://100.107.186.122:8002/Disconnect`);
-      }catch(e){
-        console.log(e)
-      }finally{
-        try{
-        const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/Sql`,{action:"stop"});
-        }catch(e){
-          console.log(e);
-        }
-        setConnectionStatus(false);
-        alert("Data Logging to Postgresql Stopped ")
-      setLoading(false);
-      }
-    }catch(e){
-      console.log(e);
-    }
-  }
 
   useEffect(() => {
     getAllSQLConfig();
@@ -116,21 +117,23 @@ export const SQLConfigPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           {/* Connection Status */}
-          {connectionStatus && (
+          {/* {connectionStatus && (
             <div className="bg-green-50 border-b border-green-200 p-4">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-green-700 font-medium">SQL Connection Active</span>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Form Header */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center space-x-2">
+                                                      {connectionTest && (<Wifi className="w-7 h-7 text-green-600" />)}
+              {!connectionTest && (<WifiOff className="w-7 h-7 text-red-600" />)}
               <Database className="w-5 h-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900">SQL Database Connection</h2>
             </div>
@@ -145,7 +148,7 @@ export const SQLConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Server Name or IP Address
+                  IP Address<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -158,7 +161,7 @@ export const SQLConfigPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Port Number
+                  Port<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -174,7 +177,7 @@ export const SQLConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Database Name
+                  Database Name<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -190,7 +193,7 @@ export const SQLConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Username
+                  Username<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -203,7 +206,7 @@ export const SQLConfigPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
+                  Password<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="password"
@@ -215,7 +218,7 @@ export const SQLConfigPage = () => {
               </div>
                             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Table Name
+                  Table Name<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -235,12 +238,12 @@ export const SQLConfigPage = () => {
               <div className="flex space-x-3">
 
               <button
-                onClick={()=>connectionStatus ? DisconnectServer() : saveSQLConfig()}
+                onClick={saveSQLConfig}
                 disabled={loading}
-                className={`px-6 py-2 ${connectionStatus ? "bg-red-600 hover:bg-red-700" :"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
+                className={`px-6 py-2 ${"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
               >
                 <Save className="w-4 h-4" />
-                <span>{connectionStatus ? "Disconnect":"Connect"}</span>
+                <span>{"Save"}</span>
               </button>
               </div>
             </div>

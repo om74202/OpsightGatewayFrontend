@@ -68,7 +68,7 @@ export const FirewallPortConfiguration = () => {
         </div>
       )}
 
-      <div className="bg-white shadow-lg rounded-xl w-full max-w-4xl overflow-hidden">
+      <div className="bg-white shadow-lg rounded-xl w-full max-w-7xl overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center bg-gray-900 text-white py-4 px-6">
           <h2 className="text-lg font-bold">Firewall Port Configuration</h2>
@@ -89,7 +89,7 @@ export const FirewallPortConfiguration = () => {
                 <tr className="bg-gray-100">
                   <th className="py-3 px-4 border-b text-left">#</th>
                   <th className="py-3 px-4 border-b text-left">Port Number</th>
-                  <th className="py-3 px-4 border-b text-right">Actions</th>
+                  <th className="py-3 px-4 border-b text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,7 +100,7 @@ export const FirewallPortConfiguration = () => {
                   >
                     <td className="py-2 px-4">{index + 1}</td>
                     <td className="py-2 px-4">{port}</td>
-                    <td className="py-2 px-4 text-right">
+                    <td className="py-2 px-4 ">
                       <button
                         onClick={() => handleDeletePort(port)}
                         className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg transition"

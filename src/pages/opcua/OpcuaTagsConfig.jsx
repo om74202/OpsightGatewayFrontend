@@ -108,16 +108,21 @@ const ServerSection = React.memo(({  updateTagProperties, setIsExpanded,isExpand
   </div>
 ));
 
-export const OpcuaTagsConfig = () => {
+export const OpcuaTagsConfig = ({serverInfo}) => {
   const [staticTags, setStaticTags] = useState([]);
   const [subscribedNodes,setSubscribedNodes]=useState([]);
   const [nodeIds, setNodeIds] = useState([]);
   const [isConnected,setIsConnected]=useState(false)
+  const [isLoading,setIsLoading]=useState(false)
   const [expandedNodes, setExpandedNodes] = useState({});
   const [isExpanded,setIsExpanded]=useState(true);
-  const serverInfo = JSON.parse(localStorage.getItem("Server"));
 
-
+useEffect(()=>{
+  setSubscribedNodes([])
+  setStaticTags([])
+  browseTags()
+    getStaticTags();
+},[serverInfo])
 
   const handleSubscribeNodeChange = (newNode) => {
     setSubscribedNodes((prevNodes) => {
@@ -165,16 +170,18 @@ export const OpcuaTagsConfig = () => {
     name,
     dataType,
     scaling,
-    nodeId,
-    serverId: serverInfo.serverId
+    address:nodeId,
+    serverId: serverInfo.id
   }));
 
-      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/saveTags`,payload) 
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:payload}) 
       if(response.data.status!=="success"){
         alert(response.data.message || "failed to add Tags")
       }
+      alert("Tags Saved Successfully")
     }catch(e){
       console.log(e);
+        alert( "Please give Tags Unique Names")
       
     }
   }
@@ -197,12 +204,16 @@ export const OpcuaTagsConfig = () => {
     }
   }
   const disConnectServer=async()=>{
+    setIsLoading(true)
     try{
       const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"1"})
-      console.log("Server Disconnected");
+      alert("Server Disconnected");
       setIsConnected(false);
     }catch(e){
       console.log(e);
+      alert("No active connection detected")
+    }finally{
+      setIsLoading(false)
     }
   }
 
@@ -212,38 +223,39 @@ export const OpcuaTagsConfig = () => {
 
   const browseTags=async()=>{
     try{
-        
-
-        const payload={...serverInfo,connectionId:"1"}
+        const payload={...serverInfo.data,...serverInfo,connectionId:"1"}
         const connected=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/connectServer`,payload);
         if(connected.data.status==="Success"){
           setIsConnected(true)
             
             const subscribed=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/subscribeNodes`,{nodeIds,connectionId:"1"});
-            if(subscribed.data.status==="Success"){
-                // const getRealtimeTags=await axios.get(`${process.env.REACT_APP_API_URL}/opcua/getRealtimeData?connectionId=1`)
-            }
         }
 
     }catch(e){
         console.log(e);
+    }finally{
     }
   }
 
   useEffect(()=>{
     browseTags();
-    getStaticTags();
   },[nodeIds])
 
   const getStaticTags = async () => {
+    setIsLoading(true)
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/opcua/browseTags`,
-        serverInfo
+        {...serverInfo,...serverInfo.data}
       );
+      if((response.data?.tree || []).length>0){
+        setIsLoading(false)
+      }
       setStaticTags(response.data?.tree || []);
+
     } catch (e) {
       console.log(e);
+    }finally{
     }
   };
 
@@ -260,7 +272,7 @@ export const OpcuaTagsConfig = () => {
   };
 
   useEffect(()=>{
-    const ws = new WebSocket('ws://localhost:3001'); // replace with your backend IP if needed
+    const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}`); // replace with your backend IP if needed
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -296,51 +308,62 @@ export const OpcuaTagsConfig = () => {
     };
 
     return () => ws.close();
-  },[nodeIds])
+  },[nodeIds,serverInfo])
 
  
 
-  const TreeNode = ({ node }) => {
-    const hasChildren = node.children && node.children.length > 0;
-    const isExpanded = !!expandedNodes[node.nodeId];
 
-    return (
-      <div className="ml-1 my-1">
-        <div className="cursor-pointer flex items-center" >
-          {hasChildren &&
-            (isExpanded ? <ChevronDown size={14} onClick={() => toggleNode(node.nodeId)}/> : <ChevronRight size={14} onClick={() => toggleNode(node.nodeId)}/>)}
+const TreeNode = ({ node, loadingNodes = {} }) => {
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = !!expandedNodes[node.nodeId];
 
-          {!hasChildren ? (
-            <FileText size={12} className="text-green-600" />
+  return (
+    <div className="ml-1 my-1">
+      <div className="cursor-pointer flex items-center">
+        {hasChildren &&
+          (isExpanded ? (
+            <ChevronDown size={14} onClick={() => toggleNode(node.nodeId)} />
           ) : (
-            <Folder size={12} className="text-blue-600" />
-          )}
+            <ChevronRight size={14} onClick={() => toggleNode(node.nodeId)} />
+          ))}
 
-          <span
-            className="font-medium text-xs ml-1"
-            onDoubleClick={(e) => {
-            //   e.stopPropagation(); // Prevent toggle on double-click
-              handleAddNodeId(node.nodeId);
-            }}
-          >
-            {node.displayName}
-          </span>
-        </div>
-
-        <div className="ml-6 text-xs text-gray-600">
-          {node.dataType && <div>Type: {node.dataType}</div>}
-        </div>
-
-        {isExpanded && hasChildren && (
-          <div className="pl-2 border-l-2 border-gray-300 mt-1">
-            {node.children.map((child) => (
-              <TreeNode key={child.nodeId} node={child} />
-            ))}
-          </div>
+        {!hasChildren ? (
+          <FileText size={12} className="text-green-600" />
+        ) : (
+          <Folder size={12} className="text-blue-600" />
         )}
+
+        <span
+          className="font-medium text-xs ml-1"
+          onDoubleClick={() => handleAddNodeId(node.nodeId)}
+        >
+          {node.displayName}
+        </span>
       </div>
-    );
-  };
+
+      <div className="ml-6 text-xs text-gray-600">
+        {node.dataType && <div>Type: {node.dataType}</div>}
+      </div>
+
+      {/* Loader placeholder when expanded */}
+      {isExpanded && hasChildren && (
+        <div className="pl-2 border-l-2 border-gray-300 mt-1">
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className="h-3 w-24 bg-gray-300 rounded animate-pulse"></div>
+              <div className="h-3 w-32 bg-gray-300 rounded animate-pulse"></div>
+              <div className="h-3 w-20 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+          ) : (
+            node.children.map((child) => (
+              <TreeNode key={child.nodeId} node={child} loadingNodes={loadingNodes} />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 
@@ -371,10 +394,17 @@ export const OpcuaTagsConfig = () => {
       </div>
       <div className="flex">
         <div className="w-1/5 bg-gray-400 min-h-screen overflow-hidden p-2">
-        <h2 className="text-sm font-semibold mb-2">Browse OPC UA Tags</h2>
+        <h2 className="text-sm font-semibold mb-2">{isLoading?"Browsing":"Browse"} OPC UA Tags</h2>
         {staticTags.map((node) => (
-          <TreeNode key={node.nodeId} node={node} />
+          <TreeNode key={node.nodeId} node={node} loadingNodes={{"rootNodeId": true }}/>
         ))}
+        {isLoading && (
+            <div className="space-y-2">
+              <div className="h-3 w-24 bg-gray-300 rounded animate-pulse"></div>
+              <div className="h-3 w-32 bg-gray-300 rounded animate-pulse"></div>
+              <div className="h-3 w-20 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+        )}
         
       </div>
       <div className="w-full">

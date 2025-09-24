@@ -24,6 +24,7 @@ import {
   HeartPlus,
   LucideLayoutDashboard,
   LayoutDashboardIcon,
+  Wand,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { DashboardLayout } from "./DashboardLayout";
@@ -54,17 +55,9 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "OPC UA", path: "/gateway/edge-connection/opcua", tab: "OPCUA" },
         { name: "Modbus RTU", path: "/gateway/edge-connection/modbus-rtu", tab: "Modbus RTU" },
         { name: "Modbus TCP", path: "/gateway/edge-connection/modbus-tcp", tab: "Modbus TCP" },
-        { name: "Simens", path: "/gateway/edge-connection/s-7", tab: "Simens" },
+        { name: "S-7", path: "/gateway/edge-connection/s-7", tab: "Simens" },
         { name: "SLMP", path: "/gateway/edge-connection/slmp", tab: "Seamless Message Protocol" },
       ],
-    },
-    { name: "IIOT Configuration", icon: <Database className="w-5 h-5 mr-3" />, path: "/gateway/database-management" ,
-      children: [
-        { name: "OPC UA", path: "/gateway/database-management/opcua", tab: "OPCUA" },
-        { name: "InfluxDB", path: "/gateway/database-management/influx", tab: "InfluxDB" },
-        { name: "PostgreSQL", path: "/gateway/database-management/postgresql", tab: "PostgreSQL" },
-        { name: "MQTT", path: "/gateway/database-management/mqtt", tab: "MQTT" },
-      ]
     },
     { name: "Tags Configuration", icon: <Tags className="w-5 h-5 mr-3" />, path: "/gateway/iiot" ,
       children: [
@@ -73,16 +66,36 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "Custom Tags", path: "/gateway/iiot/customTags", tab: "Custom Tags" },
       ]
     },
+        { name: "IIOT Configuration", icon: <Database className="w-5 h-5 mr-3" />, path: "/gateway/database-management" ,
+      children: [
+        { name: "OPC UA", path: "/gateway/database-management/opcua", tab: "OPCUA" },
+        { name: "InfluxDB", path: "/gateway/database-management/influx", tab: "InfluxDB" },
+        { name: "PostgreSQL", path: "/gateway/database-management/postgresql", tab: "PostgreSQL" },
+        { name: "MQTT", path: "/gateway/database-management/mqtt", tab: "MQTT" },
+      ]
+    },
+    { name: "Setup Wizard", icon: <Wand className="w-5 h-5 mr-3" />, path: "/gateway/wizard", end: true },
     { name: "Email Notification", icon: <Mail className="w-5 h-5 mr-3" />, path: "/gateway/emailNotification", end: true },
 
   ];
 
-  const toggleSubMenu = (name) => {
-    setExpanded((prev) => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
-  };
+const toggleSubMenu = (name) => {
+  setExpanded((prev) => {
+    // If it's already open, just close it
+    if (prev[name]) { 
+      return { ...prev, [name]: false };
+    }
+
+    // Otherwise, close all others and open only this one
+    const reset = Object.keys(prev).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
+
+    return { ...reset, [name]: true };
+  });
+};
+
   const handleLogout=()=>{
     logout();
     navigate('/login')

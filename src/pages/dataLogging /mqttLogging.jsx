@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, ArrowLeft, Save, X } from 'lucide-react';
+import { Wifi, ArrowLeft, Save, X, WifiOff } from 'lucide-react';
 import axios from 'axios';
 
 // Mock user data since localStorage is not available in artifacts
@@ -16,8 +16,7 @@ export const MQTTConfigPage = () => {
     qos: '0',
     targetTopic:''
   });
-
-  const [connectionStatus, setConnectionStatus] = useState(false);
+  const [connectionTest,setConnectionTest]=useState(false)
   const [loading, setLoading] = useState(false);
 
   // Mock API calls - replace with actual endpoints
@@ -29,6 +28,7 @@ export const MQTTConfigPage = () => {
       if (mqttData) {
         setMqttConfig(prev => ({ ...prev, ...mqttData.data }));
       }
+      testConnection();
       console.log("Fetching MQTT configuration...");
     } catch (e) {
       console.log(e);
@@ -36,9 +36,23 @@ export const MQTTConfigPage = () => {
   };
 
   const saveMQTTConfig = async () => {
-    if (!window.confirm("This will stop any other active data Logging.Do you want to continue this process?")) {
-      return; // run your function only if user clicks OK
+    if(mqttConfig.broker==="" || mqttConfig.targetTopic==="" || mqttConfig.port===""){
+      alert("Please enter the Broker's name")
+      return;
     }
+        if( mqttConfig.port===""){
+      alert("Please enter the Port number")
+      return;
+    }
+        if(mqttConfig.topics.length===0){
+      alert("Your MQTT Broker should have atleast one topic")
+      return;
+    }
+        if(mqttConfig.targetTopic==="" ){
+      alert("Please enter your Target Topic's name")
+      return;
+    }
+
     try {
       setLoading(true);
       const payload = {
@@ -57,9 +71,8 @@ export const MQTTConfigPage = () => {
           topic: mqttConfig.targetTopic
         }
       }
-        const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
+        // const logResponse=await axios.post(`http://100.107.186.122:8002/data-flush`,loggingPayload)
         try{
-        const logOpcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"start",topic:mqttConfig.targetTopic})
         }catch(e){
           console.log(e);
         }
@@ -67,9 +80,9 @@ export const MQTTConfigPage = () => {
 
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/database/save`, payload);
       console.log("Saving MQTT configuration:", payload);
+      testConnection()
       setLoading(false);
-      setConnectionStatus(true)
-      alert("Data Logging to MQTT Started ");
+      alert("MQTT configuration saved successfully ");
       getAllMQTTConfig();
       // Handle success - maybe show a toast notification
     } catch (e) {
@@ -82,13 +95,19 @@ export const MQTTConfigPage = () => {
   const testConnection = async () => {
     try {
       setLoading(true);
-      // Mock connection test
+      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testMqtt`,{})
+            if(response.data.status==="success"){
+              setConnectionTest(true)
+      }else{
+        setConnectionTest(false)
+      }
+      
       setTimeout(() => {
-        setConnectionStatus(true);
         setLoading(false);
       }, 2000);
     } catch (e) {
       console.log(e);
+      setConnectionTest(false);
       setLoading(false);
     }
   };
@@ -111,12 +130,11 @@ export const MQTTConfigPage = () => {
         console.log(e);
       }finally{
         try{
-      const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"stop",topic:mqttConfig.targetTopic});
+      // const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/MQTT`,{action:"stop",topic:mqttConfig.targetTopic});
         }catch(e){
           console.log(e);
         }
       if(response.status===200){
-        setConnectionStatus(false);
       }
       alert("Data Logging to MQTT Stopped")
       setLoading(false);
@@ -130,22 +148,16 @@ export const MQTTConfigPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
  
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          {/* Connection Status */}
-          {connectionStatus && (
-            <div className="bg-green-50 border-b border-green-200 p-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-green-700 font-medium">MQTT Connection Active</span>
-              </div>
-            </div>
-          )}
+
 
           {/* Form Header */}
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-2">
-              <Wifi className="w-5 h-5 text-green-600" />
+            <div className="flex items-center space-x-2">              
+              {connectionTest && (<Wifi className="w-7 h-7 text-green-600" />)}
+              {!connectionTest && (<WifiOff className="w-7 h-7 text-red-600" />)}
+
               <h2 className="text-lg font-semibold text-gray-900">MQTT Connection</h2>
             </div>
             <p className="text-gray-500 text-sm mt-1">Configure MQTT broker connection settings for messaging protocol.</p>
@@ -156,7 +168,7 @@ export const MQTTConfigPage = () => {
             {/* Client ID */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Client ID
+                Client ID<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -171,7 +183,7 @@ export const MQTTConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Broker Host
+                  Broker Host<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -184,7 +196,7 @@ export const MQTTConfigPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Port
+                  Port<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -229,7 +241,7 @@ export const MQTTConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Topic
+                  Topics<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -256,7 +268,7 @@ export const MQTTConfigPage = () => {
               </div>
               <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Target Topic
+                Select Target Topic<span className="text-red-500">*</span>
               </label>
               <select
                 value={mqttConfig.targetTopic || ""}
@@ -290,12 +302,12 @@ export const MQTTConfigPage = () => {
                 </button> */}
 
               <button
-                onClick={()=>connectionStatus ? DisconnectServer() : saveMQTTConfig()}
+                onClick={saveMQTTConfig}
                 disabled={loading}
-                className={`px-6 py-2 ${connectionStatus ? "bg-red-600 hover:bg-red-700" :"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
+                className={`px-6 py-2 ${"bg-blue-600 hover:bg-blue-700"} disabled:bg-blue-400 text-white rounded-lg flex items-center space-x-2`}
               >
                 <Save className="w-4 h-4" />
-                <span>{connectionStatus ? "Disconnect":"Connect"}</span>
+                <span>{"Save"}</span>
               </button>
               </div>
             </div>

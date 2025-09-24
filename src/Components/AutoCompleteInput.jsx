@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function AutocompleteInput({ label="Input Box", options = [], defaultValue ='',name, onSelect,placeholder="Start Typing...",type="text" }) {
+export default function AutocompleteInput({ label="Input Box", options = [],isCompulsary=false, defaultValue ='',name, onSelect,placeholder="Start Typing...",type="text" }) {
   const [inputValue, setInputValue] = useState();
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -54,7 +54,7 @@ export default function AutocompleteInput({ label="Input Box", options = [], def
 
   return (
     <div className="w-auto relative font-sans" ref={containerRef}>
-      {label && <label className="block mb-1 text-gray-700 text-xs" >{label}</label>}
+      {label && <label className="block mb-1 text-gray-900 font-medium text-xs" >{label}{isCompulsary?(<span className="text-red-500">*</span>):(<span></span>)}</label>}
       <input
       name={name}
         type={type}

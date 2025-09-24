@@ -6,15 +6,16 @@ const OpSightDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
     edgeConnections: { count: 5, available: 5 },
     iiotConnections: { count: 4, available: 4 },
+    activeConnections:"",
     tagConfiguration: { configured: 0 },
     systemStatus: {
       connectionStatus: 'Online',
-      activeConnections: {value:0,names:[]},
-      configuredDatabases:{value:0,names:[]},
+      configuredDatabases:"",
       configuredTags: {value:0,names:[]},
     }
   });
   const [loading, setLoading] = useState(true);
+  const [active,setActive]=useState(false)
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -24,20 +25,36 @@ const OpSightDashboard = () => {
 
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`);
-      const response2 = await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllServers`);
+      const response2 = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
       const connectedServerNames =
   (response2.data?.servers || [])
-    .filter(v => v.status === "Connected")
+    .filter(v => v.Active===true)
     .map(v => v.name || v.serverName);
 
 console.log(connectedServerNames);
 
 
-      const tagNames=response.data?.tags.map((t)=>t.name)
+      const tagNames=response.data?.tags.filter(v => v.Active===true).map((t)=>t.name)
       const databaseNames=response.data?.databases.map((t)=>t.type)
+      const activedb=response.data?.databases.find((t)=>t.Active===true);
+      if(!activedb){
+        setActive(false)
+        setDashboardData((prev)=>({
+          ...prev,
+          activeConnections:"0/"+(response2.data?.servers || []).length
+        }))
+      }else{
+                setDashboardData((prev)=>({
+          ...prev,
+          activeConnections:connectedServerNames.length+"/"+(response2.data?.servers || []).length
+        }))
+      }
+      console.log(activedb)
+
+
       setDashboardData((prev)=>({
         ...prev,
-        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:response.data?.tags?.length || 0,names:tagNames},configuredDatabases:{value:response.data?.databases?.length || 0,names:databaseNames},activeConnections:{value:connectedServerNames.length,names:connectedServerNames} }
+        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:response.data?.tags?.length || 0,names:tagNames},configuredDatabases:activedb?.type || "Nil", }
       }))
     } catch (e) {
       console.log(e);
@@ -172,7 +189,7 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to OpSight Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Opsight Dashboard</h1>
           <p className="text-gray-600 text-lg">
             Your industrial control and monitoring dashboard for managing edge connections, IIOT protocols, and tag configurations.
           </p>
@@ -189,14 +206,7 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
             color="blue"
           />
           
-          <StatusCard
-            icon={Wifi}
-            title="IIOT Connections" 
-            count={dashboardData.iiotConnections.count}
-            subtitle={`${dashboardData.iiotConnections.available} protocols available`}
-            description="Set up OPCUA, InfluxDB, SQL, and MQTT connections for IoT integration."
-            color="green"
-          />
+
           
           <StatusCard
             icon={Tag}
@@ -206,6 +216,15 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
             description="Browse, configure, and create custom tags with formulas."
             color="purple"
           />
+
+            <StatusCard
+            icon={Wifi}
+            title="IIOT Connections" 
+            count={dashboardData.iiotConnections.count}
+            subtitle={`${dashboardData.iiotConnections.available} protocols available`}
+            description="Set up OPCUA, InfluxDB, SQL, and MQTT connections for IoT integration."
+            color="green"
+          />
         </div>
 
         {/* System Status */}
@@ -214,24 +233,21 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
           
           <div className="space-y-2">
             <SystemStatusItem
-              label="Active Connections"
-              tags={dashboardData.systemStatus.activeConnections.names}
-              value={`${dashboardData.systemStatus.activeConnections.value} Connected`}
+              label="Active Edge Connections"
+              value={`${dashboardData.activeConnections} Connected`}
               color="blue"
             />
-            <SystemStatusItem
-              label="IIOT Configurations"
-              value={`${dashboardData.systemStatus.configuredDatabases.value} total`}
-              tags={dashboardData.systemStatus.configuredDatabases.names}
-              color="green"
-            />
-            
             <SystemStatusItem 
               label="Configured Tags"
               value={`${dashboardData.systemStatus.configuredTags.value} tags`}
-              tags={dashboardData.systemStatus.configuredTags.names}
               color="purple"
             />
+              <SystemStatusItem
+              label="Active IIOT Configuration"
+              value={`${dashboardData.systemStatus.configuredDatabases} `}
+              color="green"
+            />
+            
           </div>
         </div>
       </div>
