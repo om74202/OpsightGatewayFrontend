@@ -85,7 +85,7 @@ export const SLMPConfig = () => {
       setLoading(true)
     try {
       const response = await axios.post(
-        `http://100.107.186.122:8003/mitsubishi-plc/test-connection`,
+        `/mitsubishi-plc/test-connection`,
         {
           ip: formConfig.ip,
           

@@ -83,7 +83,7 @@ export const ModbusTCPConfig = () => {
       setLoading(true)
     try {
       const response = await axios.post(
-        `http://100.107.186.122:8002/modbus-tcp/test-connection`,
+        `/modbus-tcp/test-connection`,
         {
           ip: formConfig.ip,
           port: parseInt(formConfig.port),

@@ -1,29 +1,42 @@
 import React, { useState, useEffect } from "react";
-import { Server, Save, X, Shield, Wifi, WifiOff } from "lucide-react";
+import { Server, Save, X, Shield, Wifi, WifiOff, Copy } from "lucide-react";
 import axios from "axios";
+import AutocompleteInput from "../../Components/AutoCompleteInput";
 
 export const OPCUAConfigPage = () => {
   const [opcuaConfig, setOpcuaConfig] = useState({
-    uniqueServerName: "",
-    ipAddress: "",
+    ip: "",
     port: "",
-    frequency: "",
-    authentication: "None",
-    securityPolicy: "None",
-    securityMode: "None",
+    // username:null,
+    // password:null,
+    // certificate:null,
+    // frequency: "",
+    // authentication: "None",
+    // securityPolicy: "None",
+    // securityMode: "None",
   });
 
   const [connectionTest, setConnectionTest] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [copied, setCopied] = useState(false);
+  const [connectionString,setConnectionString]=useState("opc.tcp://"+(opcuaConfig.ip || "IP_ADDRESS")+":"+(opcuaConfig.port || "PORT"))
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(connectionString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Fetch existing OPCUA config
   const getAllOPCUAConfig = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/database/getAll`);
       const data = response.data || [];
-      const opcuaData = data.find((item) => item.type === "OPCUA");
+      const opcuaData = data.find((item) => item.type === "OPC_UA");
       if (opcuaData) {
         setOpcuaConfig((prev) => ({ ...prev, ...opcuaData.data }));
+        setConnectionString("opc.tcp://"+(opcuaData.data.ip || "IP_ADDRESS")+":"+(opcuaData.data.port || "PORT"))
       }
       testConnection();
     } catch (e) {
@@ -43,9 +56,11 @@ export const OPCUAConfigPage = () => {
     try {
       setLoading(true);
       const payload = {
-        type: "OPCUA",
+        type: "OPC_UA",
         data: opcuaConfig,
       };
+      console.log(payload)
+      
       await axios.post(`${process.env.REACT_APP_API_URL}/database/save`, payload);
       testConnection();
       setLoading(false);
@@ -58,8 +73,9 @@ export const OPCUAConfigPage = () => {
   const testConnection = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testConnection`, opcuaConfig);
-      setConnectionTest(response.data.status === "success");
+      // const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testConnection`, opcuaConfig);
+      // setConnectionTest(response.data.status === "success");
+      setConnectionTest(true)
       setLoading(false);
     } catch (e) {
       console.log(e);
@@ -92,34 +108,18 @@ export const OPCUAConfigPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Unique Server Name
-                </label>
-                <input
-                  type="text"
-                  value={opcuaConfig.uniqueServerName}
-                  onChange={(e) => handleInputChange("uniqueServerName", e.target.value)}
-                  placeholder="Enter Unique Server Name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   IP Address
                 </label>
                 <input
                   type="text"
-                  value={opcuaConfig.ipAddress}
-                  onChange={(e) => handleInputChange("ipAddress", e.target.value)}
+                  value={opcuaConfig.ip}
+                  // onChange={(e) => handleInputChange("ip", e.target.value)}
                   placeholder="Enter IP Address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 text-lg rounded-lg"
                 />
               </div>
-            </div>
-
-            {/* Row 2: Port + Frequency */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Port<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={opcuaConfig.port}
@@ -128,22 +128,15 @@ export const OPCUAConfigPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Frequency (seconds)
-                </label>
-                <input
-                  type="text"
-                  value={opcuaConfig.frequency}
-                  onChange={(e) => handleInputChange("frequency", e.target.value)}
-                  placeholder="Enter Frequency"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-              </div>
+            </div>
+
+            {/* Row 2: Port + Frequency */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             </div>
 
             {/* Row 3: Authentication + Security Policy */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Authentication</label>
                 <select
@@ -169,10 +162,10 @@ export const OPCUAConfigPage = () => {
                   <option value="Basic256Sha256">Basic256Sha256</option>
                 </select>
               </div>
-            </div>
+            </div> */}
 
             {/* Row 4: Security Mode */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Security Mode</label>
               <select
                 value={opcuaConfig.securityMode}
@@ -183,8 +176,71 @@ export const OPCUAConfigPage = () => {
                 <option value="Sign">Sign</option>
                 <option value="SignAndEncrypt">Sign & Encrypt</option>
               </select>
-            </div>
+            </div> */}
+
+                              {/* {opcuaConfig.authentication === "UsernamePassword" && (
+                    <div className="">
+                      <div>
+                                      <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={opcuaConfig.username}
+                  onChange={(e) => handleInputChange("frequency", e.target.value)}
+                  placeholder="Enter Frequency"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+                      </div>
+                      <div>
+                                      <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={opcuaConfig.password}
+                  onChange={(e) => handleInputChange("frequency", e.target.value)}
+                  placeholder="Enter Frequency"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+                      </div>
+                    </div>
+                  )}
+                  {opcuaConfig.authentication === "Certificate" && (
+                    <div className="mt-4">
+                      <label className="block text-sm text-gray-600 mb-1">Certificate<span className="text-red-500">*</span> (.pem)</label>
+                      <input
+                        type="file"
+                        accept=".pem"
+                        onChange={(e) => handleInputChange(e.target.files[0], "certificate")}
+                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                  )} */}
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 mx-6">Endpoint URL</label>
+                            <div className="flex items-center bg-gray-200 justify-between px-3 mx-6 py-2 border border-gray-300 rounded">
+        <span className="truncate">{connectionString}</span>
+        <button
+          onClick={handleCopy}
+          className="ml-2 text-gray-500 hover:text-gray-700"
+        >
+          <Copy size={16} />
+        </button>
+      </div>
+        <div className="flex justify-end mx-6">
+            {copied && (
+        <p className="text-sm text-green-700 mt-1">Copied!</p>
+      )}
+        </div>
+          </div>
+
+
 
           {/* Footer Buttons */}
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end space-x-3">
@@ -196,6 +252,9 @@ export const OPCUAConfigPage = () => {
               <Save className="w-4 h-4" /> {loading ? "Saving..." : "Save"}
             </button>
           </div>
+          
+    
+
         </div>
 
         {/* Info Card */}

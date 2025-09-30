@@ -2,16 +2,16 @@
 import { useState, useEffect } from "react";
 import { Server, Tag, Database, Settings, Check, X, ChevronRight } from "lucide-react";
 import axios from "axios";
-const disconnectApis=["http://100.107.186.122:8001/disconnect",
-  `http://100.107.186.122:8002/disconnect`,
-"http://100.107.186.122:8003/disconnect","http://100.107.186.122:8000/disconnect",`${process.env.REACT_APP_API_URL}/opcua/LogData`]
+const disconnectApis=["/siemen-plc/disconnect",
+  `/modbus-tcp/disconnect`,
+"/mitsubishi-plc/disconnect","/modbus-rtu/disconnect",`${process.env.REACT_APP_API_URL}/opcua/LogData`]
 
 const SERVER_REGISTRY = {
   SIEMENS: {
     id: "S-7",
     label: "Siemens",
-    connect: "http://100.107.186.122:8001/data-flush",
-    disconnect: "http://100.107.186.122:8001/disconnect",
+    connect: "/siemen-plc/data-flush",
+    disconnect: "http://127.0.0.1:8001/disconnect",
     actions: {
       start: "/data-flush/",      // POST to start / flush
       disconnect: "/disconnect",  // POST to disconnect
@@ -30,21 +30,21 @@ const SERVER_REGISTRY = {
   TCP: {
     id: "Modbus-TCP",
     label: "TCP",
-    connect: "http://100.107.186.122:8002/data-flush",
+    connect: "/modbus-tcp/data-flush",
     disconnect: "http://100.107.186.122:8002/disconnect",
     actions: { start: "/data-flush/", disconnect: "/disconnect" },
   },
   SLMP: {
     id: "SLMP",
     label: "SLMP",
-    connect: "http://100.107.186.122:8003/data-flush",
+    connect: "/mitsubishi-plc/data-flush",
     disconnect: "http://100.107.186.122:8003/disconnect",
     actions: { start: "/data-flush/", disconnect: "/disconnect" },
   },
   RTU: {
     id: "Modbus-RTU",
     label: "RTU",
-    connect: "http://100.107.186.122:8000/data-flush",
+    connect: "/modbus-rtu/data-flush",
     disconnect: "http://100.107.186.122:8000/disconnect",
     actions: { start: "/data-flush", disconnect: "/Disconnect" },
   },
@@ -129,12 +129,12 @@ servers
       setLoading(true);
       let response;
           const opcuaResponse=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/LogData`,{action:"stop"});
-      response=await axios.post(`http://100.107.186.122:8001/disconnect`);
-      response=await axios.post(`http://100.107.186.122:8002/disconnect`);
+      response=await axios.post(`http://127.0.0.1:8001/disconnect`);
+      response=await axios.post(`http://127.0.0.1:8002/disconnect`);
 
 
-      response=await axios.post(`http://100.107.186.122:8003/disconnect`);
-        response=await axios.post(`http://100.107.186.122:8000/Disconnect`);
+      response=await axios.post(`http://127.0.0.1:8003/disconnect`);
+        response=await axios.post(`http://127.0.0.1:8000/Disconnect`);
       try{
         
 

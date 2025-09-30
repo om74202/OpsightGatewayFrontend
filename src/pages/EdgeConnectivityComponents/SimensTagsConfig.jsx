@@ -363,7 +363,7 @@ export const SimensTagsConfig = ({serverInfo}) => {
   const disConnectServer = async () => {
     try {
       const response = await axios.post(
-        `http://100.107.186.122:8001/disconnect`
+        `/siemen-plc/disconnect`
       );
     } catch (e) {
       console.log(e);
@@ -451,7 +451,7 @@ export const SimensTagsConfig = ({serverInfo}) => {
             result:{tags,global_tags:globalTags}
         }
         console.log(payload)
-        const response=await axios.post(`http://100.107.186.122:8001/start-background-read/`,payload)
+        const response=await axios.post(`/siemen-plc/start-background-read/`,payload)
         setCount(count+1)
     }catch(e){
         console.log(e);

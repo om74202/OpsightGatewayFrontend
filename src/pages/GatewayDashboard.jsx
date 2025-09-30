@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, Database, Tag, Activity } from 'lucide-react';
 import axios from 'axios';
+import GatewayGraph from '../Components/GatewayDashboardFlow';
 
 const OpSightDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
     edgeConnections: { count: 5, available: 5 },
     iiotConnections: { count: 4, available: 4 },
     activeConnections:"",
-    tagConfiguration: { configured: 0 },
     systemStatus: {
       connectionStatus: 'Online',
       configuredDatabases:"",
@@ -54,7 +54,7 @@ console.log(connectedServerNames);
 
       setDashboardData((prev)=>({
         ...prev,
-        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:response.data?.tags?.length || 0,names:tagNames},configuredDatabases:activedb?.type || "Nil", }
+        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:tagNames.length+"/"+(response.data?.tags?.length || "") || 0,names:tagNames},configuredDatabases:activedb?.type || "Nil", }
       }))
     } catch (e) {
       console.log(e);
@@ -152,7 +152,6 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
     </div>
   );
 };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -196,35 +195,18 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
         </div>
 
         {/* Main Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <StatusCard
-            icon={Database}
-            title="Edge Connections"
-            count={dashboardData.edgeConnections.count}
-            subtitle={`${dashboardData.edgeConnections.available} protocols available`}
-            description="Configure OPCUA, Siemens, RS485, Mitsubishi, and Modbus TCP connections."
-            color="blue"
-          />
-          
+        <div className="grid grid-cols-1  gap-6 mb-8">
+          <GatewayGraph
+  iiot={{ name: "Main IIoT Hub", type: "MQTT" }}
+  gateway={{ name: "Opsight Gateway", type: "" }}
+  edges={[
+    { name: "Edge-1", type: "Modbus", status: "connected" },
+    { name: "Edge-2", type: "Siemens PLC", status: "disconnected" },
+    { name: "Edge-3", type: "RTU", status: "connected" },
+    { name: "Edge-4", type: "RTU", status: "connected" },
+  ]}
+/>
 
-          
-          <StatusCard
-            icon={Tag}
-            title="Tag Configuration"
-            count={dashboardData.tagConfiguration.count}
-            subtitle={`${dashboardData.tagConfiguration.configured} tags configured`}
-            description="Browse, configure, and create custom tags with formulas."
-            color="purple"
-          />
-
-            <StatusCard
-            icon={Wifi}
-            title="IIOT Connections" 
-            count={dashboardData.iiotConnections.count}
-            subtitle={`${dashboardData.iiotConnections.available} protocols available`}
-            description="Set up OPCUA, InfluxDB, SQL, and MQTT connections for IoT integration."
-            color="green"
-          />
         </div>
 
         {/* System Status */}

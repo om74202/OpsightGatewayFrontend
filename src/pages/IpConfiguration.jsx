@@ -16,9 +16,20 @@ export const StaticIPConfiguration = () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/gatewayConfig/ipConfig`);
       const data = await res.json();
-      setWifiProfiles(data);
-      setEthProfiles(data.filter((p)=>p.type==="ethernet") || []);
-    } catch (err) {
+      setWifiProfiles(
+  data
+    .filter(p => p.type?.toLowerCase().includes("wireless"))
+    .map(p => ({ ...p, typeName: "Wifi" })) || []
+);
+
+setEthProfiles(
+  data
+    .filter(p => p.type?.toLowerCase().includes("ethernet"))
+    .map(p => ({ ...p, typeName: "Ethernet" })) || []
+);
+
+
+        } catch (err) {
       console.error("Error fetching profiles:", err);
     }
   };
@@ -82,12 +93,14 @@ export const StaticIPConfiguration = () => {
       }
     } catch (err) {
       console.error("Error submitting profile:", err);
-      setMessage({ type: "error", text: "Failed to save profile" });
+      setMessage({ type: "error", text: "Failed to save profile Please make sure connection is active before running" });
     }
   };
 
   const handleDelete = async (name, type) => {
     try {
+      window.confirm("Are you sure you want to delete this profile?") &&
+        
       await fetch(`${process.env.REACT_APP_API_URL}/gatewayConfig/IPConfig/${name}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -108,7 +121,7 @@ export const StaticIPConfiguration = () => {
     <div className="bg-white shadow-md rounded-lg w-full max-w-7xl mb-8">
       <div className="flex justify-between items-center bg-gray-900 text-white py-3 px-6 rounded-t-lg">
         <h2 className="text-lg font-bold">
-          {type === "wifi" ? "Static IP Profiles" : "Ethernet Static IP Profiles"}
+          {type === "wifi" ? "Wifi Static IP Profiles" : "Ethernet Static IP Profiles"}
         </h2>
         <button
           onClick={() => openModal(type)}
@@ -123,9 +136,8 @@ export const StaticIPConfiguration = () => {
             <tr className="bg-gray-200">
               <th className="py-2 px-4 border-b">#</th>
               <th className="py-2 px-4 border-b">Profile Name</th>
-              <th className="py-2 px-4 border-b">Type</th>
               <th className="py-2 px-4 border-b">IP</th>
-              <th className="py-2 px-4 border-b">Router</th>
+              <th className="py-2 px-4 border-b">Gateway</th>
               <th className="py-2 px-4 border-b">DNS</th>
               <th className="py-2 px-4 border-b text-right">Actions</th>
             </tr>
@@ -135,20 +147,19 @@ export const StaticIPConfiguration = () => {
               <tr key={i} className="hover:bg-gray-50">
                 <td className="py-2 px-4 border-b">{i + 1}</td>
                 <td className="py-2 px-4 border-b">{p.name}</td>
-                <td className="py-2 px-4 border-b">{p.type}</td>
                 <td className="py-2 px-4 border-b">{p.ipAddress}</td>
                 <td className="py-2 px-4 border-b">{p.routerIP}</td>
                 <td className="py-2 px-4 border-b">{p.dnsServers[0]}</td>
                 <td className="py-2 px-4 border-b text-right space-x-2">
-                  {p.device!==null && (
+                  
                     <button
                     className="p-1 text-blue-500 hover:text-blue-700"
                     onClick={() => openModal(type, p)}
                   >
                     <Edit className="w-5 h-5" />
                   </button>
-                  )}
-                  {!(type === "ethernet" && p.name === "static_eth0") && (
+                  
+                  {!(p.typeName === "Ethernet" && p.name === "static_eth0") && (
                     <button
                       className="p-1 text-red-500 hover:text-red-700"
                       onClick={() => handleDelete(p.name, type)}
@@ -179,7 +190,7 @@ export const StaticIPConfiguration = () => {
       )}
 
       {renderTable(wifiProfiles, "wifi")}
-      {/* {renderTable(ethProfiles, "ethernet")} */}
+      {renderTable(ethProfiles, "ethernet")}
 
       {/* Modal */}
       {modalType && (
@@ -196,7 +207,7 @@ export const StaticIPConfiguration = () => {
             </h2>
             {["name","staticIP", "routerIP", "dnsServer"].map((field, idx) => (
               <div className="mb-4" key={idx}>
-                <label className="block text-gray-700 capitalize">{field}</label>
+                <label className="block text-gray-700 capitalize">{field}<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData[field]}

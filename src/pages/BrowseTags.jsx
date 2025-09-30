@@ -41,7 +41,7 @@ export default function BrowseTagsPage(){
       case "Modbus-RTU":
         return <ModbusConfigTags selectedServer={selectedServer} streamNames={streamNames} />;
       case "Modbus-TCP":
-        return <ModbusConfigTags type="tcp" api="http://100.107.186.122:8002" selectedServer={selectedServer}/>;
+        return <ModbusConfigTags type="tcp" api="/modbus-tcp" selectedServer={selectedServer}/>;
       case "S-7":
         return <SimensTagsConfig  serverInfo={selectedServer}/>;
         case "SLMP":

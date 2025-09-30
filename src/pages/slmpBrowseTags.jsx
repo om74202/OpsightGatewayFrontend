@@ -243,7 +243,7 @@ const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresse
 ));
 
 
-export const SlmpBrowseTags = ({api="http://100.107.186.122:8000" ,selectedServer}) => {
+export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
   
   const wsRef = useRef(null);
   const [dataType,setDataType]=useState(deviceTypes[0]);
@@ -271,7 +271,7 @@ export const SlmpBrowseTags = ({api="http://100.107.186.122:8000" ,selectedServe
 
         alert("Server Disconnected Successfully")
                 wsRef.current.close();
-        const response=await axios.post(`${api}/Disconnect`);
+        const response=await axios.post(`${api}/disconnect`);
         
       }catch(e){
         console.log(e);
@@ -358,7 +358,7 @@ const browseTags = useCallback(async () => {
       }
     };
     console.log(payload);
-       const response=await axios.post(`http://100.107.186.122:8003/start-background-read/`,payload)
+       const response=await axios.post(`/mitsubishi-plc/start-background-read/`,payload)
        setCount(count+1);
     console.log(response.data)
   } catch (e) {

@@ -298,7 +298,7 @@ const ServerSection = React.memo(({ server, updateServer,loading, updateTagPrope
   </div>
 ));
 
-export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000",selectedServer,streamNames=['TCP:Device1']}) => {
+export const ModbusConfigTags = ({type="rtu",api="/modbus-rtu",selectedServer,streamNames=['TCP:Device1']}) => {
   const [serverInfo,setServerInfo]=useState(selectedServer)
   const wsRef = useRef(null);
 
@@ -350,7 +350,7 @@ export const ModbusConfigTags = ({type="rtu",api="http://100.107.186.122:8000",s
 
         alert("Server Disconnected Successfully")
                 wsRef.current.close();
-        const response=await axios.post(`${api}/Disconnect`);
+        const response=await axios.post(`${api}/siemen-plc/Disconnect`);
         
       }catch(e){
         console.log(e);

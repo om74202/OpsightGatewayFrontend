@@ -89,7 +89,7 @@ export const ModbusRTUConfig = () => {
       }
       setLoading(true)
       const response = await axios.post(
-        `http://100.107.186.122:8000/modbus-rtu/test-connection`,
+        `/modbus-rtu/test-connection`,
         {...formConfig}
       );
       if (response.data?.status === "success") {
