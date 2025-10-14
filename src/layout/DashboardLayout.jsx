@@ -22,7 +22,8 @@ const pageTitles = {
   "/gateway/iiot/browseTags" : "IIOT Configuration - Browse Tags",
   "/gateway/iiot/tags" : "IIOT Configuration - Tags",
   "/gateway/iiot/customTags" : "IIOT Configuration - Custom Tags",
-  "/gateway/emailNotification":"Email Notification",
+  "/gateway/emailNotification/rules":"Alert Rules",
+  "/gateway/emailNotification/history":"Alert History",
   "/gateway/wizard":"Setup Wizard",
   "/gateway/wifiConfiguration":"Wifi Configuration",
   "/gateway/ipConfiguration":"IP Configuration"

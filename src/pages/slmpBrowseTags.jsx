@@ -4,6 +4,9 @@ import { Play, RefreshCw, Save, CheckCircle, Wifi, WifiOff, ChevronDown, Chevron
 import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
 import { applyScaling } from './../functions/tags';
+import { useNotify } from '../context/ConfirmContext';
+import { useForm, useFieldArray } from "react-hook-form";
+
 
  const skeletonRows = Array(5).fill(0);
 
@@ -244,6 +247,7 @@ const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresse
 
 
 export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
+  const notify=useNotify()
   
   const wsRef = useRef(null);
   const [dataType,setDataType]=useState(deviceTypes[0]);
@@ -269,12 +273,14 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
         //   return {...server,tags:[],isConnected:false}
         // }))
 
-        alert("Server Disconnected Successfully")
                 wsRef.current.close();
-        const response=await axios.post(`${api}/disconnect`);
+        const response=await axios.post(`${api}/data-flush`);
+        notify.success("Connection Disconnected Successfully")
+
         
       }catch(e){
         console.log(e);
+        notify.error("Failed to disconnect ")
       }
     }
     console.log(dataType)
@@ -283,9 +289,10 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
       try{
         const selectedTags=tags.filter((t)=>t.status==="pass")
         const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:selectedTags})
-        alert("Tags saved successfully")
+        notify.success("Tags saved successfully")
       }catch(e){
         console.log(e);
+        notify.error("Failed to save tags")
       }
     }
 
@@ -350,6 +357,11 @@ const browseTags = useCallback(async () => {
     const newAddresses = addresses.map((a) => ({
       address: dataType.value + a.address
     }));
+    console.log(newAddresses)
+    if(newAddresses[0].address==="TN"){
+      notify.error("Please Select at least one address")
+      return
+    }
 
     const payload = {
       serverInfo:{ip:selectedServer.data.ip,port:selectedServer.data.port,comm_type:selectedServer.data.communicationType},

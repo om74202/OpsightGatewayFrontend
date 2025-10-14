@@ -43,7 +43,7 @@ export default function Dropdown({ label="Dropdown", options = [],name, defaultV
 
   return (
     <div className="w-auto relative font-sans" ref={containerRef} onKeyDown={handleKeyDown} tabIndex={0}>
-      {label && <label className="block mb-1 text-xs text-gray-700">{label}</label>}
+      {label && <label className="block mb-1 text-xs font-medium">{label}</label>}
 
       <div
         className="border border-gray-300 rounded-md px-4 py-1 cursor-pointer bg-white"

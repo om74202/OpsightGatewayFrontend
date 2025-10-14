@@ -23,6 +23,7 @@ import OpSightDashboard from "./pages/GatewayDashboard";
 import ProtectedRoute from "./pages/routes/protectedRoutes";
 import { Main } from "./pages/emailNotification/main";
 import { WizardMain } from "./pages/wizard/wizardMain";
+import { AlertsHistory } from "./pages/emailNotification/emailHistory";
 
 
 
@@ -57,7 +58,8 @@ function App() {
         <Route path="userManagement" element={<UserManagement/>}></Route>
         <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
         <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
-        <Route path="emailNotification" element={<Main/>}></Route>
+        <Route path="emailNotification/rules" element={<Main/>}></Route>
+        <Route path="emailNotification/history" element={<AlertsHistory/>}></Route>
         <Route path="wizard" element={<WizardMain/>}></Route>
         <Route path="iiot/tags" element={<IIOT/>}></Route>
         <Route path="iiot/browseTags" element={<BrowseTagsPage/>}></Route>

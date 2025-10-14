@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import axios from "axios";
+import { useConfirm, useNotify } from "../context/ConfirmContext";
 
 export const FirewallPortConfiguration = () => {
   const [ports, setPorts] = useState([]);
   const [portNumber, setPortNumber] = useState("");
+  const notify=useNotify()
+  const confirm=useConfirm()
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [notification, setNotification] = useState(null); // custom notifications
 
   // Fetch existing ports
   const fetchPortProfiles = async() => {
@@ -22,51 +24,42 @@ export const FirewallPortConfiguration = () => {
     fetchPortProfiles();
   }, []);
 
-  // Simple notification handler
-  const showNotification = (message, type = "success") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
+
 
   const handleAddPort = async() => {
     try{
       const respnse=await axios.post(`${process.env.REACT_APP_API_URL}/gatewayConfig/port`,{port:portNumber});
       console.log(respnse.data)
-        showNotification(`Port ${portNumber} added successfully`);
+      notify.success(`${portNumber} added successfully`);
         setPortNumber("");
         setIsModalOpen(false);
         fetchPortProfiles();
     }catch(e){
       console.log(e);
+      notify.error("Failed to add desired port ")
     }
   };
 
   const handleDeletePort =async (port) => {
     try{
+      const ok=await confirm("Are you sure you need to delete this port ?")
+      if(!ok) return;
       console.log(port)
       const response=await axios.delete(`${process.env.REACT_APP_API_URL}/gatewayConfig/port`,{
     data: { port },   // 👈 body goes here
   });
       console.log(response.data)
-              showNotification(`Port ${port} deleted successfully`);
+      notify.success(`${port} deleted successfully`)
         fetchPortProfiles();
     }catch(e){
       console.log(e);
+      notify.error("Failed to delete port")
     }
   };
 
   return (
     <div className="flex flex-col items-center py-8">
-      {/* Notification */}
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${
-            notification.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          {notification.message}
-        </div>
-      )}
+      
 
       <div className="bg-white shadow-lg rounded-xl w-full max-w-7xl overflow-hidden">
         {/* Header */}
@@ -152,7 +145,7 @@ export const FirewallPortConfiguration = () => {
                 disabled={!portNumber}
                 className={`px-4 py-2 rounded-lg transition text-white ${
                   portNumber
-                    ? "bg-blue-500 hover:bg-blue-600"
+                    ? "bg-gray-900 hover:bg-gray-400"
                     : "bg-gray-300 cursor-not-allowed"
                 }`}
               >

@@ -5,18 +5,14 @@ import GatewayGraph from '../Components/GatewayDashboardFlow';
 
 const OpSightDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
-    edgeConnections: { count: 5, available: 5 },
-    iiotConnections: { count: 4, available: 4 },
     activeConnections:"",
-    systemStatus: {
-      connectionStatus: 'Online',
-      configuredDatabases:"",
-      configuredTags: {value:0,names:[]},
-    }
+    activeTags:"",
+    activeCustomTags:"",
+    activeDatabase:""
   });
   const [loading, setLoading] = useState(true);
-  const [active,setActive]=useState(false)
   const [error, setError] = useState(null);
+  const [connectionStatus,setConnectionStatus]=useState([])
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -24,37 +20,33 @@ const OpSightDashboard = () => {
         setLoading(true);
 
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`);
-      const response2 = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
-      const connectedServerNames =
-  (response2.data?.servers || [])
-    .filter(v => v.Active===true)
-    .map(v => v.name || v.serverName);
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
+      const responseRealtime = await axios.get(`http://192.168.1.52:8004/central/server-status/`);  
+      let connections=responseRealtime.data || {}
 
-console.log(connectedServerNames);
+      const activeDatabase=response.data?.database?.type || "NA" 
+      const servers=response.data?.servers || [];
+      const realtimeServers=servers.filter((s)=>connections?.status[s.name])
+      setConnectionStatus(realtimeServers)
+      const activeServers=servers.filter((server)=>server.Active===true);
+      console.log()
+    //   const RealtimeServerStatus = activeServers.filter(server => 
+    // connections.some(connection => 
+    //     server.name.toLowerCase().includes(connection.toLowerCase())
+    // )
+    // );
+      // Collect all tags
+      const tags = servers.flatMap((s) => s.tags || []);
+      const activeTags = activeServers.flatMap((s) => s.tags || []);
 
-
-      const tagNames=response.data?.tags.filter(v => v.Active===true).map((t)=>t.name)
-      const databaseNames=response.data?.databases.map((t)=>t.type)
-      const activedb=response.data?.databases.find((t)=>t.Active===true);
-      if(!activedb){
-        setActive(false)
-        setDashboardData((prev)=>({
-          ...prev,
-          activeConnections:"0/"+(response2.data?.servers || []).length
-        }))
-      }else{
-                setDashboardData((prev)=>({
-          ...prev,
-          activeConnections:connectedServerNames.length+"/"+(response2.data?.servers || []).length
-        }))
-      }
-      console.log(activedb)
-
-
+      // Collect all customTags
+      const customTags = servers.flatMap((s) => s.customTags || []);
+      const activeCustomTags = activeServers.flatMap((s) => s.customTags || []);
       setDashboardData((prev)=>({
-        ...prev,
-        systemStatus:{...dashboardData.systemStatus,configuredTags:{value:tagNames.length+"/"+(response.data?.tags?.length || "") || 0,names:tagNames},configuredDatabases:activedb?.type || "Nil", }
+        activeConnections:activeServers.length+"/"+servers.length,
+        activeCustomTags:activeCustomTags.length+"/"+customTags.length,
+        activeTags:activeTags.length+"/"+tags.length,
+        activeDatabase:activeDatabase,
       }))
     } catch (e) {
       console.log(e);
@@ -69,35 +61,6 @@ console.log(connectedServerNames);
 
     fetchDashboardData();
   }, []);
-
-  const StatusCard = ({ icon: Icon, title, count, subtitle, description, color = "blue" }) => {
-    const colorClasses = {
-      blue: "bg-blue-50 border-blue-200",
-      green: "bg-green-50 border-green-200", 
-      purple: "bg-purple-50 border-purple-200"
-    };
-
-    const iconColorClasses = {
-      blue: "text-blue-600",
-      green: "text-green-600",
-      purple: "text-purple-600"
-    };
-
-    return (
-      <div className={`p-6 rounded-lg border-2 ${colorClasses[color]} transition-all hover:shadow-md`}>
-        <div className="flex items-center gap-4 mb-4">
-          <div className={`p-2 rounded-lg bg-white ${iconColorClasses[color]}`}>
-            <Icon size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-            <p className="text-sm text-gray-600">{subtitle}</p>
-          </div>
-        </div>
-        <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
-      </div>
-    );
-  };
 
 
 const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
@@ -189,9 +152,6 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Opsight Dashboard</h1>
-          <p className="text-gray-600 text-lg">
-            Your industrial control and monitoring dashboard for managing edge connections, IIOT protocols, and tag configurations.
-          </p>
         </div>
 
         {/* Main Cards */}
@@ -199,12 +159,7 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
           <GatewayGraph
   iiot={{ name: "Main IIoT Hub", type: "MQTT" }}
   gateway={{ name: "Opsight Gateway", type: "" }}
-  edges={[
-    { name: "Edge-1", type: "Modbus", status: "connected" },
-    { name: "Edge-2", type: "Siemens PLC", status: "disconnected" },
-    { name: "Edge-3", type: "RTU", status: "connected" },
-    { name: "Edge-4", type: "RTU", status: "connected" },
-  ]}
+  edges={connectionStatus}
 />
 
         </div>
@@ -220,13 +175,18 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
               color="blue"
             />
             <SystemStatusItem 
-              label="Configured Tags"
-              value={`${dashboardData.systemStatus.configuredTags.value} tags`}
+              label="Active Tags"
+              value={`${dashboardData.activeTags} tags`}
+              color="purple"
+            />
+                        <SystemStatusItem 
+              label="Active Custom Tags"
+              value={`${dashboardData.activeCustomTags} custom tags`}
               color="purple"
             />
               <SystemStatusItem
               label="Active IIOT Configuration"
-              value={`${dashboardData.systemStatus.configuredDatabases} `}
+              value={`${dashboardData.activeDatabase.replace("_"," ")} `}
               color="green"
             />
             

@@ -1,55 +1,69 @@
+
+
+
 import axios from "axios";
 import { Edit, Trash2, Server, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const mockServerList = [
-  {
-    id: 1,
-    name: "a",
-    port: "COM3",
-    baudRate: 9600,
-    frequency: 1,
-    parity: "N",
-    byteSize: 8,
-    stopBits: 1,
-    status: "Connected",
-    createdAt: "2025-09-02"
-  }
-];
+import { useForm } from "react-hook-form";
+import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
 export const ModbusRTUConfig = () => {
-  const [correctConfig,setCorrectConfig]=useState({})
-  const [loading,setLoading]=useState(false);
-
-  const [formConfig, setFormConfig] = useState({
-    name: "",
-    port: "",
-    baudRate: 9600,
-    frequency: 1,
-    parity: "N",
-    byteSize: 8,
-    stopBits: 1
-  });
-  const [editConfig, setEditConfig] = useState({});
+  const notify=useNotify()
+  const [correctConfig, setCorrectConfig] = useState({});
+  const [availablePorts,setAvailablePorts]=useState([])
+  const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [editConfig, setEditConfig] = useState({});
   const [serverList, setServerList] = useState([]);
   const [count, setCount] = useState(0);
+  const confirm=useConfirm()
+  const {
+  register: registerEdit,
+  handleSubmit: handleSubmitEdit,
+  reset: resetEdit,
+  formState: { errors: editErrors },
+} = useForm({
+  mode: "onChange",
+  defaultValues: {
+    name: "",
+    frequency: "",
+    data: {
+      port: "",
+      baudRate: "",
+      parity: "N",
+      byteSize: "",
+      stopBits: "",
+    },
+  },
+});
 
-  const handleInputChange = (name, value) => {
-    setFormConfig((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+    reset,
+  } = useForm({
+    defaultValues: {
+      name: "",
+      port: "",
+      baudRate: 9600,
+      frequency: 1,
+      parity: "N",
+      byteSize: 8,
+      stopBits: 1,
+    },
+  });
 
   const getServerList = async () => {
     const url = `${process.env.REACT_APP_API_URL}/allServers/Modbus-RTU`;
     try {
       const response = await axios.get(url);
       const list = response.data.servers.filter((d) => d.type === "Modbus-RTU");
+      setAvailablePorts(response.data?.modbusPorts || [])
       setServerList(list);
     } catch (e) {
       console.log(e);
@@ -60,212 +74,224 @@ export const ModbusRTUConfig = () => {
     getServerList();
   }, [count]);
 
-  const testConnection = async () => {
-    
+  // test connection
+  const testConnection = async (data) => {
     try {
-      if(formConfig.name===""){
-        alert("Please Enter a unique name")
-        return
-      }
-
-      if(formConfig.port===""){
-        alert("Please enter a valid Port")
-      }
-      if(formConfig.frequency<=0){
-        alert("Frequency should be greater than zero")
-        return
-      }
-
-
-      if(formConfig.byteSize<=0){
-        alert("Please enter a valid IP address")
-        return
-      }
-
-
-      if(formConfig.stopBits<0){
-        alert("Please enter a valid IP address")
-        return
-      }
-      setLoading(true)
-      const response = await axios.post(
-        `/modbus-rtu/test-connection`,
-        {...formConfig}
-      );
+      setLoading(true);
+      const response = await axios.post(`/modbus-rtu/test-connection`, data);
       if (response.data?.status === "success") {
         setConnected(true);
-        setCorrectConfig(formConfig)
+        setCorrectConfig(data);
         setSuccessMessage("Connection Successful");
+        setError("");
+      } else {
+        setError("Connection Failed");
       }
     } catch (e) {
       setError("Connection Failed");
-    }finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
 
+  // save connection
   const submitServer = async () => {
-              if(formConfig!==correctConfig){
-            alert("Test the connection again as you edited the previously tested connection credentials")
-            setSuccessMessage("")
-        setConnected(false);
-        return
-      }
-      setLoading(true)
+    const data = getValues();
+    if (JSON.stringify(data) !== JSON.stringify(correctConfig)) {
+      setSuccessMessage("");
+      setConnected(false);
+      setError(
+        "Test the connection again as you edited the previously tested credentials"
+      );
+      return;
+    }
+
+    setLoading(true);
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/allServers/add`, {
         type: "Modbus-RTU",
-        ...formConfig,
-        data:{stopBits:formConfig.stopBits,baudRate:formConfig.baudRate,byteSize:formConfig.byteSize,parity:formConfig.parity,port:formConfig.port}
+        ...data,
+        
+        data: {
+          stopBits: data.stopBits,
+          baudRate: data.baudRate,
+          byteSize: data.byteSize,
+          parity: data.parity,
+          port: data.port,
+        },
       });
-      getServerList()
+      getServerList();
+      notify.success("Connection saved successfully!");
+      reset();
     } catch (e) {
       console.log(e);
-    }finally{
-      setLoading(false)
+      notify.error("Failed to reach the server ")
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this server?")) {
+    const ok = await confirm("Are you sure you want to delete this connection? ");
+                if (!ok) return;
       try {
         await axios.delete(`${process.env.REACT_APP_API_URL}/allServers/delete/${id}`);
-        getServerList()
+      notify.success("Connection deleted successfully!");
+
+        getServerList();
       } catch (e) {
         console.log(e);
+        notify.error("Failed to delete the connection")
       }
-    }
+    
   };
 
   const handleEdit = (name = "", value = "") => {
-    console.log(name,value,editConfig)
-    
-    if(name==="name" || name==="frequency"){
-          setEditConfig((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-    }else{
-      setEditConfig((prev)=>({
+    if (name === "name" || name === "frequency") {
+      setEditConfig((prev) => ({
         ...prev,
-        data:{
+        [name]: name==="frequency"?parseInt(value):value,
+      }));
+    } else {
+      setEditConfig((prev) => ({
+        ...prev,
+        data: {
           ...prev.data,
-          [name]:value
-        }
-        
-      }))
+          [name]: value,
+        },
+      }));
     }
   };
 
-  const handleSaveEdit = async (id) => {
-    console.log(editConfig)
-    setEditConfig((prev)=>({
-      ...prev,
-      
-      data:{
-        ...prev.data,
-        ["baudRate"]:parseInt(editConfig.data.baudRate),
-        ["stopBits"]:parseInt(editConfig.data.stopBits),
-        ["byteSize"]:parseInt(editConfig.data.byteSize)
-      }
-      
-    }))
-    try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`,{ ...editConfig,frequency:parseInt(editConfig.frequency)});
-      getServerList()
-    } catch (e) {
-      console.log(e);
-    }
-    setEditingId(null);
-  };
+const handleSaveEditValues = async (id, values) => {
+  try {
+    await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {
+      ...editConfig, // keep original object props like id, type if present
+      name: values.name,
+      frequency: parseInt(values.frequency, 10),
+      data: {
+        ...editConfig.data,
+        port: values.data.port,
+        parity: values.data.parity,
+        baudRate: parseInt(values.data.baudRate, 10),
+        byteSize: parseInt(values.data.byteSize, 10),
+        stopBits: parseInt(values.data.stopBits, 10),
+      },
+    });
+      notify.success("Connection edited successfully!");
+    getServerList();
+  } catch (e) {
+    console.log(e);
+      notify.error("Failed to edit connection");
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-  };
+  }
+  setEditingId(null);
+};
 
   return (
     <div className="min-h-screen bg-gray-50 p-2">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Modbus RTU Configuration</h1>
+          <h1 className="text-3xl font-bold ">Modbus RTU Configuration</h1>
           <p className="text-gray-600 mt-2">
-             Modbus RTU (RS485) serial connection parameters.
+            Modbus RTU (RS485) serial connection parameters.
           </p>
         </div>
 
-        {/* Configuration Form */}
-        <div className="bg-white rounded-lg shadow-sm border  border-gray-200 mb-2">
-          <div className="border-b border-gray-200 p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Radio className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-800">Modbus RTU Connection</h2>
-            </div>
-            <p className="text-sm text-gray-600">
-              Configure serial communication settings for Modbus RTU devices.
-            </p>
-          </div>
+        {/* Config Form */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-2">
+         
 
-          <div className="p-6">
+          <form onSubmit={handleSubmit(testConnection)} className="p-6 ">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Connection Name<span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">
+                  Connection Name<span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
+                  {...register("name", { required: "Connection name is required" })}
+                  className="w-full px-3 py-2 border rounded-md"
                   placeholder="Enter Connection Name"
-                  value={formConfig.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
+                {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
               </div>
 
               {/* Port */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Port<span className="text-red-500">*</span></label>
+              {/* <div>
+                <label className="block text-sm font-medium mb-1">
+                  Port<span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
+                  {...register("port", { required: "Port is required" })}
+                  className="w-full px-3 py-2 border rounded-md"
                   placeholder="Enter Port"
-                  value={formConfig.port}
-                  onChange={(e) => handleInputChange("port", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </div>
+                {errors.port && <p className="text-red-500 text-sm">{errors.port.message}</p>}
+              </div> */}
+              {/* expects availablePorts: string[] in scope */}
+<div>
+  <label className="block text-sm font-medium mb-1">
+    Port<span className="text-red-500">*</span>
+  </label>
+
+  <select
+    {...register("port", { required: "Port is required" })}
+    className="w-full px-3 py-2 border rounded-md bg-white"
+    defaultValue=""
+    disabled={!availablePorts?.length}
+  >
+    <option value="" disabled>
+      {availablePorts?.length ? "Select a port…" : "No ports available"}
+    </option>
+    {availablePorts?.map((p) => (
+      <option key={p} value={p}>
+        {p}
+      </option>
+    ))}
+  </select>
+
+  {errors.port && (
+    <p className="text-red-500 text-sm">{errors.port.message}</p>
+  )}
+</div>
+
 
               {/* Baud Rate */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Baud Rate</label>
-                <select
-                  value={formConfig.baudRate}
-                  onChange={(e) => handleInputChange("baudRate", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
+                <label className="block text-sm font-medium mb-1">Baud Rate</label>
+                <select {...register("baudRate")} className="w-full px-3 py-2 border rounded-md">
                   {[4800, 9600, 19200, 38400, 57600, 115200].map((rate) => (
-                    <option key={rate} value={rate}>{rate}</option>
+                    <option key={rate} value={rate}>
+                      {rate}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Frequency */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Frequency<span className="text-red-500">*</span> (in sec)</label>
+                <label className="block text-sm font-medium mb-1">
+                  Frequency<span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
-                  placeholder="Enter Frequency"
-                  value={formConfig.frequency}
-                  onChange={(e) => handleInputChange("frequency", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  {...register("frequency", {
+                    required: "Frequency is required",
+                    min: { value: 1, message: "Frequency must be > 0" },
+                  })}
+                  className="w-full px-3 py-2 border rounded-md"
                 />
+                {errors.frequency && (
+                  <p className="text-red-500 text-sm">{errors.frequency.message}</p>
+                )}
               </div>
 
               {/* Parity */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parity</label>
-                <select
-                  value={formConfig.parity}
-                  onChange={(e) => handleInputChange("parity", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
+                <label className="block text-sm font-medium mb-1">Parity</label>
+                <select {...register("parity")} className="w-full px-3 py-2 border rounded-md">
                   <option value="N">None</option>
                   <option value="E">Even</option>
                   <option value="O">Odd</option>
@@ -274,208 +300,257 @@ export const ModbusRTUConfig = () => {
 
               {/* Byte Size */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Byte Size<span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">
+                  Byte Size<span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
-                  placeholder="Enter Byte Size"
-                  value={formConfig.byteSize}
-                  onChange={(e) => handleInputChange("byteSize", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  {...register("byteSize", {
+                    required: "Byte size is required",
+                    min: { value: 1, message: "Must be > 0" },
+                  })}
+                  className="w-full px-3 py-2 border rounded-md"
                 />
+                {errors.byteSize && (
+                  <p className="text-red-500 text-sm">{errors.byteSize.message}</p>
+                )}
               </div>
 
               {/* Stop Bits */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stop Bits<span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium mb-1">
+                  Stop Bits<span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
-                  placeholder="Enter Stop Bits"
-                  value={formConfig.stopBits}
-                  onChange={(e) => handleInputChange("stopBits", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  {...register("stopBits", {
+                    required: "Stop bits required",
+                    min: { value: 1, message: "Must be >= 1" },
+                  })}
+                  className="w-full px-3 py-2 border rounded-md"
                 />
+                {errors.stopBits && (
+                  <p className="text-red-500 text-sm">{errors.stopBits.message}</p>
+                )}
               </div>
             </div>
 
             {/* Buttons */}
             <div className="flex justify-end mt-6">
-<button
-    disabled={loading}
-    onClick={testConnection}
-    className="bg-gray-900 mx-3 hover:bg-gray-800 text-white font-medium px-6 py-2 rounded-md transition-colors"
-  >
-    {loading && !connected ? "Testing..." : "Test Connection"}
-  </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-gray-900 mx-3 text-white px-6 py-2 rounded-md"
+              >
+                {loading && !connected ? "Testing..." : "Test Connection"}
+              </button>
 
-  {/* Save Connection Button */}
-  <button
-    disabled={loading || !connected} // disable until tested
-    onClick={submitServer}
-    className={`font-medium px-6 py-2 rounded-md transition-colors ${
-      connected
-        ? "bg-green-600 hover:bg-green-500 text-white"
-        : "bg-gray-400 text-gray-200 cursor-not-allowed"
-    }`}
-  >
-    {loading && connected ? "Saving..." : "Save Connection"}
-  </button>
+              <button
+                type="button"
+                onClick={submitServer}
+                disabled={loading || !connected}
+                className={`px-6 py-2 rounded-md ${
+                  connected
+                    ? "bg-green-600 text-white hover:bg-green-500"
+                    : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                }`}
+              >
+                {loading && connected ? "Saving..." : "Save Connection"}
+              </button>
             </div>
 
-            {successMessage !== "" && (
-              <div className="mt-3 text-right">
-                <span className="text-sm text-green-600 font-medium">{successMessage}</span>
-              </div>
+            {successMessage && (
+              <p className="mt-3 text-right text-green-600 font-medium">{successMessage}</p>
             )}
-            {error !== "" && (
-              <div className="mt-3 text-right">
-                <span className="text-sm text-red-600 font-medium">{error}</span>
-              </div>
-            )}
-          </div>
+            {error && <p className="mt-3 text-right text-red-600 font-medium">{error}</p>}
+          </form>
         </div>
 
-        {/* Connections Table */}
+        {/* Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="border-b border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-800">Tested Modbus RTU Connections</h2>
+          <div className="border-b p-6">
+            <h2 className="text-lg font-semibold ">Tested Connections</h2>
             <p className="text-sm text-gray-600 mt-1">
-              View all Tested Modbus RTU connections. Total entries: {serverList.length}
+              Total entries: {serverList.length}
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Connection Name</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Port</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Baud Rate</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Frequency (in sec)</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Parity</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Byte Size</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-700">Stop Bits</th>
-                  <th className="text-right py-3 px-6 text-sm font-medium text-gray-700">Actions</th>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="py-3 px-6 text-left">Connection Name</th>
+                  <th className="py-3 px-6 text-left">Port</th>
+                  <th className="py-3 px-6 text-left">Baud Rate</th>
+                  <th className="py-3 px-6 text-left">Frequency</th>
+                  <th className="py-3 px-6 text-left">Parity</th>
+                  <th className="py-3 px-6 text-left">Byte Size</th>
+                  <th className="py-3 px-6 text-left">Stop Bits</th>
+                  <th className="py-3 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {serverList.map((server) => (
-                  <tr key={server.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={server.id} className="border-b hover:bg-gray-50">
                     {editingId === server.id ? (
                       <>
-                        <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
-                            value={editConfig.name}
+                          {...registerEdit("name", {
+          required: "Connection name is required",
+          minLength: { value: 2, message: "Min 2 characters" },
+        })}
+                            // value={editConfig.name}
                             onChange={(e) => handleEdit("name", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                          {editErrors.name && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.name.message}</p>
+      )}
                         </td>
-                        <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                           {...registerEdit("data.port", {
+          required: "Port is required",
+        })}
                             value={editConfig.data.port}
                             onChange={(e) => handleEdit("port", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                                {editErrors.data?.port && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.data.port.message}</p>
+      )}
                         </td>
-                        <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                          {...registerEdit("data.baudRate", {
+          required: "Baud rate is required",
+          validate: (v) =>
+            /^\d+$/.test(String(v)) || "Baud rate must be a number",
+        })}
                             value={editConfig.data.baudRate}
                             onChange={(e) => handleEdit("baudRate", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                          {editErrors.data?.baudRate && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.data.baudRate.message}</p>
+      )}
                         </td>
-                                                <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                          type="number"
+                           {...registerEdit("frequency", {
+          required: "Frequency is required",
+          validate: (v) =>
+            Number(v) > 0 || "Frequency must be > 0",
+        })}
                             value={editConfig.frequency}
                             onChange={(e) => handleEdit("frequency", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                          {editErrors.frequency && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.frequency.message}</p>
+      )}
                         </td>
-                        <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                          {...registerEdit("data.parity", {
+          required: "Parity is required",
+          validate: (v) =>
+            ["N", "E", "O"].includes(String(v).toUpperCase()) ||
+            "Parity must be N / E / O",
+        })}
                             value={editConfig.data.parity}
                             onChange={(e) => handleEdit("parity", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                          {editErrors.data?.parity && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.data.parity.message}</p>
+      )}
                         </td>
-                                                <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                          type="number"
+                           {...registerEdit("data.byteSize", {
+          required: "Byte size is required",
+          validate: (v) =>
+            Number(v) >= 1 || "Byte size must be >= 1",
+        })}
                             value={editConfig.data.byteSize}
                             onChange={(e) => handleEdit("byteSize", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                           {editErrors.data?.byteSize && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.data.byteSize.message}</p>
+      )}
                         </td>
-                                                <td className="py-3 px-6">
+                        <td className="px-6 py-3">
                           <input
-                            type="text"
+                          type="number"
+                          {...registerEdit("data.stopBits", {
+          required: "Stop bits required",
+          validate: (v) =>
+            Number(v) >= 1 || "Stop bits must be >= 1",
+        })}
                             value={editConfig.data.stopBits}
                             onChange={(e) => handleEdit("stopBits", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border rounded px-2 py-1 text-sm"
                           />
+                          {editErrors.data?.stopBits && (
+        <p className="text-red-500 text-xs mt-1">{editErrors.data.stopBits.message}</p>
+      )}
                         </td>
-                        {/* <td className="py-3 px-6 text-sm text-gray-600">
-                          {new Date(server.createdAt || "2025-09-02").toLocaleDateString()}
-                        </td> */}
-                        {/* <td className="py-3 px-6">
-                          <input
-                            type="text"
-                            value={editConfig.status}
-                            onChange={(e) => handleEdit("status", e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </td> */}
-                        <td className="py-3 px-6 text-right">
-                          <div className="flex gap-1 justify-end">
-                            <button
-                              onClick={() => handleSaveEdit(server.id)}
-                              className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                        <td className="px-6 py-3 text-right">
+                          <button
+                            onClick={handleSubmitEdit((vals) => handleSaveEditValues(server.id, vals))}
+                            className="bg-green-500 px-3 py-1 rounded text-white text-sm mr-2"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-gray-500 px-3 py-1 rounded text-white text-sm"
+                          >
+                            Cancel
+                          </button>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="py-3 px-6 text-sm font-medium text-gray-900">{server.name}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.data.port}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.data.baudRate}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.frequency}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.data.parity}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.data.byteSize}</td>
-                        <td className="py-3 px-6 text-sm text-gray-600">{server.data.stopBits}</td>
-                        <td className="py-3 px-6 text-right">
-                          <div className="flex gap-1 justify-end">
-                            <button
-                              onClick={() => {
-                                console.log(server)
-                                setEditingId(server.id);
-                                setEditConfig(server);
-                              }}
-                              className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                              title="Edit server"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(server.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete server"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <td className="px-6 py-3">{server.name}</td>
+                        <td className="px-6 py-3">{server.data.port}</td>
+                        <td className="px-6 py-3">{server.data.baudRate}</td>
+                        <td className="px-6 py-3">{server.frequency}</td>
+                        <td className="px-6 py-3">{server.data.parity}</td>
+                        <td className="px-6 py-3">{server.data.byteSize}</td>
+                        <td className="px-6 py-3">{server.data.stopBits}</td>
+                        <td className="px-6 py-3 text-right">
+                          <button
+                            onClick={() => {
+                              setEditingId(server.id);
+                              setEditConfig(server);
+                              resetEdit({
+      name: server.name ?? "",
+      frequency: server.frequency ?? "",
+      data: {
+        port: server.data?.port ?? "",
+        baudRate: server.data?.baudRate ?? "",
+        parity: server.data?.parity ?? "N",
+        byteSize: server.data?.byteSize ?? "",
+        stopBits: server.data?.stopBits ?? "",
+      },
+    });
+                            }}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(server.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </td>
                       </>
                     )}
@@ -487,8 +562,7 @@ export const ModbusRTUConfig = () => {
             {serverList.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <Server className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">No connections found</p>
-                <p className="text-sm">Add a new Modbus RTU connection to get started</p>
+                <p>No connections found</p>
               </div>
             )}
           </div>

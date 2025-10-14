@@ -54,7 +54,7 @@ export default function AutocompleteInput({ label="Input Box", options = [],isCo
 
   return (
     <div className="w-auto relative font-sans" ref={containerRef}>
-      {label && <label className="block mb-1 text-gray-900 font-medium text-xs" >{label}{isCompulsary?(<span className="text-red-500">*</span>):(<span></span>)}</label>}
+      {label && <label className="block mb-1  font-medium text-xs" >{label}{isCompulsary?(<span className="text-red-500">*</span>):(<span></span>)}</label>}
       <input
       name={name}
         type={type}

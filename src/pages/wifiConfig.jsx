@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Wifi, RefreshCcw, Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import axios from "axios";
+import { useConfirm, useNotify } from "../context/ConfirmContext";
 
 export const WifiConnections = () => {
   const [wifiList, setWifiList] = useState([]);
@@ -9,6 +10,7 @@ export const WifiConnections = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSSID, setCurrentSSID] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const notify=useNotify()
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(null); // Success/Error messages
@@ -19,13 +21,13 @@ export const WifiConnections = () => {
     try{
       const response=await axios.get(`${process.env.REACT_APP_API_URL}/gatewayConfig/wifi`)
             setWifiList(response.data.networks);
+            notify.success("Network scan Completed !")
             setCurrentSSID(response.data?.current || "")
         setIsLoading(false);
-        setMessage({ type: "success", text: "Scan complete!" });
 
     }catch(e){
                       setIsLoading(false);
-        setMessage({ type: "error", text: "Failed to scan networks." });
+                      notify.error("Failed to scan the networks")
     }
   };
 

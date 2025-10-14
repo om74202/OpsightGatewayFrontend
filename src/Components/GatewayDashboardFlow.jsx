@@ -68,6 +68,7 @@ function CustomNode({ data }) {
 
 
 export default function GatewayGraph({ iiot, gateway, edges }) {
+  console.log(edges)
   // Nodes
   const nodes = [
     {
@@ -94,7 +95,7 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       data: {
         label: `${edge.name} (${edge.type})`,
         type: "edge",
-        status: edge.status,
+        status: edge.Active,
       },
       position: { x: 0, y: index * 120 },
     })),
@@ -117,9 +118,9 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       source: edge.name,
       target: "gateway",
       type: "",
-      animated: edge.status === "connected",
+      animated: edge.status === true,
       style: {
-        stroke: edge.status === "connected" ? "#10B981" : "#EF4444",
+        stroke: edge.status === true ? "#10B981" : "#EF4444",
         strokeWidth: 2,
       },
     })),

@@ -75,7 +75,10 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       ]
     },
     { name: "Setup Wizard", icon: <Wand className="w-5 h-5 mr-3" />, path: "/gateway/wizard", end: true },
-    { name: "Email Notification", icon: <Mail className="w-5 h-5 mr-3" />, path: "/gateway/emailNotification", end: true },
+    { name: "Email Notification", icon: <Mail className="w-5 h-5 mr-3" />, path: "/gateway/emailNotification", children: [
+        { name: "Rules", path: "/gateway/emailNotification/rules", tab: "Rules" },
+        { name: "History", path: "/gateway/emailNotification/history", tab: "history" }
+      ] },
 
   ];
 

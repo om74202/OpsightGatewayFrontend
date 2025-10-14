@@ -2,6 +2,8 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { ChevronRight, ChevronDown, Folder, FileText,CheckCircle, Wifi, WifiOff, ChevronUp, Play } from "lucide-react";
 import { applyScaling } from "../../functions/tags";
+import { useNotify } from "../../context/ConfirmContext";
+
 
 const ServerSection = React.memo(({  updateTagProperties, setIsExpanded,isExpanded,isConnected,subscribedNodes=[]}) => (
   <div>
@@ -116,6 +118,7 @@ export const OpcuaTagsConfig = ({serverInfo}) => {
   const [isLoading,setIsLoading]=useState(false)
   const [expandedNodes, setExpandedNodes] = useState({});
   const [isExpanded,setIsExpanded]=useState(true);
+  const notify=useNotify()
 
 useEffect(()=>{
   setSubscribedNodes([])
@@ -176,12 +179,12 @@ useEffect(()=>{
 
       const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:payload}) 
       if(response.data.status!=="success"){
-        alert(response.data.message || "failed to add Tags")
+             notify.error("Failed to save tags");
       }
-      alert("Tags Saved Successfully")
+      notify.success("Tags Saved Successfully")
     }catch(e){
       console.log(e);
-        alert( "Please give Tags Unique Names")
+        notify.error( "Please give Tags Unique Names")
       
     }
   }
@@ -191,27 +194,19 @@ useEffect(()=>{
 
     }catch(e){
       console.log(e);
-      alert("Tag deletion failed , Internal Server error")
+      notify.error("Tag deletion failed , Internal Server error")
     }
   }
 
-  const updateTag=()=>{
-    try{
-      
-    }catch(e){
-      console.log(e);
-      alert("Tag updation failed , Internal Server error")
-    }
-  }
   const disConnectServer=async()=>{
     setIsLoading(true)
     try{
       const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"1"})
-      alert("Server Disconnected");
+      notify.success("Server Disconnected");
       setIsConnected(false);
     }catch(e){
       console.log(e);
-      alert("No active connection detected")
+      notify.error("No active connection detected")
     }finally{
       setIsLoading(false)
     }
@@ -272,7 +267,7 @@ useEffect(()=>{
   };
 
   useEffect(()=>{
-    const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}`); // replace with your backend IP if needed
+    const ws = new WebSocket(`${process.env.REACT_APP_API_WEBSOCKET_URL}/`); // replace with your backend IP if needed
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -283,10 +278,8 @@ useEffect(()=>{
       try {
       
          const msg = JSON.parse(event.data);
-        const deviceName = msg.stream.split(':')[1];
         
 
-            // console.log(msg.id.split('-'))
         if(msg.stream==="opcuaStream" && msg.type==='update'){
           handleSubscribeNodeChange(msg.payload)
           
@@ -301,6 +294,7 @@ useEffect(()=>{
 
     ws.onerror = (err) => {
       console.error('WebSocket error:', err);
+      console.log(err)
     };
 
     ws.onclose = () => {
