@@ -447,7 +447,9 @@ export const SLMPConfig = () => {
                     ) : (
                       // VIEW MODE
                       <>
-                        <td className="px-6 py-3">{server.name}</td>
+                        <td className="px-6 py-3">   {server.Active && (
+                            <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
+                            )} {server.name}</td>
                         <td className="px-6 py-3">
                           {server?.data?.ip}:{server?.data?.port}
                         </td>

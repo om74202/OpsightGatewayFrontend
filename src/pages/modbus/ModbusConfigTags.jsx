@@ -41,14 +41,14 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
   return (
     <>
       <h5 className="text-sm font-medium text-gray-700">
-        Register Address Ranges <span className="text-red-500">*</span>
+        Register Ranges <span className="text-red-500">*</span>
       </h5>
 
       {(rangeFields || []).map((range, rIndex) => (
         <div key={range.key} className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm text-gray-600 mb-1">
-              Addresses<span className="text-red-500">*</span>
+              Start<span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -113,7 +113,7 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
         onClick={() => appendRange({ addresses: "", count: 1 })}
         className="mt-2 text-blue-600 text-sm hover:underline"
       >
-        + Add Address-Count
+        + Add Start-Count
       </button>
     </>
   );
@@ -124,6 +124,7 @@ export const ServerSection = React.memo(
   ({
     index,
     control,
+    type,
     register,
     errors,
     serverUi, // { id, name, isConnected, isExpanded, tags }
@@ -187,7 +188,7 @@ export const ServerSection = React.memo(
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slave ID<span className="text-red-500">*</span>
+                    Slave ID{type==="rtu" && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="text"
@@ -778,6 +779,7 @@ export const ModbusConfigTags = ({
             <ServerSection
               key={sf.key}
               index={i}
+              type={type}
               control={control}
               register={register}
               errors={errors}

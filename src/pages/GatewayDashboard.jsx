@@ -21,7 +21,7 @@ const OpSightDashboard = () => {
 
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
-      const responseRealtime = await axios.get(`http://192.168.1.52:8004/central/server-status/`);  
+      const responseRealtime = await axios.get(`/central/server-status/`);  
       let connections=responseRealtime.data || {}
 
       const activeDatabase=response.data?.database?.type || "NA" 
@@ -29,7 +29,6 @@ const OpSightDashboard = () => {
       const realtimeServers=servers.filter((s)=>connections?.status[s.name])
       setConnectionStatus(realtimeServers)
       const activeServers=servers.filter((server)=>server.Active===true);
-      console.log()
     //   const RealtimeServerStatus = activeServers.filter(server => 
     // connections.some(connection => 
     //     server.name.toLowerCase().includes(connection.toLowerCase())

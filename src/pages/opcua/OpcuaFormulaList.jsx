@@ -1323,10 +1323,10 @@ export const FormulaConfig = () => {
           {/* Live result & status */}
           <div className="bg-gray-50 rounded-md p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Result:</span>
+              <span className="text-sm text-gray-600">Calculation with dummy values:</span>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold text-blue-600">{result}</span>
-                <span className="text-xs text-gray-500">Real-time calculation</span>
+                <span className="text-xs text-gray-500">Sample calculation</span>
               </div>
             </div>
           </div>

@@ -305,10 +305,11 @@ const handleSaveEditValues = async (id, values) => {
                 </label>
                 <input
                   type="number"
-                  {...register("byteSize", {
-                    required: "Byte size is required",
-                    min: { value: 1, message: "Must be > 0" },
-                  })}
+                      {...register("byteSize", {
+                       required: "Byte size is required",
+                       validate: (value) =>
+                         value === "7" || value === "8" || "Byte size must be 7 or 8",
+                      })}
                   className="w-full px-3 py-2 border rounded-md"
                 />
                 {errors.byteSize && (
@@ -473,8 +474,8 @@ const handleSaveEditValues = async (id, values) => {
                           type="number"
                            {...registerEdit("data.byteSize", {
           required: "Byte size is required",
-          validate: (v) =>
-            Number(v) >= 1 || "Byte size must be >= 1",
+          validate: (value) =>
+        value === "7" || value === "8" || value === 7 || value === 8 || "Byte size must be 7 or 8",
         })}
                             value={editConfig.data.byteSize}
                             onChange={(e) => handleEdit("byteSize", e.target.value)}
@@ -489,8 +490,8 @@ const handleSaveEditValues = async (id, values) => {
                           type="number"
                           {...registerEdit("data.stopBits", {
           required: "Stop bits required",
-          validate: (v) =>
-            Number(v) >= 1 || "Stop bits must be >= 1",
+          validate: (value) =>
+        value === 2 || value === 1 || value === '2' || value === '1' || "Stop Bits must be 1 or 2",
         })}
                             value={editConfig.data.stopBits}
                             onChange={(e) => handleEdit("stopBits", e.target.value)}
@@ -517,7 +518,11 @@ const handleSaveEditValues = async (id, values) => {
                       </>
                     ) : (
                       <>
-                        <td className="px-6 py-3">{server.name}</td>
+
+                      
+                        <td className="px-6 py-3">   {server.Active && (
+                            <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
+                            )} {server.name}</td>
                         <td className="px-6 py-3">{server.data.port}</td>
                         <td className="px-6 py-3">{server.data.baudRate}</td>
                         <td className="px-6 py-3">{server.frequency}</td>

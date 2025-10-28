@@ -128,18 +128,19 @@ export const WifiConnections = () => {
               </thead>
               <tbody>
                 {wifiList.map((ssid, index) => (
+                  
                   <tr
                     key={index}
                     className="hover:bg-gray-50 transition border-b last:border-none"
                   >
                     <td className="px-6 py-3">{index + 1}</td>
-                    <td className="px-6 py-3">{ssid}</td>
+                    <td className="px-6 py-3">{ssid.replace(/\\x20/g,"")===currentSSID && <span className="w-3 h-3  bg-green-500 rounded-full inline-block"></span>}   {ssid}</td>
                     <td className="px-6 py-3 text-right">
                       <button
                         onClick={() => handleConnectClick(ssid)}
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition"
                       >
-                        Connect
+                        {ssid.replace(/\\x20/g, "")===currentSSID?`Connected`:`Connect`}
                       </button>
                     </td>
                   </tr>

@@ -17,7 +17,7 @@ function CustomNode({ data }) {
           ? "bg-blue-800"
           : data.type === "gateway"
           ? "bg-transparent shadow-none p-0" // remove bg for image gateway
-          : data.status === "connected"
+          : data.status === true
           ? "bg-emerald-600"
           : "bg-red-600 opacity-80"
       }`}
@@ -110,7 +110,7 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
 
       type: "straight",
       animated: true,
-      style: { stroke: "#10B981", strokeWidth: 2 },
+      style: { stroke: "#10B981", strokeWidth: 5 },
     },
     ...edges.map((edge) => ({
       id: `${edge.name}-to-gateway`,
@@ -118,10 +118,10 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       source: edge.name,
       target: "gateway",
       type: "",
-      animated: edge.status === true,
+      animated: edge.Active === true,
       style: {
-        stroke: edge.status === true ? "#10B981" : "#EF4444",
-        strokeWidth: 2,
+        stroke: edge.Active === true ? "#10B981" : "#EF4444",
+        strokeWidth: 5,
       },
     })),
   ];

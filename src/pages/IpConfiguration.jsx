@@ -337,14 +337,14 @@ export const StaticIPConfiguration = () => {
         notify.success("Configuration saved successfully");
       }
       closeModal();
-      fetchProfiles();
+      window.location.reload();
     } catch (err) {
       console.error("Error submitting profile:", err);
       notify.error("Failed to save configuration");
     }
   };
 
-  const handleDelete = async (name, type) => {
+  const handleDelete = async (name, type) => {  
     try {
       const ok = await confirm("Are you sure you want to delete this profile?");
       if (!ok) return;
@@ -495,7 +495,7 @@ export const StaticIPConfiguration = () => {
               {/* Gateway / Router IP */}
               <div className="mb-4">
                 <label className="block text-gray-700">
-                  Gateway (Router IP) <span className="text-red-500">*</span>
+                  Gateway (Router IP)
                 </label>
                 <input
                   type="text"
@@ -504,7 +504,7 @@ export const StaticIPConfiguration = () => {
                   }`}
                   placeholder="e.g. 192.168.1.1"
                   {...register("routerIP", {
-                    required: "Gateway (Router IP) is required",
+                    // required: "Gateway (Router IP) is required",
                     pattern: {
                       value: IPV4_REGEX,
                       message: "Enter a valid IPv4 address (e.g. 192.168.1.1)",
@@ -519,7 +519,7 @@ export const StaticIPConfiguration = () => {
               {/* DNS Server */}
               <div className="mb-6">
                 <label className="block text-gray-700">
-                  DNS Server <span className="text-red-500">*</span>
+                  DNS Server 
                 </label>
                 <input
                   type="text"
@@ -528,7 +528,7 @@ export const StaticIPConfiguration = () => {
                   }`}
                   placeholder="e.g. 8.8.8.8"
                   {...register("dnsServer", {
-                    required: "DNS Server is required",
+                    // required: "DNS Server is required",
                     pattern: {
                       value: IPV4_REGEX,
                       message: "Enter a valid IPv4 address (e.g. 8.8.8.8)",

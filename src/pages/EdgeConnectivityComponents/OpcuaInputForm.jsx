@@ -376,7 +376,9 @@ export const OpcuaInputForm = () => {
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-2">{server.name}</td>
+                        <td className="px-6 py-3">   {server.Active && (
+                            <span className="w-3 h-3 bg-green-500 rounded-full inline-block"></span>
+                            )} {server.name}</td>
                       <td className="px-4 py-2">{server.data.ip}:{server.data.port}</td>
                       <td className="px-4 py-2">{server.frequency}</td>
                       <td className="px-4 py-2">

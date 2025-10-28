@@ -307,7 +307,7 @@ export const MQTTConfigPage = () => {
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3">
-              <button
+              {/* <button
                 type="button"
                 onClick={() => testConnection()}
                 disabled={loading}
@@ -315,7 +315,7 @@ export const MQTTConfigPage = () => {
                 title="Test Connection"
               >
                 Test
-              </button>
+              </button> */}
 
               <button
                 type="submit"

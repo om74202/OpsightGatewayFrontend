@@ -695,6 +695,7 @@ const disconnectApis = [
   "/modbus-tcp/disconnect",
   "/mitsubishi-plc/disconnect",
   "/modbus-rtu/disconnect",
+  "/central/disconnect",
   `${process.env.REACT_APP_API_URL}/opcua/LogData`,
 ];
 
@@ -727,6 +728,12 @@ const SERVER_REGISTRY = {
     id: "Modbus-RTU",
     label: "RTU",
     connect: "/modbus-rtu/data-flush",
+    disconnect: "http://100.107.186.122:8000/disconnect",
+  },
+  All: {
+    id: "All",
+    label: "RTU",
+    connect: "/central/data-flush",
     disconnect: "http://100.107.186.122:8000/disconnect",
   },
 };
@@ -922,7 +929,7 @@ export const WizardMain = () => {
 
   const selectDatabase = (databaseId) => setSelectedDatabase(databaseId);
 
-  const updateConfiguration = async () => {
+const updateConfiguration = async () => {
     const config = {
       servers: selectedServers,
       tags: selectedTags,
@@ -957,6 +964,11 @@ export const WizardMain = () => {
           return axios.post(apiDetails.connect, { action: "start" });
         })
       );
+      try{
+        const response=await axios.post(`/central/data-flush`,{action:"start"}) 
+      }catch(e){
+        console.log(e);
+      }
 
       notify.success("Configuration updated successfully");
     } catch (error) {

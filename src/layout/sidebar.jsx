@@ -111,7 +111,7 @@ const toggleSubMenu = (name) => {
       }`}
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-500">
+      {/* <div className="p-4 border-b border-gray-500">
         <div className={`flex ${isCollapsed ? "justify-center" : "justify-end"}`}>
           <button
             onClick={toggleCollapse}
@@ -120,10 +120,49 @@ const toggleSubMenu = (name) => {
             {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
+      </div> */}
+            <div className="px-4 py-6 flex  justify-between border-b ">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+          {/* User Avatar */}
+          <div className="flex-shrink-0">
+            {authUser.user.profileImage ? (
+              <img
+                src={authUser.user.profileImage}
+                alt={authUser.user.name || 'User'}
+                className="w-10 h-10 rounded-full object-cover border-2 "
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+            )}
+
+          </div>
+
+          {/* User Info */}
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {authUser.user.name || authUser.user.username || 'User'}
+              </p>
+              <p className="text-xs text-white truncate">
+                {authUser.user.role}
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="">
+           <button
+            onClick={toggleCollapse}
+            className="p-1  rounded hover:bg-gray-100"
+          >
+            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
-      <div className="p-4 overflow-y-auto pt-0 flex-1">
+      <div className="p-4 mt-2 overflow-y-auto pt-0 flex-1">
         <nav>
           <ul>
             {navItems.map((item) => (
@@ -200,7 +239,7 @@ const toggleSubMenu = (name) => {
       </div>
 
       {/* Footer with Logout */}
-      <div>
+      <div className="mb-10">
         <div className="p-4 border-t border-gray-500">
           <button
           onClick={()=>handleLogout()}
@@ -214,7 +253,7 @@ const toggleSubMenu = (name) => {
         </div>
 
         {!isCollapsed && (
-          <div className="p-4 text-center text-xs text-gray-300">
+          <div className="p-4 font-bold text-center text-[14px] text-black">
             © Opsight AI Private Limited
           </div>
         )}

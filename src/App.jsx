@@ -32,6 +32,8 @@ function App() {
     <>
     <Routes>
         {/* Public Route */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
     
 
         {/* Protected Routes */}
