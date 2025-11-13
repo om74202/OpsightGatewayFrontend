@@ -35,7 +35,7 @@ export const SLMPConfig = () => {
       name: "",
       ip: "",
       communicationType: "binary",
-      port: 502,
+      port: 5007,
       frequency: 1,
     },
     mode: "onSubmit",
@@ -51,13 +51,24 @@ export const SLMPConfig = () => {
     defaultValues: {
       name: "",
       ip: "",
-      port: 502,
+      port: 5007,
       communicationType: "binary",
       frequency: 1,
       loggingStatus: undefined, // preserved if it exists on the record
     },
     mode: "onSubmit",
   });
+
+        useEffect(() => {
+    if (!successMessage && !error) return;
+
+    const clearMessages = setTimeout(() => {
+      setSuccessMessage("");
+      setError("");
+    }, 3000);
+
+    return () => clearTimeout(clearMessages);
+  }, [successMessage, error]);
 
   const getServerList = async () => {
     try {
@@ -162,7 +173,7 @@ export const SLMPConfig = () => {
     resetEdit({
       name: server?.name ?? "",
       ip: server?.data?.ip ?? "",
-      port: server?.data?.port ?? 502,
+      port: server?.data?.port ?? 5007,
       communicationType: server?.data?.communicationType ?? "binary",
       frequency: server?.frequency ?? 1,
       loggingStatus: server?.loggingStatus, // preserve if exists
@@ -171,17 +182,42 @@ export const SLMPConfig = () => {
 
   // -------- SAVE EDIT (validated by RHF; no <form> inside table) --------
   const onSaveEdit = async (form) => {
+    const updatePayload = {
+      name: form.name,
+      frequency: parseInt(form.frequency),
+      ...(form.loggingStatus !== undefined ? { loggingStatus: form.loggingStatus } : {}),
+      data: {
+        ip: form.ip,
+        port: parseInt(form.port),
+        communicationType: form.communicationType,
+      },
+    };
+
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${editingId}`, {
-        name: form.name,
-        frequency: parseInt(form.frequency),
-        ...(form.loggingStatus !== undefined ? { loggingStatus: form.loggingStatus } : {}),
-        data: {
-          ip: form.ip,
-          port: parseInt(form.port),
-          communicationType: form.communicationType,
+      const testResponse = await axios.post(
+        `/mitsubishi-plc/test-connection`,
+        {
+          ip: updatePayload.data.ip,
+          port: updatePayload.data.port,
+          frequency: updatePayload.frequency,
+          comm_type: updatePayload.data.communicationType,
+          name: updatePayload.name,
         },
-      });
+        { headers: { "Content-Type": "application/json", accept: "application/json" } }
+      );
+
+      if (testResponse.data?.status !== "success") {
+        notify.error("Connection test failed. Edit not saved.");
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      notify.error("Connection test failed. Edit not saved.");
+      return;
+    }
+
+    try {
+      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${editingId}`, updatePayload);
       setEditingId(null);
       notify.success("Connection edited  successfully!");
       await getServerList();
@@ -328,7 +364,7 @@ export const SLMPConfig = () => {
                   <th className="text-left py-3 px-6">Connection Name</th>
                   <th className="text-left py-3 px-6">IP:Port</th>
                   <th className="text-left py-3 px-6">Communication Type</th>
-                  <th className="text-left py-3 px-6">Frequency</th>
+                  <th className="text-left py-3 px-6">Frequency  (sec)</th>
                   <th className="text-right py-3 px-6">Actions</th>
                 </tr>
               </thead>

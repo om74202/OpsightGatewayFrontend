@@ -22,11 +22,17 @@ const OpSightDashboard = () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
       const responseRealtime = await axios.get(`/central/server-status/`);  
-      let connections=responseRealtime.data || {}
+      let connections=responseRealtime?.data || {}
 
       const activeDatabase=response.data?.database?.type || "NA" 
       const servers=response.data?.servers || [];
-      const realtimeServers=servers.filter((s)=>connections?.status[s.name])
+      const statusPrefixes = new Set(
+  Object.entries(connections?.status || {})
+    .filter(([, isUp]) => Boolean(isUp))     // only truthy statuses
+    .map(([k]) => k.split('/')[0])           // take part before '/'
+);
+
+const realtimeServers = servers.filter(s => statusPrefixes.has(s.name));
       setConnectionStatus(realtimeServers)
       const activeServers=servers.filter((server)=>server.Active===true);
     //   const RealtimeServerStatus = activeServers.filter(server => 
@@ -36,11 +42,11 @@ const OpSightDashboard = () => {
     // );
       // Collect all tags
       const tags = servers.flatMap((s) => s.tags || []);
-      const activeTags = activeServers.flatMap((s) => s.tags || []);
+      const activeTags = activeServers.flatMap((s) => (s.tags || []).filter(t=>t.Active));
 
       // Collect all customTags
       const customTags = servers.flatMap((s) => s.customTags || []);
-      const activeCustomTags = activeServers.flatMap((s) => s.customTags || []);
+      const activeCustomTags = activeServers.flatMap((s) => (s.customTags || []).filter(s=>s.Active));
       setDashboardData((prev)=>({
         activeConnections:activeServers.length+"/"+servers.length,
         activeCustomTags:activeCustomTags.length+"/"+customTags.length,
@@ -156,7 +162,7 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
         {/* Main Cards */}
         <div className="grid grid-cols-1  gap-6 mb-8">
           <GatewayGraph
-  iiot={{ name: "Main IIoT Hub", type: "MQTT" }}
+  iiot={{ name: dashboardData.activeDatabase.replace("_"," "), type: "" }}
   gateway={{ name: "Opsight Gateway", type: "" }}
   edges={connectionStatus}
 />
@@ -170,22 +176,22 @@ const SystemStatusItem = ({ label, value, color = "gray", tags = [] }) => {
           <div className="space-y-2">
             <SystemStatusItem
               label="Active Edge Connections"
-              value={`${dashboardData.activeConnections} Connected`}
+              value={`${dashboardData.activeConnections} ${dashboardData.activeConnections===""?"N/A":"Connections"}`}
               color="blue"
             />
             <SystemStatusItem 
               label="Active Tags"
-              value={`${dashboardData.activeTags} tags`}
+              value={`${dashboardData.activeTags} ${dashboardData.activeTags===""?"N/A":"tags"}`}
               color="purple"
             />
                         <SystemStatusItem 
               label="Active Custom Tags"
-              value={`${dashboardData.activeCustomTags} custom tags`}
+              value={`${dashboardData.activeCustomTags} ${dashboardData.activeCustomTags===""?"N/A":"custom tags"}`}
               color="purple"
             />
               <SystemStatusItem
               label="Active IIOT Configuration"
-              value={`${dashboardData.activeDatabase.replace("_"," ")} `}
+              value={`${dashboardData.activeDatabase===""?"N/A":`${dashboardData.activeDatabase.replace("_"," ")}`} `}
               color="green"
             />
             

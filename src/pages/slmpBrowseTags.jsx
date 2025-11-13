@@ -4,7 +4,7 @@ import { Play, RefreshCw, Save, CheckCircle, Wifi, WifiOff, ChevronDown, Chevron
 import { jsx } from 'react/jsx-runtime';
 import axios from 'axios';
 import { applyScaling } from './../functions/tags';
-import { useNotify } from '../context/ConfirmContext';
+import { useConfirm, useNotify } from '../context/ConfirmContext';
 import { useForm, useFieldArray } from "react-hook-form";
 
 
@@ -25,7 +25,7 @@ const deviceTypes = [
 ];
 const streamNames=['slmp:stream']
 
-const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresses ,setDataType,addresses=[], tags=[],isConnected,updateTagProperties }) => (
+const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresses ,setDataType,addresses=[], tags=[],isConnected,updateTagProperties,onSelectAllTags,onDeselectAllTags,allTagsSelected,noTagsSelected }) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
     
@@ -173,24 +173,50 @@ const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresse
           </div>
         ) : tags.length > 0 ? (
           // Actual data table
-          <div className="overflow-x-auto border border-gray-200 rounded-md">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tags.map((tag) => (
+          <div className="space-y-3">
+            <div className="flex items-center gap-6">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={allTagsSelected}
+                  onChange={() =>
+                    allTagsSelected ? onDeselectAllTags() : onSelectAllTags()
+                  }
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                Select All
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={noTagsSelected}
+                  onChange={() =>
+                    noTagsSelected ? onSelectAllTags() : onDeselectAllTags()
+                  }
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                Deselect All
+              </label>
+            </div>
+            <div className="overflow-x-auto border border-gray-200 rounded-md">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scaling</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tags.map((tag) => (
                   <tr key={tag.address} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        onClick={(e) =>
+                        checked={tag.status === "pass"}
+                        onChange={(e) =>
                           updateTagProperties(tag.address, {
                             status: e.target.checked ? "pass" : "fail",
                           })
@@ -226,8 +252,9 @@ const ServerSection = React.memo(({dataType=deviceTypes[0],isLoading,setAddresse
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           // No tags
@@ -255,9 +282,32 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
     address:""
   }])
   const [count,setCount]=useState(0)
+  const confirm=useConfirm()
   const [isLoading,setIsLoading]=useState(false)
   const [tags,setTags]=useState([])
 
+  const bulkUpdateTagStatus = useCallback((nextStatus) => {
+    setTags((prevTags) => {
+      if (!prevTags.length) {
+        return prevTags;
+      }
+      let changed = false;
+      const updated = prevTags.map((tag) => {
+        if (tag.status === nextStatus) {
+          return tag;
+        }
+        changed = true;
+        return { ...tag, status: nextStatus };
+      });
+      return changed ? updated : prevTags;
+    });
+  }, []);
+
+  const selectAllTags = useCallback(() => bulkUpdateTagStatus("pass"), [bulkUpdateTagStatus]);
+  const deselectAllTags = useCallback(() => bulkUpdateTagStatus("fail"), [bulkUpdateTagStatus]);
+
+  const allTagsSelected = tags.length > 0 && tags.every((tag) => tag.status === "pass");
+  const noTagsSelected = tags.length > 0 && tags.every((tag) => tag.status !== "pass");
 
   useEffect(()=>{
     setTags([])
@@ -280,7 +330,7 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
         
       }catch(e){
         console.log(e);
-        notify.error("Failed to disconnect ")
+        notify.error("Make sure this connection is active")
       }
     }
     console.log(dataType)
@@ -292,7 +342,7 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
         notify.success("Tags saved successfully")
       }catch(e){
         console.log(e);
-        notify.error("Failed to save tags")
+              notify.error("Failed to save tags, Make sure the names of the selected tags are unique");
       }
     }
 
@@ -352,7 +402,7 @@ function updateTagProperties(address, updatedFields) {
 
 const browseTags = useCallback(async () => {
   try {
-    setIsLoading(true)
+    
     console.log(dataType)
     const newAddresses = addresses.map((a) => ({
       address: dataType.value + a.address
@@ -362,6 +412,9 @@ const browseTags = useCallback(async () => {
       notify.error("Please Select at least one address")
       return
     }
+    const ok=await confirm("Browsing will temporarily stop any ongoing data logging . Do you want to continue?")
+    if(!ok) return;
+    setIsLoading(true)
 
     const payload = {
       serverInfo:{ip:selectedServer.data.ip,port:selectedServer.data.port,comm_type:selectedServer.data.communicationType},
@@ -497,6 +550,10 @@ const browseTags = useCallback(async () => {
               tags={tags}
               setDataType={setDataType}
               addresses={addresses}
+              onSelectAllTags={selectAllTags}
+              onDeselectAllTags={deselectAllTags}
+              allTagsSelected={allTagsSelected}
+              noTagsSelected={noTagsSelected}
             />
          <div className='flex justify-between'>
 
@@ -507,7 +564,3 @@ const browseTags = useCallback(async () => {
     </div>
   );
 };
-
-
-
-

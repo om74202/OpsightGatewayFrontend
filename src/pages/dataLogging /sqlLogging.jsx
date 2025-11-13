@@ -23,7 +23,6 @@ export const SQLConfigPage = () => {
       driver: "",
       username: "",
       password: "",
-      targetTable: "",
       sqlFields: "",
     },
   });
@@ -212,25 +211,7 @@ export const SQLConfigPage = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Table<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Enter Target Table"
-                {...register("targetTable", {
-                  required: "Target table is required",
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-              {errors.targetTable && (
-                <p className="text-sm text-red-500">
-                  {errors.targetTable.message}
-                </p>
-              )}
-            </div>
+           
 
             {/* Footer */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end">

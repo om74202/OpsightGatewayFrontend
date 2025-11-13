@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, use } from "react";
 import {
   Play,
   Save as SaveIcon,
@@ -9,7 +9,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
-import { useNotify } from "../../context/ConfirmContext";
+import { useConfirm, useNotify } from "../../context/ConfirmContext";
 import { applyScaling } from "../../functions/tags";
 import axios from "axios";
 
@@ -19,6 +19,11 @@ const DatatypesGlobal = ["INT", "DINT", "DWORD", "REAL", "BOOL"];
 /* -------------------------------------------------------------------------- */
 /*                        Server section (form-driven UI)                      */
 /* -------------------------------------------------------------------------- */
+
+
+
+
+//TODO: I was not able to add + operator in scaling of a browsed tag , it was showing NaN , why? is the issue resolved  
 const ServerSection = React.memo(function ServerSection({
   // UI
   isExpanded,
@@ -37,6 +42,10 @@ const ServerSection = React.memo(function ServerSection({
   // Browsed tag table
   browsedTags,
   updateBrowsedTag,
+  allBrowsedTagsSelected,
+  allBrowsedTagsDeselected,
+  onSelectAllBrowsedTags,
+  onDeselectAllBrowsedTags,
 }) {
   const watchedTags = useWatch({
     control,
@@ -341,6 +350,28 @@ const ServerSection = React.memo(function ServerSection({
       {/* Browsed Tags Table */}
       <div className="w-full px-5 pb-4">
         <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
+        {!isLoading && browsedTags.length > 0 && (
+          <div className="flex flex-wrap gap-4 mb-2 text-sm text-gray-600 select-none">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600"
+                checked={Boolean(allBrowsedTagsSelected)}
+                onChange={(e) => onSelectAllBrowsedTags?.(e.target.checked)}
+              />
+              <span className="ml-2">Select all browsed tags</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600"
+                checked={Boolean(allBrowsedTagsDeselected)}
+                onChange={(e) => onDeselectAllBrowsedTags?.(e.target.checked)}
+              />
+              <span className="ml-2">Deselect all browsed tags</span>
+            </label>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="overflow-x-auto border border-gray-200 rounded-md">
@@ -403,6 +434,7 @@ const ServerSection = React.memo(function ServerSection({
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
+                        checked={tag.status === "pass"}
                         onChange={(e) =>
                           updateBrowsedTag(tag.id, "status", e.target.checked ? "pass" : "fail")
                         }
@@ -463,6 +495,7 @@ const ServerSection = React.memo(function ServerSection({
 export const SimensTagsConfig = ({ serverInfo }) => {
   const notify = useNotify();
   const wsRef = useRef(null);
+  const confirm=useConfirm()
 
   // UI
   const [isExpanded, setIsExpanded] = useState(true);
@@ -470,7 +503,25 @@ export const SimensTagsConfig = ({ serverInfo }) => {
   const [browsedTags, setBrowsedTags] = useState([]);
   const [count, setCount] = useState(0); // WS session trigger
     console.log(process.env.REACT_APP_API_WEBSOCKET_URL,"Connecting to this url")
+  const allBrowsedTagsSelected = useMemo(
+    () => browsedTags.length > 0 && browsedTags.every((tag) => tag.status === "pass"),
+    [browsedTags]
+  );
+  const allBrowsedTagsDeselected = useMemo(
+    () => browsedTags.length > 0 && browsedTags.every((tag) => tag.status !== "pass"),
+    [browsedTags]
+  );
 
+  const disConnectServer = useCallback(async () => {
+    try {
+      await axios.post(`/siemen-plc/data-flush`);
+      notify.success("Disconnected successfully");
+      wsRef.current?.close();
+    } catch (e) {
+      console.log(e);
+      notify.error("Make sure this connection is active");
+    }
+  }, [notify]);
 
   // RHF setup
   const {
@@ -523,25 +574,34 @@ export const SimensTagsConfig = ({ serverInfo }) => {
   const updateBrowsedTag = useCallback((id, field, value) => {
     setBrowsedTags((prev) => {
       const idx = prev.findIndex((t) => t.id === id);
-      if (idx === -1) return [...prev, { id, [field]: value }];
+      if (idx === -1)
+        return [
+          ...prev,
+          {
+            id,
+            status: field === "status" ? value : "fail",
+            [field]: value,
+          },
+        ];
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value };
       return next;
     });
   }, []);
+  const handleSelectAllBrowsedTags = useCallback((checked) => {
+    const status = checked ? "pass" : "fail";
+    setBrowsedTags((prev) =>
+      prev.map((tag) => (tag.status === status ? tag : { ...tag, status }))
+    );
+  }, []);
+  const handleDeselectAllBrowsedTags = useCallback((checked) => {
+    if (!checked) return;
+    setBrowsedTags((prev) =>
+      prev.map((tag) => (tag.status === "fail" ? tag : { ...tag, status: "fail" }))
+    );
+  }, []);
 
   /* -------------------------------- Actions -------------------------------- */
-  const disConnectServer = async () => {
-    try {
-      await axios.post(`/siemen-plc/disconnect`);
-      notify.success("Disconnected");
-      wsRef.current?.close();
-    } catch (e) {
-      console.log(e);
-      notify.error("Failed to disconnect");
-    }
-  };
-
   // Browse with RHF validation
   const onBrowse = async (values) => {
     try {
@@ -550,6 +610,8 @@ export const SimensTagsConfig = ({ serverInfo }) => {
         notify.error("Please add at least one Tag or Global Tag");
         return;
       }
+      const ok=await confirm("Browsing will temporarily stop any ongoing data logging . Do you want to continue?")
+      if(!ok) return;
 
       setIsLoading(true);
 
@@ -579,6 +641,7 @@ export const SimensTagsConfig = ({ serverInfo }) => {
       };
 
       await axios.post(`/siemen-plc/start-background-read/`, payload);
+      setBrowsedTags([])
       setCount((c) => c + 1);
       notify.success("Browsing started");
     } catch (e) {
@@ -627,7 +690,7 @@ export const SimensTagsConfig = ({ serverInfo }) => {
       notify.success("Tags saved successfully");
     } catch (e) {
       console.log(e);
-      notify.error("Failed to save tags");
+      notify.error("Failed to save tags, Make sure the names of the selected tags are unique");
     }
   };
 
@@ -658,7 +721,7 @@ export const SimensTagsConfig = ({ serverInfo }) => {
           transformed.forEach((n) => {
             const i = next.findIndex((t) => t.id === n.id);
             if (i === -1) {
-              next.push({ ...n, name: n.id }); // default name = id
+              next.push({ ...n, name: n.id, status: "fail" }); // default name = id
             } else {
               next[i] = { ...next[i], value: n.value };
             }
@@ -690,7 +753,7 @@ export const SimensTagsConfig = ({ serverInfo }) => {
           onClick={disConnectServer}
           className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium 
                      rounded-lg text-sm px-5 py-2.5 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-400"
-          disabled={browsedTags.length === 0}
+          // disabled={browsedTags.length === 0}
         >
           Disconnect Server
         </button>
@@ -730,6 +793,10 @@ export const SimensTagsConfig = ({ serverInfo }) => {
           removeGlobal={removeGlobalIndex}
           browsedTags={browsedTags}
           updateBrowsedTag={updateBrowsedTag}
+          allBrowsedTagsSelected={allBrowsedTagsSelected}
+          allBrowsedTagsDeselected={allBrowsedTagsDeselected}
+          onSelectAllBrowsedTags={handleSelectAllBrowsedTags}
+          onDeselectAllBrowsedTags={handleDeselectAllBrowsedTags}
         />
       </div>
     </div>

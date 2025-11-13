@@ -29,13 +29,13 @@ export const ModbusRTUConfig = () => {
   mode: "onChange",
   defaultValues: {
     name: "",
-    frequency: "",
+    frequency: 1,
     data: {
       port: "",
       baudRate: "",
       parity: "N",
-      byteSize: "",
-      stopBits: "",
+      byteSize: 8,
+      stopBits: 1,
     },
   },
 });
@@ -58,6 +58,54 @@ export const ModbusRTUConfig = () => {
     },
   });
 
+        useEffect(() => {
+    if (!successMessage && !error) return;
+
+    const clearMessages = setTimeout(() => {
+      setSuccessMessage("");
+      setError("");
+    }, 3000);
+
+    return () => clearTimeout(clearMessages);
+  }, [successMessage, error]);
+  
+
+  const testEditConnection = async (config) => {
+    const stopBits = Number.parseInt(config?.data?.stopBits, 10);
+    const byteSize = Number.parseInt(config?.data?.byteSize, 10);
+    const baudRate = Number.parseInt(config?.data?.baudRate, 10);
+    const frequency = Number.parseInt(config?.frequency, 10);
+    const port = config?.data?.port;
+
+    if (
+      !port ||
+      Number.isNaN(baudRate) ||
+      Number.isNaN(byteSize) ||
+      Number.isNaN(stopBits) ||
+      Number.isNaN(frequency)
+    ) {
+      return false;
+    }
+
+    try {
+      const response = await axios.post(`/modbus-rtu/test-connection`, {
+        name: config?.name,
+        port,
+        baudRate,
+        parity: config?.data?.parity,
+        byteSize,
+        stopBits,
+        frequency,
+      });
+
+      return response.data?.status === "success";
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  };
+
+
   const getServerList = async () => {
     const url = `${process.env.REACT_APP_API_URL}/allServers/Modbus-RTU`;
     try {
@@ -74,11 +122,16 @@ export const ModbusRTUConfig = () => {
     getServerList();
   }, [count]);
 
-  // test connection
   const testConnection = async (data) => {
     try {
       setLoading(true);
-      const response = await axios.post(`/modbus-rtu/test-connection`, data);
+      const payload = {
+        ...data,
+        frequency:Number.parseInt(data.frequency,10),
+        stopBits: Number.parseInt(data.stopBits, 10),
+        byteSize: Number.parseInt(data.byteSize, 10),
+      };
+      const response = await axios.post(`/modbus-rtu/test-connection`, payload);
       if (response.data?.status === "success") {
         setConnected(true);
         setCorrectConfig(data);
@@ -153,30 +206,43 @@ export const ModbusRTUConfig = () => {
         [name]: name==="frequency"?parseInt(value):value,
       }));
     } else {
+      const numericFields = ["baudRate", "stopBits", "byteSize"];
       setEditConfig((prev) => ({
         ...prev,
         data: {
           ...prev.data,
-          [name]: value,
+          [name]: numericFields.includes(name)
+            ? (value === "" ? "" : parseInt(value, 10))
+            : value,
         },
       }));
     }
   };
 
 const handleSaveEditValues = async (id, values) => {
+  const payload = {
+    ...editConfig,
+    name: values.name,
+    frequency: Number.parseInt(values.frequency, 10),
+    data: {
+      ...editConfig.data,
+      port: values.data.port,
+      parity: values.data.parity,
+      baudRate: Number.parseInt(values.data.baudRate, 10),
+      byteSize: Number.parseInt(values.data.byteSize, 10),
+      stopBits: Number.parseInt(values.data.stopBits, 10),
+    },
+  };
+
+  const ok = await testEditConnection(payload);
+  if (!ok) {
+    notify.error("Connection test failed. Edit not saved.");
+    return;
+  }
+
   try {
     await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {
-      ...editConfig, // keep original object props like id, type if present
-      name: values.name,
-      frequency: parseInt(values.frequency, 10),
-      data: {
-        ...editConfig.data,
-        port: values.data.port,
-        parity: values.data.parity,
-        baudRate: parseInt(values.data.baudRate, 10),
-        byteSize: parseInt(values.data.byteSize, 10),
-        stopBits: parseInt(values.data.stopBits, 10),
-      },
+      ...payload, // keep original object props like id, type if present
     });
       notify.success("Connection edited successfully!");
     getServerList();
@@ -273,7 +339,7 @@ const handleSaveEditValues = async (id, values) => {
               {/* Frequency */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Frequency<span className="text-red-500">*</span>
+                  Frequency  (sec)<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -307,8 +373,9 @@ const handleSaveEditValues = async (id, values) => {
                   type="number"
                       {...register("byteSize", {
                        required: "Byte size is required",
+                       valueAsNumber: true,
                        validate: (value) =>
-                         value === "7" || value === "8" || "Byte size must be 7 or 8",
+                         value === 7 || value === 8 || "Byte size must be 7 or 8",
                       })}
                   className="w-full px-3 py-2 border rounded-md"
                 />
@@ -326,7 +393,10 @@ const handleSaveEditValues = async (id, values) => {
                   type="number"
                   {...register("stopBits", {
                     required: "Stop bits required",
-                    min: { value: 1, message: "Must be >= 1" },
+                    valueAsNumber: true,
+                    min: { value: 1, message: "Stop bit must be  1 or 2" },
+                    validate: (value) =>
+                      value === 1 || value === 2 || "Stop Bits must be 1 or 2",
                   })}
                   className="w-full px-3 py-2 border rounded-md"
                 />
@@ -383,7 +453,7 @@ const handleSaveEditValues = async (id, values) => {
                   <th className="py-3 px-6 text-left">Connection Name</th>
                   <th className="py-3 px-6 text-left">Port</th>
                   <th className="py-3 px-6 text-left">Baud Rate</th>
-                  <th className="py-3 px-6 text-left">Frequency</th>
+                  <th className="py-3 px-6 text-left">Frequency  (sec)</th>
                   <th className="py-3 px-6 text-left">Parity</th>
                   <th className="py-3 px-6 text-left">Byte Size</th>
                   <th className="py-3 px-6 text-left">Stop Bits</th>
@@ -469,16 +539,18 @@ const handleSaveEditValues = async (id, values) => {
         <p className="text-red-500 text-xs mt-1">{editErrors.data.parity.message}</p>
       )}
                         </td>
+                        
                         <td className="px-6 py-3">
                           <input
                           type="number"
                            {...registerEdit("data.byteSize", {
           required: "Byte size is required",
+          valueAsNumber: true,
+          onChange: (e) => handleEdit("byteSize", e.target.value),
           validate: (value) =>
-        value === "7" || value === "8" || value === 7 || value === 8 || "Byte size must be 7 or 8",
+            value === 7 || value === 8 || "Byte size must be 7 or 8",
         })}
                             value={editConfig.data.byteSize}
-                            onChange={(e) => handleEdit("byteSize", e.target.value)}
                             className="w-full border rounded px-2 py-1 text-sm"
                           />
                            {editErrors.data?.byteSize && (
@@ -490,11 +562,12 @@ const handleSaveEditValues = async (id, values) => {
                           type="number"
                           {...registerEdit("data.stopBits", {
           required: "Stop bits required",
+          valueAsNumber: true,
+          onChange: (e) => handleEdit("stopBits", e.target.value),
           validate: (value) =>
-        value === 2 || value === 1 || value === '2' || value === '1' || "Stop Bits must be 1 or 2",
+        value === 2 || value === 1 || "Stop Bits must be 1 or 2",
         })}
                             value={editConfig.data.stopBits}
-                            onChange={(e) => handleEdit("stopBits", e.target.value)}
                             className="w-full border rounded px-2 py-1 text-sm"
                           />
                           {editErrors.data?.stopBits && (

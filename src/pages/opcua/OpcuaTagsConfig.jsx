@@ -184,7 +184,8 @@ useEffect(()=>{
       notify.success("Tags Saved Successfully")
     }catch(e){
       console.log(e);
-        notify.error( "Please give Tags Unique Names")
+              notify.error("Failed to save tags, Make sure the names of the selected tags are unique");
+
       
     }
   }

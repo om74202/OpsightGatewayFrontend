@@ -1,864 +1,7 @@
 
-// import React, { useState, useRef, useEffect,useMemo } from 'react';
-// import { Save, RotateCcw, Edit2, Trash2, Plus, X, Filter, Search, Check } from 'lucide-react';
-// import axios from 'axios';
-// import { capitalizeFirstLetter } from '../BrowseTags';
-// import { useForm, Controller } from 'react-hook-form';
-
-// import { useConfirm, useNotify } from '../../context/ConfirmContext';
-
-
-// const protocolOrder = {
-//   "opc ua": 1,
-//   modbusrtu: 2,
-//   modbustcp: 3,
-//   siemens: 4,
-//   slmp: 5,
-// };
-
-// export const FormulaConfig = () => {
-
-
-//   // Mock data for demonstration - replace with your actual localStorage logic
-//   const notify=useNotify()
-//   const serverInfo = JSON.parse(localStorage.getItem("Server"))
-//   const confirm=useConfirm()
-//   const [loading,setLoading]=useState(false)
-  
-//   const [tagsList,setTagsList]=useState([])
-//   const [variables, setVariables] = useState([]);
-//   const [expression, setExpression] = useState('');
-//   const [formulaName, setFormulaName] = useState('');
-//   const [savedFormulas, setSavedFormulas] = useState([]);
-//   const [testValues, setTestValues] = useState({});
-//   const [suggestions, setSuggestions] = useState([]);
-//   const [showSuggestions, setShowSuggestions] = useState(false);
-//   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-//   const [cursorPosition, setCursorPosition] = useState(0);
-//   const [result, setResult] = useState(0);
-//   const inputRef = useRef(null);
-//   const [servers,setServers]=useState([]);
-//   const [selectedServer,setSelectedServer]=useState({});
-//     const {
-//   control,
-//   handleSubmit,
-//   formState: { errors, isValid, isSubmitting },
-// } = useForm({
-//   mode: 'onChange',
-//   defaultValues: {
-//     name: formulaName || '',
-//     formula: expression || '',
-//   },
-// });
-
-
-//     const [filters, setFilters] = useState({ name: "", protocol: "", serverName: "" });
-//     const [count, setCount] = useState(0);
-//     const [editingFormulaId, setEditingFormulaId] = useState(null);
-//     const [editValues, setEditValues] = useState({ name: "", expression: "" });
-
-
-
- 
-
-
-
-//   const getAllServers=async()=>{
-//     setLoading(true)
-//         try{
-//       const responseServers=await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
-
-//       const response=await axios.get(`${process.env.REACT_APP_API_URL}/allServers/customTag/get`);
-//       setVariables(
-//   responseServers.data.servers.flatMap(server => server.tags.map(tag => tag.name))
-// );
-
-//       setServers(responseServers.data?.servers || [])
-//       const c=response.data?.servers || [];
-//       setSavedFormulas(response.data?.data || [])
-//     }catch(e){
-//       console.log(e);
-//     }finally{
-//       setLoading(false)
-//     }
-//   }
-
-//   useEffect(()=>{
-//     getAllServers();
-//   },[])
-//   useEffect(()=>{
-//     setTagsList(selectedServer?.tags?.map((t)=>t.name) || [])
-//   },[selectedServer])
-//   // filters
-
-
-
-
-
-
-//   const saveFormula = async() => {
-//     try{
-//      if (!formulaName.trim() || !expression.trim()) return;
-    
-//     const parseResult = parseFormula(expression,tagsList);
-//     if (!parseResult.isValid) {
-//       alert(`Invalid formula: ${parseResult.error}`);
-//       return;
-//     }
-
-//     const newFormula = {
-//       name: formulaName,
-//       type:selectedServer?.protocol,
-//       expression: expression.trim(),
-//       serverId:serverInfo.id
-//     };
-//     console.log(newFormula)
-
-
-//       const response = await axios.post(`${process.env.REACT_APP_API_URL}/allServers/customTag/save`, newFormula);
-//       console.log(response.data);
-    
-//     alert("Custom Tags Updated")
-//     getAllServers();
-
-//     setFormulaName('');
-//     setExpression('');
-//     setShowSuggestions(false); 
-//     }catch(e){
-//       console.log(e)
-//     }finally{
-//     }
-//   };
-
-
-//     const filteredFormulas = useMemo(() => {
-//     return savedFormulas.filter((formula) => {
-//       const nameMatch = formula.name.toLowerCase().includes(filters.name.toLowerCase());
-//       const protocolMatch = !filters.protocol || formula.server.type === filters.protocol;
-//       const serverMatch = !filters.serverName || formula.server.name === filters.serverName;
-//       return nameMatch && protocolMatch && serverMatch;
-//     });
-//   }, [saveFormula, filters]);
-
-
-//   const handleFilterChange = (filterType, value) => {
-//     setFilters((prev) => ({ ...prev, [filterType]: value }));
-//   };
-
-//   const clearFilters = () => {
-//     setFilters({ name: "", protocol: "", serverName: "" });
-//   };
-
-//   const deleteFormula = async (id) => {
-//     try{
-//       const ok=await confirm("Are you sure you want to delete this custom tag?")
-//       if(!ok){
-//         return;
-//       }
-//       const response = await axios.delete(`${process.env.REACT_APP_API_URL}/allServers/customTag/delete/${id}`);
-//       getAllServers()
-//       notify.success("Custom tag deleted successfully!");
-//     }catch(e){
-//       notify.error("Failed to delete custom tag")
-//     }
-//   };
-//     const startEditing = (formula) => {
-//     setEditingFormulaId(formula.id);
-//     setEditValues({ name: formula.name, expression: formula.expression });
-//   };
-
-
-//   // Parse and validate formula
-// const parseFormula = (input,vars=variables) => {
-//   try {
-//     console.log(variables,vars)
-//     let testExpression = input;
-//     const sortedVariables = vars.sort((a, b) => b.length - a.length);
-
-//     sortedVariables.forEach((variable) => {
-//       const regex = new RegExp(
-//         `\\b${variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
-//         "g"
-//       );
-//       testExpression = testExpression.replace(regex, "1");
-//     });
-
-//     const validChars = /^[0-9+\-*/().\s]+$/;
-//     if (!validChars.test(testExpression)) {
-//       return { isValid: false, error: "Invalid characters in formula" };
-//     }
-
-//     const result = Function('"use strict"; return (' + testExpression + ")")();
-
-//     // 🔍 Check for NaN / Infinity
-//     if (!Number.isFinite(result)) {
-//       return { isValid: false, error: "Formula evaluates to Infinity or NaN" };
-//     }
-
-//     return { isValid: true, expression: input };
-//   } catch (error) {
-//     return { isValid: false, error: "Invalid formula syntax" };
-//   }
-// };
-
-
-//   // Find current word being typed at cursor position
-//   const getCurrentWord = (text, position) => {
-//     let start = position;
-//     while (start > 0 && /[a-zA-Z0-9_]/.test(text[start - 1])) {
-//       start--;
-//     }
-    
-//     let end = position;
-//     while (end < text.length && /[a-zA-Z0-9_]/.test(text[end])) {
-//       end++;
-//     }
-    
-//     return {
-//       word: text.substring(start, end),
-//       start: start,
-//       end: end
-//     };
-//   };
-
-//   // Handle input change with suggestions
-//   const handleInputChange = (e) => {
-//     const value = e.target.value;
-//     const position = e.target.selectionStart;
-//     setExpression(value);
-//     setCursorPosition(position);
-    
-//     // Calculate result in real-time
-//     const testResult = evaluateFormula(value, testValues);
-//     setResult(testResult);
-    
-//     const currentWordInfo = getCurrentWord(value, position);
-//     const currentWord = currentWordInfo.word;
-    
-//     if (currentWord && currentWord.length > 0 && /^[a-zA-Z]/.test(currentWord)) {
-//       const matchingVars = tagsList.filter(variable => 
-//         variable.toLowerCase().startsWith(currentWord.toLowerCase()) &&
-//         variable.toLowerCase() !== currentWord.toLowerCase()
-//       );
-      
-//       if (matchingVars.length > 0) {
-//         setSuggestions(matchingVars);
-//         setShowSuggestions(true);
-//         setSelectedSuggestion(0);
-//       } else {
-//         setShowSuggestions(false);
-//       }
-//     } else {
-//       setShowSuggestions(false);
-//     }
-//   };
-
-//   // Handle key down events
-//   const handleKeyDown = (e) => {
-//     if (showSuggestions) {
-//       if (e.key === 'ArrowDown') {
-//         e.preventDefault();
-//         setSelectedSuggestion((prev) => 
-//           prev < suggestions.length - 1 ? prev + 1 : prev
-//         );
-//       } else if (e.key === 'ArrowUp') {
-//         e.preventDefault();
-//         setSelectedSuggestion((prev) => prev > 0 ? prev - 1 : prev);
-//       } else if (e.key === 'Tab' || e.key === 'Enter') {
-//         e.preventDefault();
-//         applySuggestion(suggestions[selectedSuggestion]);
-//       } else if (e.key === 'Escape') {
-//         setShowSuggestions(false);
-//       }
-//     }
-//   };
-
-//   // Apply selected suggestion
-//   const applySuggestion = (suggestion) => {
-//     const currentWordInfo = getCurrentWord(expression, cursorPosition);
-    
-//     const beforeWord = expression.substring(0, currentWordInfo.start);
-//     const afterWord = expression.substring(currentWordInfo.end);
-    
-//     const newValue = beforeWord + suggestion + afterWord;
-    
-//     setExpression(newValue);
-//     setShowSuggestions(false);
-    
-//     setTimeout(() => {
-//       const newPosition = currentWordInfo.start + suggestion.length;
-//       inputRef.current.setSelectionRange(newPosition, newPosition);
-//     }, 0);
-//   };
-
-//   // Clear formula
-//   const clearFormula = () => {
-//     setExpression('');
-//     setResult(0);
-//     setShowSuggestions(false);
-//   };
-
-//   // Evaluate formula with given values
-//   const evaluateFormula = (formulaString, values) => {
-//     try {
-//       let expression = formulaString;
-//       console.log(variables)
-//       const sortedVariables = [...variables].sort((a, b) => b.length - a.length);
-      
-//       sortedVariables.forEach(variable => {
-//         const value = values[variable] || 1; // Default to 1 for demo
-//         const regex = new RegExp(`\\b${variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-//         expression = expression.replace(regex, value);
-//       });
-      
-//       return Function('"use strict"; return (' + expression + ')')();
-//     } catch (error) {
-//       return 0;
-//     }
-//   };
-
-
-//   // Cancel editing
-//   const cancelEditing = () => {
-//     setEditingFormulaId(null);
-//         setEditValues({ name: "", expression: "" });
-
-//   };
-
-//   // Get formula validation status
-//   const getFormulaStatus = (exp=expression) => {
-//     console.log(exp,"Testing this expression")
-//     if (!exp.trim()) return { isValid: true, message: '' };
-//     const result = parseFormula(exp);
-//     console.log(result,exp)
-//     return {
-//       isValid: result.isValid,
-//       message: result.isValid ? 'Valid formula' : result.error
-//     };
-//   };
-
-//     const saveEdit = async (formula) => {
-//     if (editValues.name.trim() === "" || editValues.expression.trim() === "") {
-//       alert("Name and Expression cannot be empty");
-//       return;
-//     }
-//     console.log(editValues.expression)
-// const status=parseFormula(editValues.expression)
-
-// if(!status.isValid){
-//   alert(status.error)
-//   return
-// }
-
-
-    
-
-//     // check duplicate name
-//     const nameExists = savedFormulas.some(
-//       (f) => f.id !== formula.id && f.name.toLowerCase() === editValues.name.toLowerCase()
-//     );
-//     if (nameExists) {
-//       notify.error("A formula with this name already exists. Please choose a unique name.");
-//       return;
-//     }
-
-//     let api = `${process.env.REACT_APP_API_URL}/allServers/customTag/update/${formula.id}`;
-//     const payload = { ...formula, name: editValues.name, expression: editValues.expression };
-
-//     try {
-//       await axios.put(api, payload);
-//       notify.success("Custom tag saved successfully!");
-//       setCount(count + 1);
-//       cancelEditing();
-//     } catch (e) {
-//       console.log(e);
-//       notify.error("Failed to save custom tag");
-
-//     }finally{
-//       getAllServers()
-//     }
-//   };
-
-//   const formulaStatus = getFormulaStatus();
-
-//     const protocols = [...new Set(savedFormulas.map((f) => f.server.type))];
-//   const serverNames = [...new Set(savedFormulas.map((f) => f.server.name))];
-
-//   return (
-//     <div className="max-w-7xl mx-auto bg-gray-50 min-h-screen">
-//             <div className="bg-white rounded-xl border p-4 shadow-sm">
-//         <div className="flex items-center gap-2 mb-2">
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-5 w-5 text-gray-500"
-//             fill="none"
-//             viewBox="0 0 24 24"
-//             stroke="currentColor"
-//             strokeWidth={2}
-//           >
-//             <path
-//               strokeLinecap="round"
-//               strokeLinejoin="round"
-//               d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
-//             />
-//           </svg>
-//           <h2 className="font-semibold">Server Selection</h2>
-//         </div>
-//         <p className="text-gray-500 text-sm">
-//           Select a Server to add custom tags.
-//         </p>
-//         <select
-//           value={selectedServer?.name || selectedServer?.serverName || ""}
-//           onChange={(e) => {
-//             const selected = servers.find(
-//               (s) => s.name === e.target.value || s.serverName === e.target.value
-//             );
-//             if (selected) {
-//               setSelectedServer(selected);
-              
-//               localStorage.setItem("Server",JSON.stringify(selected))
-//               console.log(selected)
-//             }
-//           }}
-//           className="border rounded-md p-2 w-64 focus:ring focus:ring-indigo-200"
-//         >
-//           <option value="">Select Server</option>
-//           {servers.map((server) => (
-//             <option key={server.serverId || server.id} value={server.name || server.serverName}>
-//               {server.name || server.serverName} ->  ({capitalizeFirstLetter((server.protocol || server.type))})
-//             </option>
-//           ))}
-//         </select>
-
-//       </div>
-
-//       {/* Create Custom Tag Section */}
-//       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-2">
-
-//         <div className="space-y-4-2">
-//           {/* Name Input */}
-//           <div className='flex '>
-// {/* Name Input (validated) */}
-// <div className="w-1/4 mx-6">
-//   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-
-//   <Controller
-//     name="name"
-//     control={control}
-//     rules={{
-//       required: 'Name is required',
-//       validate: (v) => v.trim().length > 0 || 'Name cannot be empty',
-//       minLength: { value: 2, message: 'Name must be at least 2 characters' },
-//     }}
-//     render={({ field }) => (
-//       <>
-//         <input
-//           type="text"
-//           placeholder="new"
-//           value={formulaName}
-//           onChange={(e) => {
-//             setFormulaName(e.target.value);   // keep your state updates
-//             field.onChange(e.target.value);   // inform RHF
-//           }}
-//           aria-invalid={!!errors.name || undefined}
-//           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-//             errors.name ? 'border-red-400' : 'border-gray-300'
-//           }`}
-//         />
-//         {errors.name && (
-//           <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
-//         )}
-//       </>
-//     )}
-//   />
-// </div>
-
-// {/* Formula Input (validated, keeps your parseFormula logic) */}
-// <div className="relative w-3/4 mx-6">
-//   <label className="block text-sm font-medium text-gray-700 mb-1">Formula</label>
-
-//   <Controller
-//     name="formula"
-//     control={control}
-//     rules={{
-//       required: 'Formula is required',
-//       // Use your existing parser so validation logic stays identical
-//       validate: () => {
-//         if (!expression.trim()) return 'Formula is required';
-//         const res = parseFormula(expression, tagsList);
-//         return res.isValid || res.error; // message from your parser
-//       },
-//     }}
-//     render={({ field }) => (
-//       <>
-//         <textarea
-//           ref={inputRef}
-//           value={expression}
-//           onChange={(e) => {
-//             handleInputChange(e);        // your existing behavior
-//             field.onChange(e.target.value); // inform RHF
-//           }}
-//           onKeyDown={handleKeyDown}
-//           placeholder="Enter formula: {TagName} + 10 * 2"
-//           rows={3}
-//           aria-invalid={!!errors.formula || (!formulaStatus.isValid && !!expression) || undefined}
-//           className={`w-full px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-//             errors.formula || (expression && !formulaStatus.isValid)
-//               ? 'border-red-300 bg-red-50'
-//               : 'border-gray-300'
-//           }`}
-//         />
-//         {/* RHF error (more specific than the generic status below) */}
-//         {errors.formula && (
-//           <p className="mt-1 text-xs text-red-600">{String(errors.formula.message)}</p>
-//         )}
-
-//         {/* Suggestions Dropdown (unchanged) */}
-//         {showSuggestions && suggestions.length > 0 && (
-//           <div className="absolute left-0 w-3/4 mx-6 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1">
-//             {suggestions.map((suggestion, index) => (
-//               <div
-//                 key={suggestion}
-//                 className={`px-4 py-2 cursor-pointer ${
-//                   index === selectedSuggestion ? 'bg-blue-100' : 'hover:bg-gray-100'
-//                 }`}
-//                 onClick={() => applySuggestion(suggestion)}
-//               >
-//                 <span className="font-mono">{suggestion}</span>
-//               </div>
-//             ))}
-//           </div>
-//         )}
-//       </>
-//     )}
-//   />
-// </div>
-
-//           </div>
-
-
-//                     {/* Action Buttons */}
-//           <div className="flex gap-3 pt-1">
-//             <button
-//               onClick={handleSubmit(saveFormula)}
-//               disabled={!formulaName.trim() || !expression.trim() || !formulaStatus.isValid}
-//               className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-md hover: disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-//             >
-//               {loading?"Saving...":"Save Custom Tag"}
-//             </button>
-//             <button
-//               onClick={clearFormula}
-//               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
-//             >
-//               Clear All
-//             </button>
-//           </div>
-
-
-
-//           {/* Test Formula */}
-//           <div className="bg-gray-50 rounded-md">
-//             <div className="flex items-center gap-2 mb-2">
-//               <span className="text-sm font-medium text-gray-700">Try: {expression || 'ServerStatus + Location1'}</span>
-//             </div>
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm text-gray-600">Result:</span>
-//               <div className="flex items-center gap-2">
-//                 <span className="text-2xl font-bold text-blue-600">{result}</span>
-//                 <span className="text-xs text-gray-500">Real-time calculation</span>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Formula Status */}
-//           {expression && (
-//             <div className={`text-sm ${formulaStatus.isValid ? 'text-green-600' : 'text-red-600'}`}>
-//               {formulaStatus.message}
-//             </div>
-//           )}
-
-
-//         </div>
-//       </div>
-
-//       {/* Created Custom Tags Section */}
-//       <div className="bg-white rounded-lg border border-gray-200 p-6">
-//         <h2 className="text-lg font-semibold mb-2">Created Custom Tags</h2>
-//         {/* <p className="text-gray-600 text-sm mb-4">
-//           Manage your custom tags. Showing {savedFormulas.length} custom tag(s).
-//         </p> */}
-        
-//         {loading === true ? (
-//   // 🔹 Skeleton Table
-//   <div className="animate-pulse">
-//     <table className="min-w-full border border-gray-200 rounded-lg">
-//       <thead className="bg-gray-100"></thead>
-//       <tbody>
-//         {Array.from({ length: 5 }).map((_, i) => (
-//           <tr key={i} className="hover:bg-gray-50">
-//             <td className="px-4 py-2 border text-center">
-//               <div className="h-4 w-4 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-32 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-40 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//           </tr>
-//         ))}
-//       </tbody>
-//     </table>
-//   </div>
-// ):
-//          savedFormulas.length === 0 ? (
-//           <div className="text-center py-12 text-gray-500">
-//             <Plus className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-//             <p>No custom tags created yet</p>
-//             <p className="text-sm">Create your first custom tag using the form above</p>
-//           </div>
-//         ) : (
-//     <div className="min-h-screen bg-gray-50">
-//       <div className="max-w-7xl mx-auto">
-//         {/* Filters */}
-//         <div className="bg-white rounded-lg shadow-sm p-2 mb-1">
-//           <div className="flex items-center gap-2 mb-4">
-//             <Filter className="text-gray-600" size={20} />
-//             <h2 className="text-xl font-semibold text-gray-800">Formula Filters</h2>
-//             <span className="text-sm text-gray-500">
-//               ({filteredFormulas.length} of {savedFormulas.length} formulas shown)
-//             </span>
-//           </div>
-
-//           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-//             <div className="relative">
-//               <Search
-//                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-//                 size={16}
-//               />
-//               <input
-//                 type="text"
-//                 placeholder="Search by name..."
-//                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                 value={filters.name}
-//                 onChange={(e) => handleFilterChange("name", e.target.value)}
-//               />
-//             </div>
-
-//             <select
-//               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//               value={filters.protocol}
-//               onChange={(e) => handleFilterChange("protocol", e.target.value)}
-//             >
-//               <option value="">All Protocols</option>
-//               {protocols.map((protocol) => (
-//                 <option key={protocol} value={protocol}>
-//                   {capitalizeFirstLetter(protocol)}
-//                 </option>
-//               ))}
-//             </select>
-
-//             <select
-//               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//               value={filters.serverName}
-//               onChange={(e) => handleFilterChange("serverName", e.target.value)}
-//             >
-//               <option value="">All Servers</option>
-//               {serverNames.map((server) => (
-//                 <option key={server} value={server}>
-//                   {server}
-//                 </option>
-//               ))}
-//             </select>
-//           </div>
-//         </div>
-
-//         {/* Formulas Table */}
-//         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-//           <div className="overflow-x-auto">
-//             <table className="w-full">
-//               <thead className="bg-gray-50 border-b border-gray-200">
-//                 <tr>
-//                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-//                     Name
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-//                     Protocol
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-//                     Expression
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-//                     Server ID
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-//                     Actions
-//                   </th>
-//                 </tr>
-//               </thead>
-//               <tbody className="bg-white divide-y divide-gray-200">
-//                 {filteredFormulas.map((formula, index) => (
-//                   <tr
-//                     key={formula.id}
-//                     className={`${
-//                       index % 2 === 0 ? "bg-white" : "bg-gray-50"
-//                     } hover:bg-blue-50 transition-colors`}
-//                   >
-//                     {/* Name */}
-//                     <td className="px-4 py-3 whitespace-nowrap">
-//                       {editingFormulaId === formula.id ? (
-//                         <input
-//                           type="text"
-//                           value={editValues.name}
-//                           onChange={(e) =>
-//                             setEditValues((prev) => ({ ...prev, name: e.target.value }))
-//                           }
-//                           className="border px-2 py-1 rounded text-sm"
-//                         />
-//                       ) : (
-//                         <div className="text-sm font-medium text-gray-900">{formula.name}</div>
-//                       )}
-//                     </td>
-
-//                     {/* Protocol */}
-//                     <td className="px-4 py-3 whitespace-nowrap">
-//                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-//                         {capitalizeFirstLetter(formula.server.type)}
-//                       </span>
-//                     </td>
-
-//                     {/* Expression */}
-//                     <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
-//                       {editingFormulaId === formula.id ? (
-//                         <input
-//                           type="text"
-//                           value={editValues.expression}
-//                           onChange={(e) =>
-//                             setEditValues((prev) => ({
-//                               ...prev,
-//                               expression: e.target.value,
-//                             }))
-//                           }
-//                           className="border px-2 py-1 rounded text-sm w-full"
-//                         />
-//                       ) : (
-//                         formula.expression
-//                       )}
-//                     </td>
-
-//                     {/* Server */}
-//                     <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
-//                       {formula.server.name}
-//                     </td>
-
-//                     {/* Actions */}
-//                     <td className="px-4 py-3 whitespace-nowrap flex gap-2">
-//                       {editingFormulaId === formula.id ? (
-//                         <>
-//                           <button
-//                             onClick={() => saveEdit(formula)}
-//                             className="text-green-600 hover:text-green-800"
-//                           >
-//                             <Check size={16} />
-//                           </button>
-//                           <button
-//                             onClick={cancelEditing}
-//                             className="text-gray-600 hover:text-gray-800"
-//                           >
-//                             <X size={16} />
-//                           </button>
-//                         </>
-//                       ) : (
-//                         <>
-//                           <button
-//                             onClick={() => startEditing(formula)}
-//                             className="text-blue-600 hover:text-blue-800"
-//                           >
-//                             <Edit2 size={16} />
-//                           </button>
-//                           <button
-//                             onClick={() => deleteFormula(formula.id)}
-//                             className="text-red-600 hover:text-red-800"
-//                           >
-//                             <Trash2 size={16} />
-//                           </button>
-//                         </>
-//                       )}
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-
-// {loading === true ? (
-//   // 🔹 Skeleton Table
-//   <div className="animate-pulse">
-//     <table className="min-w-full border border-gray-200 rounded-lg">
-//       <thead className="bg-gray-100"></thead>
-//       <tbody>
-//         {Array.from({ length: 5 }).map((_, i) => (
-//           <tr key={i} className="hover:bg-gray-50">
-//             <td className="px-4 py-2 border text-center">
-//               <div className="h-4 w-4 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-32 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-40 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//             <td className="px-4 py-2 border">
-//               <div className="h-4 w-20 bg-gray-300 rounded"></div>
-//             </td>
-//           </tr>
-//         ))}
-//       </tbody>
-//     </table>
-//   </div>
-// ) : !loading && savedFormulas.length === 0 ? (
-//   // 🔹 No Data State
-//   <div className="text-center py-12">
-//     <div className="text-gray-500 text-lg">
-//       No custom  tags match your current filters
-//     </div>
-//     <button
-//       onClick={clearFilters}
-//       className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-//     >
-//       Clear Filters to Show All Custom Tags
-//     </button>
-//   </div>
-// ) : (
-//   // 🔹 Your real table will go here when data is present
-//   <div></div>
-// )}
-//         </div>
-//       </div>
-//     </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Edit2, Trash2, Plus, X, Filter, Search, Check } from "lucide-react";
+import { Edit2, Trash2, Plus, X, Filter, Search, Check, Info } from "lucide-react";
 import axios from "axios";
 import { capitalizeFirstLetter } from "../BrowseTags";
 import { useForm, Controller, useForm as useRowForm } from "react-hook-form";
@@ -870,6 +13,92 @@ const protocolOrder = {
   modbustcp: 3,
   siemens: 4,
   slmp: 5,
+};
+
+const PYTHON_RESERVED_WORDS = new Set([
+  "if",
+  "elif",
+  "else",
+  "and",
+  "or",
+  "not",
+  "True",
+  "False",
+  "None",
+  "time",
+  "start",
+  "stop",
+  "in",
+  "is",
+  "return",
+  "for",
+  "while",
+  "break",
+  "continue",
+  "pass",
+  "lambda",
+  "yield",
+  "try",
+  "except",
+  "finally",
+  "raise",
+  "import",
+  "from",
+  "as",
+  "with",
+  "class",
+  "def",
+  "del",
+  "global",
+  "nonlocal",
+  "assert",
+  "async",
+  "await",
+]);
+
+const PYTHON_ALLOWED_BUILTINS = new Set([
+  "abs",
+  "min",
+  "max",
+  "round",
+  "int",
+  "float",
+    "start",
+  "stop",
+  "str",
+  "len",
+  "sum",
+  "range",
+  "bool",
+  "pow",
+  "all",
+  "any",
+  "math",
+  "datetime",
+  "time",
+  "timedelta",
+  "result",
+]);
+
+const FORMULA_INFO_TEXT =
+  "Formulas let you derive custom values using tag names, numbers, and math operators (e.g., TagA * 1.5 + 10).";
+
+const stripStringLiterals = (source) => {
+  if (!source) return "";
+  return source.replace(/(['"])((?:\\.|(?!\1)[\s\S])*)\1/g, " ");
+};
+
+const findUnknownIdentifiers = (source, allowedSet) => {
+  if (!allowedSet || allowedSet.size === 0) return [];
+  const sanitized = stripStringLiterals(source);
+  const matches = sanitized.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) || [];
+  const unknown = new Set();
+  matches.forEach((name) => {
+    if (PYTHON_RESERVED_WORDS.has(name) || PYTHON_ALLOWED_BUILTINS.has(name)) return;
+    if (allowedSet.has(name)) return;
+    unknown.add(name);
+  });
+  return Array.from(unknown);
 };
 
 export const FormulaConfig = () => {
@@ -889,8 +118,13 @@ export const FormulaConfig = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [conditionSuggestions, setConditionSuggestions] = useState([]);
+  const [showConditionSuggestions, setShowConditionSuggestions] = useState(false);
+  const [selectedConditionSuggestion, setSelectedConditionSuggestion] = useState(0);
+  const [conditionCursorPosition, setConditionCursorPosition] = useState(0);
   const [result, setResult] = useState(0);
   const inputRef = useRef(null);
+  const conditionInputRef = useRef(null);
   const [servers, setServers] = useState([]);
   const [selectedServer, setSelectedServer] = useState({});
 
@@ -903,11 +137,14 @@ export const FormulaConfig = () => {
     setValue,        // 👈 used to sync formula on suggestion accept
     trigger,         // 👈 used if you want to force re-validate
     getValues,       // optional
+    watch,
   } = useForm({
     mode: "onChange",
     defaultValues: {
       name: "",
       formula: "",
+      condition: "",
+      monitoringDuration: "",
     },
   });
 
@@ -917,17 +154,53 @@ export const FormulaConfig = () => {
     handleSubmit: handleSubmitRow,
     reset: resetRow,
     clearErrors: clearRowErrors,
+    watch: watchRow,
     formState: { errors: rowErrors, isSubmitting: isRowSubmitting },
   } = useRowForm({
     mode: "onChange",
     defaultValues: {
       rowName: "",
       rowExpr: "",
+      rowCond: "",
+      rowDuration: "",
     },
   });
 
   const [filters, setFilters] = useState({ name: "", protocol: "", serverName: "" });
   const [editingFormulaId, setEditingFormulaId] = useState(null);
+  const conditionValue = watch("condition", "");
+  const requiresMonitoringDuration = Boolean((conditionValue || "").trim());
+  const rowConditionValue = watchRow("rowCond");
+  const requiresRowDuration = Boolean((rowConditionValue || "").trim());
+  const rowNameValue = watchRow("rowName");
+  const trimmedCreateName = useMemo(() => (formulaName || "").trim(), [formulaName]);
+  const trimmedRowName = useMemo(() => (rowNameValue || "").trim(), [rowNameValue]);
+  const availableTagsForCreate = useMemo(() => {
+    const base = new Set(tagsList);
+    if (trimmedCreateName) base.add(trimmedCreateName);
+    return Array.from(base);
+  }, [tagsList, trimmedCreateName]);
+
+  const customTagSuggestions = useMemo(() => {
+    const selectedId = selectedServer?.id ?? selectedServer?.serverId;
+    const selectedName = selectedServer?.name ?? selectedServer?.serverName;
+
+    const names = savedFormulas
+      .filter((formula) => {
+        if (!formula?.name) return false;
+        const server = formula.server || {};
+        const serverId = server.id ?? server.serverId ?? formula.serverId;
+        const serverName = server.name ?? server.serverName;
+        if (!selectedId && !selectedName) return true;
+        const matchesId = selectedId != null && serverId === selectedId;
+        const matchesName = Boolean(selectedName) && serverName === selectedName;
+        return matchesId || matchesName;
+      })
+      .map((formula) => formula.name.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(names));
+  }, [savedFormulas, selectedServer]);
 
   const getAllServers = async () => {
     setLoading(true);
@@ -950,8 +223,10 @@ export const FormulaConfig = () => {
   }, []);
 
   useEffect(() => {
-    setTagsList(selectedServer?.tags?.map((t) => t.name) || []);
-  }, [selectedServer]);
+    const baseTags = (selectedServer?.tags || []).map((t) => t.name).filter(Boolean);
+    const merged = Array.from(new Set([...baseTags, ...customTagSuggestions]));
+    setTagsList(merged);
+  }, [selectedServer, customTagSuggestions]);
 
   // ---------- Helpers ----------
   const parseFormula = (input, vars = variables) => {
@@ -997,11 +272,203 @@ export const FormulaConfig = () => {
         const regex = new RegExp(`\\b${variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g");
         exp = exp.replace(regex, v);
       });
-    return Function('"use strict"; return (' + exp + ")")();
+      return Function('"use strict"; return (' + exp + ")")();
     } catch {
       return 0;
     }
   };
+
+  const editingFormula = useMemo(
+    () => savedFormulas.find((f) => f.id === editingFormulaId) || null,
+    [savedFormulas, editingFormulaId]
+  );
+
+  const getFormulaServerIdentity = (formula) => {
+    if (!formula) return { id: null, name: null };
+    const server = formula.server || {};
+    const id = server.id ?? server.serverId ?? formula.serverId ?? null;
+    const name = server.name ?? server.serverName ?? formula.serverName ?? null;
+    return { id, name };
+  };
+
+  const buildAllowedIdentifiersForCreate = useCallback(() => {
+    const allowed = new Set();
+    variables.forEach((tag) => {
+      const trimmed = typeof tag === "string" ? tag.trim() : "";
+      if (trimmed) allowed.add(trimmed);
+    });
+    tagsList.forEach((tag) => {
+      const trimmed = typeof tag === "string" ? tag.trim() : "";
+      if (trimmed) allowed.add(trimmed);
+    });
+    if (trimmedCreateName) {
+      allowed.add(trimmedCreateName);
+    }
+    return allowed;
+  }, [variables, tagsList, trimmedCreateName]);
+
+  const buildAllowedIdentifiersForEdit = useCallback(() => {
+    const allowed = new Set();
+    variables.forEach((tag) => {
+      const trimmed = typeof tag === "string" ? tag.trim() : "";
+      if (trimmed) allowed.add(trimmed);
+    });
+
+    if (!editingFormula) {
+      savedFormulas.forEach((formula) => {
+        const trimmed = typeof formula?.name === "string" ? formula.name.trim() : "";
+        if (trimmed) allowed.add(trimmed);
+      });
+      return allowed;
+    }
+
+    const { id: targetId, name: targetName } = getFormulaServerIdentity(editingFormula);
+    savedFormulas.forEach((formula) => {
+      const trimmedName = typeof formula?.name === "string" ? formula.name.trim() : "";
+      if (!trimmedName) return;
+      const { id, name } = getFormulaServerIdentity(formula);
+      const idMatches = targetId != null && id === targetId;
+      const nameMatches = targetName && name === targetName;
+      if (idMatches || nameMatches) {
+        allowed.add(trimmedName);
+      }
+    });
+
+    if (trimmedRowName) {
+      allowed.add(trimmedRowName);
+    }
+
+    return allowed;
+  }, [variables, savedFormulas, editingFormula, trimmedRowName]);
+
+  const validateConditionValue = (value, allowedSetBuilder) => {
+    const raw = typeof value === "string" ? value : "";
+    const trimmed = raw.trim();
+    if (!trimmed) return true;
+
+    const allowedSet = typeof allowedSetBuilder === "function" ? allowedSetBuilder() : null;
+    const normalized = trimmed.replace(/\t/g, "    ").replace(/\r\n/g, "\n");
+    const lines = normalized.split("\n");
+    let i = 0;
+    let clauseCount = 0;
+    let seenElse = false;
+    let baseIndent = null;
+    const unknownIdentifiers = new Set();
+
+    while (i < lines.length) {
+      const currentLine = lines[i];
+      if (!currentLine.trim()) {
+        i++;
+        continue;
+      }
+
+      const indentMatch = currentLine.match(/^\s*/);
+      const indent = indentMatch ? indentMatch[0].length : 0;
+      const stripped = currentLine.trim();
+
+      const isIf = /^if\s+/.test(stripped);
+      const isElif = /^elif\s+/.test(stripped);
+      const isElse = /^else\b/.test(stripped);
+
+      if (!isIf && !isElif && !isElse) {
+        return "Only if/elif/else clauses are allowed";
+      }
+
+      if (seenElse && !isElse) {
+        return "Else clause must be last";
+      }
+
+      if (isElse && seenElse) {
+        return "Only one else clause is allowed";
+      }
+
+      if (clauseCount === 0 && !isIf) {
+        return "Condition must start with an if clause";
+      }
+
+      if (baseIndent === null) {
+        baseIndent = indent;
+      } else if (indent !== baseIndent) {
+        return "Clause indentation must be consistent";
+      }
+
+      const colonIndex = stripped.indexOf(":");
+      if (colonIndex === -1) {
+        return "Each clause must end with a colon";
+      }
+
+      const header = stripped.slice(0, colonIndex).trim();
+      const afterColon = stripped.slice(colonIndex + 1).trim();
+      const inlineBody = afterColon.length > 0;
+
+      if (isIf || isElif) {
+        const conditionText = header.replace(/^if\s+|^elif\s+/, "").trim();
+        if (!conditionText) {
+          return `${isIf ? "If" : "Elif"} clause must include a condition`;
+        }
+        if (allowedSet && allowedSet.size > 0) {
+          findUnknownIdentifiers(conditionText, allowedSet).forEach((name) => unknownIdentifiers.add(name));
+        }
+      } else {
+        if (header !== "else") {
+          return "Else clause format is invalid";
+        }
+        seenElse = true;
+      }
+
+      clauseCount++;
+      i++;
+
+      if (inlineBody) {
+        continue;
+      }
+
+      let bodyFound = false;
+      while (i < lines.length) {
+        const bodyLine = lines[i];
+        const bodyTrim = bodyLine.trim();
+        if (!bodyTrim) {
+          i++;
+          continue;
+        }
+
+        const bodyIndentMatch = bodyLine.match(/^\s*/);
+        const bodyIndent = bodyIndentMatch ? bodyIndentMatch[0].length : 0;
+
+        if (bodyIndent <= indent) {
+          break;
+        }
+
+        bodyFound = true;
+        i++;
+      }
+
+      if (!bodyFound && !inlineBody) {
+        const clauseLabel = isElse ? "Else" : isElif ? "Elif" : "If";
+        return `${clauseLabel} clause must contain at least one statement`;
+      }
+    }
+
+    if (clauseCount === 0) {
+      return "Condition must include an if clause";
+    }
+
+    if (unknownIdentifiers.size > 0) {
+      return `Unknown tags referenced in condition: ${Array.from(unknownIdentifiers).join(", ")}`;
+    }
+
+    return true;
+  };
+
+  const validateCreateCondition = useCallback(
+    (value) => validateConditionValue(value, buildAllowedIdentifiersForCreate),
+    [buildAllowedIdentifiersForCreate]
+  );
+
+  const validateEditCondition = useCallback(
+    (value) => validateConditionValue(value, buildAllowedIdentifiersForEdit),
+    [buildAllowedIdentifiersForEdit]
+  );
 
   // ---------- Create form interactions ----------
   const handleInputChange = (e) => {
@@ -1015,7 +482,7 @@ export const FormulaConfig = () => {
 
     const { word } = getCurrentWord(value, position);
     if (word && /^[a-zA-Z]/.test(word)) {
-      const matching = tagsList.filter(
+      const matching = availableTagsForCreate.filter(
         (v) => v.toLowerCase().startsWith(word.toLowerCase()) && v.toLowerCase() !== word.toLowerCase()
       );
       if (matching.length > 0) {
@@ -1070,17 +537,80 @@ export const FormulaConfig = () => {
     }
   };
 
+  const handleConditionChange = (e, onChange) => {
+    const value = e.target.value;
+    const position = e.target.selectionStart;
+    setConditionCursorPosition(position);
+    onChange(value);
+
+    const { word } = getCurrentWord(value, position);
+    if (word && /^[a-zA-Z]/.test(word)) {
+      const matching = availableTagsForCreate.filter(
+        (v) => v.toLowerCase().startsWith(word.toLowerCase()) && v.toLowerCase() !== word.toLowerCase()
+      );
+      if (matching.length > 0) {
+        setConditionSuggestions(matching);
+        setShowConditionSuggestions(true);
+        setSelectedConditionSuggestion(0);
+      } else {
+        setShowConditionSuggestions(false);
+      }
+    } else {
+      setShowConditionSuggestions(false);
+    }
+  };
+
+  const applyConditionSuggestion = (suggestion) => {
+    const currentValue = (conditionInputRef.current?.value || "");
+    const { start, end } = getCurrentWord(currentValue, conditionCursorPosition);
+    const beforeWord = currentValue.substring(0, start);
+    const afterWord = currentValue.substring(end);
+    const newValue = beforeWord + suggestion + afterWord;
+
+    const newPos = start + suggestion.length;
+
+    setValue("condition", newValue, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setConditionCursorPosition(newPos);
+    setShowConditionSuggestions(false);
+    setSelectedConditionSuggestion(0);
+
+    setTimeout(() => {
+      conditionInputRef.current?.setSelectionRange(newPos, newPos);
+      conditionInputRef.current?.focus();
+    }, 0);
+  };
+   
+
+  const handleConditionKeyDown = (e) => {
+    if (!showConditionSuggestions) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedConditionSuggestion((p) => (p < conditionSuggestions.length - 1 ? p + 1 : p));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedConditionSuggestion((p) => (p > 0 ? p - 1 : p));
+    } else if (e.key === "Tab" || e.key === "Enter") {
+      e.preventDefault();
+      applyConditionSuggestion(conditionSuggestions[selectedConditionSuggestion]);
+    } else if (e.key === "Escape") {
+      setShowConditionSuggestions(false);
+    }
+  };
+
   const clearFormula = () => {
     setExpression("");
     setResult(0);
     setShowSuggestions(false);
-    resetCreate({ name: "", formula: "" });
+    resetCreate({ name: "", formula: "", condition: "", monitoringDuration: "" });
     setFormulaName("");
   };
 
   const getFormulaStatus = (exp = expression) => {
     if (!exp.trim()) return { isValid: true, message: "" };
-    const r = parseFormula(exp, tagsList);
+    const r = parseFormula(exp, buildAllowedIdentifiersForCreate());
     return { isValid: r.isValid, message: r.isValid ? "Valid formula" : r.error };
   };
   const formulaStatus = getFormulaStatus();
@@ -1088,11 +618,16 @@ export const FormulaConfig = () => {
   // ---------- Create: save ----------
   const saveFormula = async (values) => {
     try {
+      const trimmedCondition = (values.condition || "").trim();
+      const rawDuration = trimmedCondition ? parseInt(values.monitoringDuration, 10) : null;
+      const durationSeconds = Number.isNaN(rawDuration) ? null : rawDuration;
       const newFormula = {
         name: values.name.trim(),
         type: selectedServer?.protocol,
         expression: values.formula.trim(),
+        condition: trimmedCondition,
         serverId: serverInfo.id,
+        monitoringDuration: durationSeconds,
       };
 
       await axios.post(`${process.env.REACT_APP_API_URL}/allServers/customTag/save`, newFormula);
@@ -1101,7 +636,7 @@ export const FormulaConfig = () => {
 
       setFormulaName("");
       setExpression("");
-      resetCreate({ name: "", formula: "" });
+      resetCreate({ name: "", formula: "", condition: "", monitoringDuration: "" });
       setShowSuggestions(false);
     } catch (e) {
       console.log(e);
@@ -1129,13 +664,15 @@ export const FormulaConfig = () => {
     resetRow({
       rowName: formula.name,
       rowExpr: formula.expression,
+      rowCond: formula?.condition || "",
+      rowDuration: formula?.monitoringDuration != null ? String(formula.monitoringDuration) : "",
     });
   };
 
   const cancelEditing = () => {
     setEditingFormulaId(null);
     clearRowErrors();
-    resetRow({ rowName: "", rowExpr: "" });
+    resetRow({ rowName: "", rowExpr: "", rowCond: "", rowDuration: "" });
   };
 
   const validateUniqueRowName = useCallback(
@@ -1151,15 +688,25 @@ export const FormulaConfig = () => {
   const validateRowExpr = useCallback(
     (value) => {
       if (!value?.trim()) return "Expression is required";
-      const res = parseFormula(value, variables);
+      const allowed = Array.from(buildAllowedIdentifiersForEdit());
+      const res = parseFormula(value, allowed);
       return res.isValid || res.error;
     },
-    [variables]
+    [buildAllowedIdentifiersForEdit]
   );
 
   const saveEdit = async (formula, values) => {
     try {
-      const payload = { ...formula, name: values.rowName.trim(), expression: values.rowExpr.trim() };
+      const trimmedCondition = (values.rowCond || "").trim();
+      const rawDuration = trimmedCondition ? parseInt(values.rowDuration, 10) : null;
+      const durationSeconds = Number.isNaN(rawDuration) ? null : rawDuration;
+      const payload = {
+        ...formula,
+        name: values.rowName.trim(),
+        expression: values.rowExpr.trim(),
+        condition: trimmedCondition,
+        monitoringDuration: durationSeconds,
+      };
       await axios.put(`${process.env.REACT_APP_API_URL}/allServers/customTag/update/${formula.id}`, payload);
       notify.success("Custom tag saved successfully!");
       setEditingFormulaId(null);
@@ -1219,9 +766,9 @@ export const FormulaConfig = () => {
       {/* Create Custom Tag */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-2">
         <div className="space-y-4-2">
-          <div className="flex">
+          <div className="flex  ">
             {/* Name */}
-            <div className="w-1/4 mx-6">
+            <div className="w-full md:w-1/4 mx-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <Controller
                 name="name"
@@ -1253,8 +800,22 @@ export const FormulaConfig = () => {
             </div>
 
             {/* Formula */}
-            <div className="relative w-3/4 mx-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Formula</label>
+            <div className="relative w-full md:w-1/4 mx-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="relative group flex items-center cursor-help"
+                    tabIndex={0}
+                    aria-label={FORMULA_INFO_TEXT}
+                  >
+                    <Info className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                    <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-60 -translate-x-1/2 rounded bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                      {FORMULA_INFO_TEXT}
+                    </span>
+                  </span>
+                  Formula
+                </span>
+              </label>
               <Controller
                 name="formula"
                 control={control}
@@ -1264,7 +825,7 @@ export const FormulaConfig = () => {
                   validate: (val) => {
                     const trimmed = (val || "").trim();
                     if (!trimmed) return "Formula is required";
-                    const res = parseFormula(trimmed, tagsList);
+                    const res = parseFormula(trimmed, buildAllowedIdentifiersForCreate());
                     return res.isValid || res.error;
                   },
                 }}
@@ -1304,7 +865,100 @@ export const FormulaConfig = () => {
                 )}
               />
             </div>
+
+            <div className="relative w-full md:w-1/2 mx-1 h-full mt-4 md:mt-0">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+              <Controller
+                name="condition"
+                control={control}
+                rules={{
+                  validate: validateCreateCondition,
+                }}
+                render={({ field }) => (
+                  <>
+                    <textarea
+                      name={field.name}
+                      value={field.value || ""}
+                      onChange={(e) => handleConditionChange(e, field.onChange)}
+                      onBlur={field.onBlur}
+                      onKeyDown={handleConditionKeyDown}
+                      ref={(node) => {
+                        field.ref(node);
+                        conditionInputRef.current = node;
+                      }}
+                      rows={4}
+                      placeholder={`if sensor_value > 50:\n    result = 1\nelse:\n    result = 0`}
+                      aria-invalid={!!errors.condition || undefined}
+                      className={`w-full px-3 py-2 border rounded-md font-mono text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+                        errors.condition ? "border-red-300 bg-red-50" : "border-gray-300"
+                      }`}
+                    />
+                    {errors.condition && <p className="mt-1 text-xs text-red-600">{String(errors.condition.message)}</p>}
+                    {showConditionSuggestions && conditionSuggestions.length > 0 && (
+                      <div className="absolute left-0 w-3/4 mx-6 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 mt-1">
+                        {conditionSuggestions.map((s, i) => (
+                          <div
+                            key={s}
+                            className={`px-4 py-2 cursor-pointer ${i === selectedConditionSuggestion ? "bg-blue-100" : "hover:bg-gray-100"}`}
+                            onClick={() => applyConditionSuggestion(s)}
+                          >
+                            <span className="font-mono">{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              />
+            </div>
           </div>
+
+          {requiresMonitoringDuration && (
+            <div className="w-full md:w-1/4 mx-1 mt-4 md:mt-0">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Monitoring Duration (s)</label>
+              <Controller
+                name="monitoringDuration"
+                control={control}
+                shouldUnregister
+                rules={{
+                  validate: (value) => {
+                    if (!requiresMonitoringDuration) return true;
+                    if (value === undefined || value === null || value === "") {
+                      return "Monitoring duration is required when condition is provided";
+                    }
+                    const parsed = Number(value);
+                    if (!Number.isInteger(parsed)) {
+                      return "Monitoring duration must be a whole number";
+                    }
+                    if (parsed <= 0) {
+                      return "Monitoring duration must be greater than 0";
+                    }
+                    return true;
+                  },
+                }}
+                render={({ field }) => (
+                  <>
+                    <input
+                      {...field}
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="e.g. 30"
+                      aria-invalid={!!errors.monitoringDuration || undefined}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.monitoringDuration ? "border-red-400 bg-red-50" : "border-gray-300"
+                      }`}
+                    />
+                    {errors.monitoringDuration && (
+                      <p className="mt-1 text-xs text-red-600">{String(errors.monitoringDuration.message)}</p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+          )}
+
+          
 
           {/* Actions */}
           <div className="flex gap-3 pt-1">
@@ -1350,7 +1004,7 @@ export const FormulaConfig = () => {
               <tbody>
                 {Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="hover:bg-gray-50">
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <td key={j} className="px-4 py-2 border">
                         <div className="h-4 w-24 bg-gray-300 rounded" />
                       </td>
@@ -1425,11 +1079,13 @@ export const FormulaConfig = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Protocol</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expression</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Server</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Protocol</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Expression</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Condition</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Monitoring Duration (s)</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Server</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
                     </thead>
 
@@ -1439,7 +1095,7 @@ export const FormulaConfig = () => {
                         return (
                           <tr key={formula.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition-colors align-top`}>
                             {/* Name */}
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               {isEditing ? (
                                 <div className="flex flex-col">
                                   <input
@@ -1458,14 +1114,14 @@ export const FormulaConfig = () => {
                             </td>
 
                             {/* Protocol */}
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                 {capitalizeFirstLetter(formula.server.type)}
                               </span>
                             </td>
 
                             {/* Expression */}
-                            <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">
+                            <td className="px-2 py-3 max-w-12 whitespace-nowrap font-mono text-sm text-gray-900">
                               {isEditing ? (
                                 <div className="flex flex-col">
                                   <input
@@ -1482,12 +1138,65 @@ export const FormulaConfig = () => {
                                 formula.expression
                               )}
                             </td>
+                            {/* Condition */}
+                            <td className={`px-2 py-3 max-w-16 ${isEditing ? "" : "overflow-hidden"}  whitespace-nowrap font-mono text-sm text-gray-900`}>
+                              {isEditing ? (
+                                <div className="flex flex-col">
+                                  <input
+                                    type="text"
+                                    className="border px-2 py-1 rounded text-sm w-full"
+                                    {...registerRow("rowCond", {
+                                      validate: validateEditCondition,
+                                    })}
+                                  />
+                                  {rowErrors.rowCond && <span className="text-xs  text-red-600 mt-1">{rowErrors.rowCond.message}</span>}
+                                </div>
+                              ) : (
+                                formula.condition
+                              )}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                              {isEditing ? (
+                                <div className="flex flex-col items-stretch">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    className="border px-2 py-1 rounded text-sm"
+                                    placeholder="30"
+                                    {...registerRow("rowDuration", {
+                                      validate: (value) => {
+                                        if (!requiresRowDuration) return true;
+                                        if (value === undefined || value === null || value === "") {
+                                          return "Duration required when condition present";
+                                        }
+                                        const parsed = Number(value);
+                                        if (!Number.isInteger(parsed)) {
+                                          return "Duration must be a whole number";
+                                        }
+                                        if (parsed <= 0) {
+                                          return "Duration must be greater than 0";
+                                        }
+                                        return true;
+                                      },
+                                    })}
+                                  />
+                                  {rowErrors.rowDuration && (
+                                    <span className="text-xs text-red-600 mt-1">{rowErrors.rowDuration.message}</span>
+                                  )}
+                                </div>
+                              ) : formula.monitoringDuration != null && formula.monitoringDuration !== undefined ? (
+                                `${formula.monitoringDuration} s`
+                              ) : (
+                                "—"
+                              )}
+                            </td>
 
                             {/* Server */}
-                            <td className="px-4 py-3 whitespace-nowrap font-mono text-sm text-gray-900">{formula.server.name}</td>
+                            <td className="px-2 py-3 whitespace-nowrap font-mono text-sm text-gray-900">{formula.server.name}</td>
 
                             {/* Actions */}
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-2 py-3 whitespace-nowrap">
                               {isEditing ? (
                                 <div className="flex items-center gap-2">
                                   <button
@@ -1526,7 +1235,7 @@ export const FormulaConfig = () => {
                       <tbody>
                         {Array.from({ length: 5 }).map((_, i) => (
                           <tr key={i} className="hover:bg-gray-50">
-                            {Array.from({ length: 6 }).map((__, j) => (
+                            {Array.from({ length: 7 }).map((__, j) => (
                               <td key={j} className="px-4 py-2 border">
                                 <div className="h-4 w-24 bg-gray-300 rounded" />
                               </td>

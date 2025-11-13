@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { Trash2, Pencil, Save, X } from "lucide-react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
+import { motion, AnimatePresence } from "framer-motion";
+
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
 const securityPolicies = ["None", "Basic128Rsa15", "Basic256", "Basic256Sha256", "Aes128_Sha256_RsaOaep"];
@@ -23,7 +25,18 @@ export const OpcuaInputForm = () => {
   const [serverList, setServerList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editConfig, setEditConfig] = useState({});
+  const [editSavingId, setEditSavingId] = useState(null);
 
+  useEffect(() => {
+    if (!successMessage && !errorMessage) return;
+
+    const clearMessages = setTimeout(() => {
+      setSuccessMessage("");
+      setErrorMessage("");
+    }, 3000);
+
+    return () => clearTimeout(clearMessages);
+  }, [successMessage, errorMessage]);
   // react-hook-form setup
   const {
     register,
@@ -66,6 +79,49 @@ export const OpcuaInputForm = () => {
       setErrorMessage("Connection failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const buildEditTestPayload = (config) => {
+    const serverData = config?.data || {};
+    const derivedAuth = serverData.username
+      ? "Username and Password"
+      : serverData.certificate
+      ? "Certificate"
+      : "None";
+
+    return {
+      name: config?.name || "",
+      ip: serverData.ip || "",
+      port: serverData.port || "",
+      frequency: parseInt(config?.frequency, 10) || 1,
+      securityPolicy: serverData.securityPolicy || "None",
+      securityMode: serverData.securityMode || "None",
+      certificate: serverData.certificate || "",
+      username: serverData.username || "",
+      password: serverData.password || "",
+      auth: derivedAuth,
+    };
+  };
+
+  const validateEditConnection = async (config) => {
+    if (!config?.data) {
+      notify.error("Invalid configuration");
+      return false;
+    }
+
+    try {
+      const payload = buildEditTestPayload(config);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/opcua/testConnection`, payload);
+      if (response.data?.status === "success") {
+        return true;
+      }
+      notify.error(response.data?.message || "Connection validation failed");
+      return false;
+    } catch (err) {
+      console.log(err);
+      notify.error("Connection validation failed");
+      return false;
     }
   };
 
@@ -146,6 +202,13 @@ export const OpcuaInputForm = () => {
   };
 
   const saveEdit = async (id) => {
+    setEditSavingId(id);
+    const isValidUpdate = await validateEditConnection(editConfig);
+    if (!isValidUpdate) {
+      setEditSavingId(null);
+      return;
+    }
+
     try {
       await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {
         ...editConfig,
@@ -159,6 +222,8 @@ export const OpcuaInputForm = () => {
       console.log(e);
       notify.error("Failed to edit connection");
 
+    } finally {
+      setEditSavingId(null);
     }
   };
 
@@ -174,7 +239,7 @@ export const OpcuaInputForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Name */}
               <div>
-                <label className="block text-sm mb-1">Connection Name *</label> 
+                <label className="block text-sm mb-1">Connection Name <span className="text-red-500">*</span></label> 
                 <input
                   {...register("name", { required: "Name is required" })}
                   className="w-full border px-3 py-2 rounded"
@@ -185,7 +250,7 @@ export const OpcuaInputForm = () => {
 
               {/* IP */}
               <div>
-                <label className="block text-sm mb-1">IP *</label>
+                <label className="block text-sm mb-1">IP <span className="text-red-500">*</span></label>
                 <input
                   {...register("ip", { required: "IP is required" })}
                   className="w-full border px-3 py-2 rounded"
@@ -196,7 +261,7 @@ export const OpcuaInputForm = () => {
 
               {/* Port */}
               <div>
-                <label className="block text-sm mb-1">Port *</label>
+                <label className="block text-sm mb-1">Port <span className="text-red-500">*</span></label>
                 <input
                   {...register("port", { required: "Port is required" })}
                   className="w-full border px-3 py-2 rounded"
@@ -207,7 +272,7 @@ export const OpcuaInputForm = () => {
 
               {/* Frequency */}
               <div>
-                <label className="block text-sm mb-1">Frequency (sec) *</label>
+                <label className="block text-sm mb-1">Frequency (sec) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   {...register("frequency", {
@@ -260,7 +325,7 @@ export const OpcuaInputForm = () => {
             {auth === "Username and Password" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-sm mb-1">Username *</label>
+                  <label className="block text-sm mb-1">Username <span className="text-red-500">*</span></label>
                   <input
                     {...register("username", { required: "Username is required" })}
                     className="w-full border px-3 py-2 rounded"
@@ -268,7 +333,7 @@ export const OpcuaInputForm = () => {
                   {errors.username && <p className="text-red-500 text-sm">{errors.username.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">Password *</label>
+                  <label className="block text-sm mb-1">Password <span className="text-red-500">*</span></label>
                   <input
                     type="password"
                     {...register("password", { required: "Password is required" })}
@@ -281,7 +346,7 @@ export const OpcuaInputForm = () => {
 
             {auth === "Certificate" && (
               <div className="mt-4">
-                <label className="block text-sm mb-1">Certificate (.pem) *</label>
+                <label className="block text-sm mb-1">Certificate (.pem) <span className="text-red-500">*</span></label>
                 <input
                   type="file"
                   accept=".pem"
@@ -317,23 +382,26 @@ export const OpcuaInputForm = () => {
           {successMessage && <p className="text-green-600 mt-2">{successMessage}</p>}
           {errorMessage && <p className="text-red-600 mt-2">{errorMessage}</p>}
         </div>
-
         {/* Table */}
+
         <div className="bg-white rounded border shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="px-4 py-2 text-left">Name</th>
                 <th className="px-4 py-2 text-left">IP:Port</th>
-                <th className="px-4 py-2 text-left">Frequency</th>
+                <th className="px-4 py-2 text-left">Frequency  (sec)</th>
                 <th className="px-4 py-2 text-left">Auth</th>
                 <th className="px-4 py-2 text-left">Security</th>
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
+              <AnimatePresence initial={false}>
               {serverList.map((server) => (
-                <tr key={server.id} className="border-b">
+                <motion.tr initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }} key={server.id} className="border-b">
                   {editingId === server.id ? (
                     <>
                       <td className="px-4 py-2">
@@ -366,12 +434,21 @@ export const OpcuaInputForm = () => {
                       <td className="px-4 py-2">{server.data.username ? "Username/Password" : server.data.certificate ? "Certificate" : "None"}</td>
                       <td className="px-4 py-2">{server.data.securityPolicy}/{server.data.securityMode}</td>
                       <td className="px-4 py-2 flex gap-2 justify-center">
-                        <button onClick={() => saveEdit(server.id)} className="text-green-600">
-                          <Save size={18} />
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="text-gray-600">
-                          <X size={18} />
-                        </button>
+                        {editSavingId === server.id ? (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                            <span>Testing...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <button onClick={() => saveEdit(server.id)} className="text-green-600">
+                              <Save size={18} />
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="text-gray-600">
+                              <X size={18} />
+                            </button>
+                          </>
+                        )}
                       </td>
                     </>
                   ) : (
@@ -399,8 +476,9 @@ export const OpcuaInputForm = () => {
                       </td>
                     </>
                   )}
-                </tr>
+                </motion.tr>
               ))}
+              </AnimatePresence>
               {serverList.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center py-4 text-gray-500">

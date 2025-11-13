@@ -7,16 +7,19 @@
 
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Tag, Search, Filter, Plus, Trash2, X, AlertCircle, Settings } from 'lucide-react';
+import { Mail, Tag, Search, Filter, Plus, Trash2, X, AlertCircle, Settings, Eye, EyeOff } from 'lucide-react';
 import { useEdges } from 'reactflow';
 import axios from 'axios';
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 import { useForm } from 'react-hook-form'; // ✅ ADDED
+import {motion} from 'motion/react'
+
+
 
 export const Main = () => {
   // Available variables/tags with type
   const [allVariables, setAllVariables] = useState([]);
-  const notifiy=useNotify()
+  const notify=useNotify()
   const confirm=useConfirm()
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,14 +28,16 @@ export const Main = () => {
   const [emailRules, setEmailRules] = useState([]);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [currentRule, setCurrentRule] = useState(null);
+  const [clickPosition, setClickPosition] = useState({ x: 50, y: -50 });
   const [showSettings, setShowSettings] = useState(false);
   const [senderSettings, setSenderSettings] = useState({
     smtpHost:'',
     port:'',
     secure:false,
     email: '',
-    apiToken: ''
+    password: ''
   });
+  const [showAppPassword, setShowAppPassword] = useState(false);
 
   // --- react-hook-form for Rule Form ---
   const {
@@ -49,7 +54,7 @@ export const Main = () => {
       condition: 'Greater than',
       triggerValue: '',
       triggerValueMax: '',
-      frequency: 'immediate',
+      frequency: 'Every 5 minutes',
       emails: [''],
       subject: '',
       description: ''
@@ -69,7 +74,7 @@ export const Main = () => {
       smtpHost: '',
       port: '',
       email: '',
-      apiToken: ''
+      password: ''
     }
   });
 
@@ -78,7 +83,7 @@ export const Main = () => {
       const response=await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
       const response2=await axios.get(`${process.env.REACT_APP_API_URL}/emailNotification/rules`);
       setEmailRules(response2.data?.rules || [])
-      setSenderSettings(response2.data?.notificationConfig || {email:"",apiToken:""})
+      setSenderSettings(response2.data?.notificationConfig || {email:"",password:""})
 
       const servers=response.data?.servers?.filter((s)=>s.Active===true)
       const variables = servers.flatMap((s) =>
@@ -105,7 +110,7 @@ export const Main = () => {
         condition: currentRule.condition || 'Greater than',
         triggerValue: currentRule.triggerValue ?? '',
         triggerValueMax: currentRule.triggerValueMax ?? '',
-        frequency: currentRule.frequency ?? 'immediate',
+        frequency: currentRule.frequency ,
         emails: currentRule.emails?.length ? currentRule.emails : [''],
         subject: currentRule.subject || '',
         description: currentRule.description || ''
@@ -119,7 +124,7 @@ export const Main = () => {
       smtpHost: senderSettings.smtpHost || '',
       port: senderSettings.port || '',
       email: senderSettings.email || '',
-      apiToken: senderSettings.apiToken || ''
+      password: senderSettings.password || ''
     });
   }, [senderSettings, resetSettings]);
 
@@ -192,7 +197,6 @@ export const Main = () => {
   }
 
   const frequencyOptions = [
-    { value: 0, label: 'Immediate' },
     { value: 5, label: 'Every 5 minutes' },
     { value: 15, label: 'Every 15 minutes' },
     { value: 30, label: 'Every 30 minutes' },
@@ -208,7 +212,7 @@ export const Main = () => {
       conditionExpression:'',
       triggerValue: '',
       triggerValueMax: '',
-      frequency: 'immediate',
+      frequency: 'Every 5 minutes',
       emails: [''],
       subject: '',
       description: '',
@@ -221,7 +225,7 @@ export const Main = () => {
       condition: 'Greater than',
       triggerValue: '',
       triggerValueMax: '',
-      frequency: 'immediate',
+      frequency: 'Every 5 minutes',
       emails: [''],
       subject: '',
       description: ''
@@ -270,13 +274,13 @@ export const Main = () => {
     try{
       const payload = { ...merged, conditionExpression: buildPythonCondition(merged) };
       const response=await axios.post(url, payload);
-      notifiy.success("Rule saved successfully !")
+      notify.success("Rule saved successfully !")
       setShowRuleForm(false);
       getVariables();
       setCurrentRule(null);
     }catch(e){
       console.log(e)
-      notifiy.error("Failed to reach server ")
+      notify.error("Failed to reach server ")
     }
   };
 
@@ -286,10 +290,10 @@ export const Main = () => {
       if (!ok) return;
       const response=await axios.delete(`${process.env.REACT_APP_API_URL}/emailNotification/rule/delete/${id}`);
       if(response.data?.ok){
-      notifiy.success("Rules deleted successfully !")
+      notify.success("Rules deleted successfully !")
         getVariables();
       }else{
-        notifiy.error("Failed to delete the rule.")
+        notify.error("Failed to delete the rule.")
       }
     }catch(e){
       console.log(e);
@@ -303,7 +307,9 @@ export const Main = () => {
 
   const updateCurrentRule = (field, value) => {
     setCurrentRule({ ...currentRule, [field]: value });
+    console.log(currentRule,field,value)
   };
+  
 
   const addRecipient = () => {
     const next = [...(currentRule?.emails || []), ''];
@@ -346,16 +352,17 @@ export const Main = () => {
         port: isNaN(parseInt(values.port)) ? '' : parseInt(values.port, 10)
       };
 
-      if (!payload.email || !payload.apiToken || !payload.smtpHost || payload.port === '') {
+      if (!payload.email || !payload.password || !payload.smtpHost || payload.port === '') {
         // Should be covered by RHF, but keep a guard:
         return;
       }
 
       const response=await axios.put(`${process.env.REACT_APP_API_URL}/emailNotification/config/update/config-1`, payload);
-      alert('Sender settings saved successfully!');
+      await notify.success('Sender settings saved successfully!');
       setShowSettings(false);
     }catch(e){
       console.log(e)
+      notify.error("Failed to save sender settings.")
     }
   };
 
@@ -457,7 +464,10 @@ export const Main = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Create Rule Form */}
             {showRuleForm ? (
-              <form
+              <motion.form
+               initial={{ opacity: 0, y: -50 }}  // start slightly above (move up by 50px)
+  animate={{ opacity: 1, y: 0 }}    // move to normal position
+  transition={{ duration: 0.2, ease: "easeOut" }} // control speed & easing
                 onSubmit={handleSubmit(onSubmitRule)}  // ✅ use RHF submit
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
               >
@@ -675,7 +685,7 @@ export const Main = () => {
                     Cancel
                   </button>
                 </div>
-              </form>
+              </motion.form>
             ) : (
               <>
                 {/* Active Rules List */}
@@ -788,7 +798,26 @@ export const Main = () => {
 
         {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+                animate={{
+        opacity: 1,
+        scale: 1,
+        x: 0,
+        y: 0,
+        borderRadius: "16px",
+        transition: {
+          type: "spring",
+          stiffness: 150,
+          damping: 18
+        }
+      }}
+      exit={{
+        opacity: 0,
+        scale: 0.7,
+        x: clickPosition.x - window.innerWidth / 2,
+        y: clickPosition.y - window.innerHeight / 2,
+        transition: { duration: 0.3 }
+      }} initial={{opacity:0 }}  transition={{duration:0.1}} className="fixed inset-0 bg-black bg-opacity-50 flex items-center  justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -861,16 +890,26 @@ export const Main = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      API Token <span className="text-red-500">*</span>
+                      App Password <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="password"
-                      placeholder="Enter your email API token"
-                      {...registerSettings('apiToken', { required: 'API token is required' })}
-                      onChange={(e) => updateSenderSettings('apiToken', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${settingsErrors.apiToken ? 'border-red-500' : 'border-gray-300'}`}
-                    />
-                    {settingsErrors.apiToken && <p className="text-xs text-red-600 mt-1">{settingsErrors.apiToken.message}</p>}
+                    <div className="relative">
+                      <input
+                        type={showAppPassword ? 'text' : 'password'}
+                        placeholder="Enter your email API token"
+                        {...registerSettings('password', { required: 'API token is required' })}
+                        onChange={(e) => updateSenderSettings('password', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${settingsErrors.password ? 'border-red-500' : 'border-gray-300'}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAppPassword((prev) => !prev)}
+                        className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+                        aria-label={showAppPassword ? 'Hide app password' : 'Show app password'}
+                      >
+                        {showAppPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {settingsErrors.password && <p className="text-xs text-red-600 mt-1">{settingsErrors.password.message}</p>}
                     <p className="text-xs text-gray-500 mt-1">
                       Your API token is stored securely and used only for sending email notifications.
                     </p>
@@ -903,7 +942,7 @@ export const Main = () => {
                 </form>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

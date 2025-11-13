@@ -423,6 +423,7 @@ export const ModbusTCPConfig = () => {
       },
     },
   });
+  //TODO: On clicking edit save button , test connection api is not hit to validate the credentials check it 
 
   const getServerList = async () => {
     try {
@@ -433,10 +434,44 @@ export const ModbusTCPConfig = () => {
       console.log(e);
     }
   };
+        useEffect(() => {
+    if (!successMessage && !error) return;
+
+    const clearMessages = setTimeout(() => {
+      setSuccessMessage("");
+      setError("");
+    }, 3000);
+
+    return () => clearTimeout(clearMessages);
+  }, [successMessage, error]);
 
   useEffect(() => {
     getServerList();
   }, [count]);
+
+  const testEditConnection = async (config) => {
+    const port = parseInt(config.data?.port, 10);
+    const frequency = parseInt(config.frequency, 10);
+
+    if (!config.data?.ip || Number.isNaN(port) || Number.isNaN(frequency)) {
+      return false;
+    }
+
+    try {
+      const response = await axios.post(`/modbus-tcp/test-connection`, {
+        name: config.name,
+        ip: config.data.ip,
+        port,
+        frequency,
+      });
+      console.log("test edit response", response);
+      return response.data?.status === "success";
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  };
+
 
   const testConnection = async (data) => {
     setLoading(true);
@@ -534,12 +569,23 @@ export const ModbusTCPConfig = () => {
 
   // New: validated save handler that uses RHF edit values
   const handleSaveEditValues = async (id, values) => {
+    const payload = {
+      name: values.name,
+      frequency: parseInt(values.frequency, 10),
+      data: {
+        ip: values.data?.ip,
+        port: values.data?.port,
+      },
+    };
+
+    const ok = await testEditConnection(payload);
+    if (!ok) {
+      notify.error("Connection test failed. Edit not saved.");
+      return;
+    }
+
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {
-        name: values.name,
-        frequency: parseInt(values.frequency, 10),
-        data: { ip: values.data.ip, port: values.data.port },
-      });
+      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, payload);
       notify.success("Connection edited successfully!");
 
       getServerList();
@@ -554,12 +600,23 @@ export const ModbusTCPConfig = () => {
   const handleSaveEdit = async (id) => {
     // kept for compatibility (not used after wiring handleSubmitEdit),
     // but safe to keep per "keep other functionalities same".
+    const payload = {
+      name: editConfig.name,
+      frequency: parseInt(editConfig.frequency, 10),
+      data: {
+        ip: editConfig.data?.ip,
+        port: editConfig.data?.port,
+      },
+    };
+
+    const ok = await testEditConnection(payload);
+    if (!ok) {
+      notify.error("Connection test failed. Edit not saved.");
+      return;
+    }
+
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, {
-        name: editConfig.name,
-        frequency: parseInt(editConfig.frequency),
-        data: { ip: editConfig.data.ip, port: editConfig.data.port },
-      });
+      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, payload);
       getServerList();
     } catch (e) {
       console.log(e);
@@ -637,7 +694,7 @@ export const ModbusTCPConfig = () => {
               {/* Frequency */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Frequency <span className="text-red-500">*</span>
+                  Frequency  (sec)<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -703,7 +760,7 @@ export const ModbusTCPConfig = () => {
                 <tr>
                   <th className="text-left py-3 px-6">Connection Name</th>
                   <th className="text-left py-3 px-6">IP:Port</th>
-                  <th className="text-left py-3 px-6">Frequency</th>
+                  <th className="text-left py-3 px-6">Frequency  (sec)</th>
                   <th className="text-right py-3 px-6">Actions</th>
                 </tr>
               </thead>

@@ -15,11 +15,9 @@ export const AlertsHistory = () => {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
 
-  // Date range (default: last 24h)
+  // Date filter (default: today)
   const now = useMemo(() => new Date(), []);
-  const twentyFourHoursAgo = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000), []);
-  const [from, setFrom] = useState(toLocalInputValue(twentyFourHoursAgo));
-  const [to, setTo] = useState(toLocalInputValue(now));
+  const [selectedDate, setSelectedDate] = useState(toLocalDateValue(now));
 
   // Sorting & pagination
   const [sortBy, setSortBy] = useState({ key: 'occurredAt', dir: 'desc' }); // 'asc' | 'desc'
@@ -32,33 +30,48 @@ export const AlertsHistory = () => {
     return m;
   }, [rules]);
 
-  const fetchRules = async () => {
-    setLoading(true)
+  const fetchRules = async (dateParam = selectedDate) => {
+    setLoading(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/emailNotification/rules`);
-      const rulesArray=res.data?.rules || []
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/emailNotification/rules`, {
+        params: dateParam ? { date: dateParam } : undefined,
+      });
+      const rulesArray = res.data?.rules || [];
       setRules(rulesArray);
-      const historyArray = rulesArray.map(rule => ({
-    name: rule.name,
-    history: rule.history,
-    emailRecipients: rule.emails,
-    subject: rule.subject
-    }));
-    setAlerts(historyArray);
+      const historyArray = rulesArray.flatMap((rule) =>
+      (rule.history ?? []).map((h) => ({
+        // history fields
+        id: h.id,
+        ruleId: h.ruleId ?? rule.id,
+        timestamp: h.timestamp ?? h.occurredAt ?? h.createdAt,
+        variable: h.variable,               // { name, ... }
+        description: h.description ?? '',
+        emailSent: h.emailSent ?? null,
+        value:h.value ,
+        emailRecipent:h.emailRecipent,
+        
+
+        // from parent rule
+        ruleName: rule.name ?? '—',
+        subject: rule.subject ?? '',
+      }))
+    );
+      setAlerts(historyArray);
+      console.log(historyArray)
     } catch (e) {
       // Non-blocking for history view
       console.warn('Failed to load rules list:', e?.message || e);
-    }finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
 
-  const refresh = async () => {
-    await Promise.all([fetchRules()]);
+  const refresh = async (date = selectedDate) => {
+    await fetchRules(date);
   };
 
   useEffect(() => {
-    refresh();
+    refresh(selectedDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -88,9 +101,6 @@ export const AlertsHistory = () => {
         ruleId: a.ruleId ?? a.rule?.id,
         ruleName,
         tagName,
-        value,
-        occurredAt,
-        occurredDate,
         raw: a,
       };
     });
@@ -98,18 +108,21 @@ export const AlertsHistory = () => {
 
   // Only date filtering (no search / rule filters)
   const filtered = useMemo(() => {
-    const fromDate = from ? new Date(from) : null;
-    const toDate = to ? new Date(to) : null;
+    if (!selectedDate) return normalizedAlerts;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) return normalizedAlerts;
+
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+    const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+    const startTime = start.getTime();
+    const endTime = end.getTime();
 
     return normalizedAlerts.filter(a => {
-      let dateOk = true;
-      if (a.occurredDate) {
-        if (fromDate && a.occurredDate < fromDate) dateOk = false;
-        if (toDate && a.occurredDate > toDate) dateOk = false;
-      }
-      return dateOk;
+      if (!a.occurredDate) return true;
+      const time = a.occurredDate.getTime();
+      return time >= startTime && time <= endTime;
     });
-  }, [normalizedAlerts, from, to]);
+  }, [normalizedAlerts]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -151,7 +164,7 @@ export const AlertsHistory = () => {
   // Reset to page 1 when date filters change
   useEffect(() => {
     setPage(1);
-  }, [from, to]);
+  }, [selectedDate]);
 
   // ---- Handlers ----
   const setSort = (key) => {
@@ -164,7 +177,7 @@ export const AlertsHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -177,27 +190,22 @@ export const AlertsHistory = () => {
           <div className="flex items-end gap-3">
             <div className="flex items-end gap-3 bg-white border border-gray-200 rounded-lg p-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
                 <input
-                  type="datetime-local"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                <input
-                  type="datetime-local"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedDate(value);
+                    refresh(value);
+                  }}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
 
             <button
-              onClick={fetchRules}
+              onClick={() => refresh(selectedDate)}
               className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
               title="Refresh"
             >
@@ -208,16 +216,14 @@ export const AlertsHistory = () => {
 
         {/* Alerts Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">Alerts</h2>
-          </div>
+         
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-lg">
+            <table className="min-w-full text-[15px] ">
+              <thead className="bg-white border-b border-gray-200">
                 <tr>
                   <Th
-                    title="Rule"
+                    title="Rule Name"
                     active={sortBy.key === 'ruleName'}
                     dir={sortBy.dir}
                     onClick={() => setSort('ruleName')}
@@ -235,11 +241,20 @@ export const AlertsHistory = () => {
                     onClick={() => setSort('value')}
                   />
                   <Th
-                    title="Time"
+                    title="Alert Time"
                     active={sortBy.key === 'occurredAt'}
                     dir={sortBy.dir}
                     onClick={() => setSort('occurredAt')}
                   />
+                  <Th
+                    title="Email Recipent"
+                    hide={true}
+                  />
+                  <Th
+                    title="Email Status"
+                    hide={true}
+                  />
+                  
                 </tr>
               </thead>
 
@@ -258,32 +273,40 @@ export const AlertsHistory = () => {
                 ) : pageSlice.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-10 text-center text-gray-500">
-                      No alerts found for selected date range.
+                      No alerts found for selected date.
                     </td>
                   </tr>
                 ) : (
                   pageSlice.map(a => (
+                  
                     <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                      <td className="px-4 py-3 text-center font-medium text-gray-800 whitespace-nowrap">
                         {a.ruleName}
                       </td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                      <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
-                          <TagIcon className="w-4 h-4 text-gray-500" />
                           <span className="truncate max-w-[240px] inline-block align-middle">{a.tagName}</span>
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-800 whitespace-nowrap">
-                        {formatValue(a.value)}
+                      <td className="px-4 py-3 text-center text-gray-800 whitespace-nowrap">
+                        {a.raw.value}
                       </td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                        {a.occurredDate ? (
-                          <time title={a.occurredDate.toISOString()}>
-                            {a.occurredDate.toLocaleString()}
+                      <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                        {a.raw.timestamp ? (
+                          <time title={a.raw.timestamp}>
+                            {new Date(a.raw.timestamp).toLocaleTimeString()}
                           </time>
                         ) : (
                           '—'
                         )}
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-800 whitespace-nowrap">
+                        {a.raw.emailRecipent}
+                      </td>
+                      <td className={`px-4 py-3 text-center rounded-md  whitespace-nowrap`}>
+                        <span className={`${a.raw.emailSent?"bg-green-500 rounded-md p-2  text-white":"bg-red-500 text-white"}`}>
+                          {a.raw.emailSent?"Sent":"Failed"}
+                        </span>
                       </td>
                     </tr>
                   ))
@@ -335,10 +358,10 @@ export const AlertsHistory = () => {
 
 /* ---------- Small presentational pieces ---------- */
 
-const Th = ({ title, active, dir, onClick }) => (
+const Th = ({ title, active, dir, onClick,hide=false }) => (
   <th
     scope="col"
-    className="px-4 py-3 text-left font-semibold text-gray-700 select-none"
+    className="px-4 py-3 text-center font-semibold text-gray-700 select-none"
   >
     <button
       className={`inline-flex items-center gap-1 ${active ? 'text-blue-600' : 'text-gray-700'}`}
@@ -346,7 +369,7 @@ const Th = ({ title, active, dir, onClick }) => (
       title={`Sort by ${title}`}
     >
       {title}
-      <span className={`text-xs ${active ? 'opacity-100' : 'opacity-40'}`}>
+      <span className={`text-xs ${hide?"hidden":""} ${active ? 'opacity-100' : 'opacity-40'}`}>
         {active ? (dir === 'asc' ? '▲' : '▼') : '▲'}
       </span>
     </button>
@@ -376,15 +399,13 @@ const SkeletonRows = () => (
 
 /* ---------- Helpers ---------- */
 
-function toLocalInputValue(date) {
-  // Returns YYYY-MM-DDTHH:mm for datetime-local
+function toLocalDateValue(date) {
+  // Returns YYYY-MM-DD for date inputs
   const pad = n => String(n).padStart(2, '0');
   const yyyy = date.getFullYear();
   const mm = pad(date.getMonth() + 1);
   const dd = pad(date.getDate());
-  const hh = pad(date.getHours());
-  const min = pad(date.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function toNum(v) {

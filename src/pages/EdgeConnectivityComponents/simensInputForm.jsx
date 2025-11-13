@@ -445,6 +445,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
+
 const IPV4_REGEX =
   /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/;
 
@@ -483,6 +484,17 @@ export const SimensInputForm = () => {
     mode: "onSubmit",
   });
 
+      useEffect(() => {
+    if (!successMessage && !error) return;
+
+    const clearMessages = setTimeout(() => {
+      setSuccessMessage("");
+      setError("");
+    }, 3000);
+
+    return () => clearTimeout(clearMessages);
+  }, [successMessage, error]);
+
   const getServerList = async () => {
     try {
       const url = `${process.env.REACT_APP_API_URL}/allServers/S-7`;
@@ -493,9 +505,24 @@ export const SimensInputForm = () => {
     }
   };
 
+
   useEffect(() => {
     getServerList();
   }, [count]);
+
+  const verifyEditConnection = async (config) => {
+    try {
+      const response = await axios.post(`/siemen-plc/test-connection`, {
+        ip: config.ip,
+        rack: parseInt(config.rack, 10),
+        slot: parseInt(config.slot, 10),
+      });
+      return response.data?.status === "success";
+    } catch {
+      return false;
+    }
+  };
+
 
   // ---------- TEST CONNECTION (create form) ----------
   const testConnection = async (data) => {
@@ -590,6 +617,12 @@ export const SimensInputForm = () => {
 
   // ---------- SAVE EDIT (validated by RHF, no <form> wrapper in table) ----------
   const onSaveEdit = async (form) => {
+    const isConnectionValid = await verifyEditConnection(form);
+    if (!isConnectionValid) {
+      notify.error("Failed to validate connection. Edit not saved.");
+      return;
+    }
+
     try {
       const url = `${process.env.REACT_APP_API_URL}/allServers/update/${editingId}`;
       await axios.put(url, {
@@ -689,7 +722,7 @@ export const SimensInputForm = () => {
               {/* Frequency */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Frequency<span className="text-red-500">*</span> (sec)
+                  Frequency  (sec)<span className="text-red-500">*</span> 
                 </label>
                 <input
                   type="number"
@@ -750,7 +783,7 @@ export const SimensInputForm = () => {
                   <th className="text-left py-3 px-6">Connection Name</th>
                   <th className="text-left py-3 px-6">IP</th>
                   <th className="text-left py-3 px-6">Rack/Slot</th>
-                  <th className="text-left py-3 px-6">Frequency</th>
+                  <th className="text-left py-3 px-6">Frequency  (sec)</th>
                   <th className="text-right py-3 px-6">Actions</th>
                 </tr>
               </thead>
@@ -905,5 +938,3 @@ export const SimensInputForm = () => {
     </div>
   );
 };
-
-

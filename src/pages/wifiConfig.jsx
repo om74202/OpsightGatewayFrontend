@@ -3,10 +3,20 @@ import { Wifi, RefreshCcw, Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import axios from "axios";
 import { useConfirm, useNotify } from "../context/ConfirmContext";
 
+const normalizeSSID = (value = "") =>
+  (typeof value === "string" ? value : "").replace(/\\x20/g, "");
+
+const getNetworkName = (network) =>
+  typeof network === "string" ? network : network?.name ?? "";
+
+const getNetworkMetric = (network) =>
+  typeof network === "object" && network !== null ? network.metric ?? "" : "";
+
 export const WifiConnections = () => {
   const [wifiList, setWifiList] = useState([]);
   const [selectedSSID, setSelectedSSID] = useState(null);
   const [password, setPassword] = useState("");
+  const [metric, setMetric] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentSSID, setCurrentSSID] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -14,15 +24,25 @@ export const WifiConnections = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(null); // Success/Error messages
+  const normalizedCurrentSSID = normalizeSSID(currentSSID);
 
   const handleScan = async() => {
     setIsLoading(true);
     setMessage(null);
     try{
       const response=await axios.get(`${process.env.REACT_APP_API_URL}/gatewayConfig/wifi`)
-            setWifiList(response.data.networks);
+            const currentNetwork=response.data?.current || ""
+            const normalizedCurrent=normalizeSSID(currentNetwork)
+            const networks=Array.isArray(response.data?.networks)?response.data.networks:[]
+            const sortedNetworks=[...networks].sort((a,b)=>{
+              const aIsCurrent=normalizeSSID(getNetworkName(a))===normalizedCurrent
+              const bIsCurrent=normalizeSSID(getNetworkName(b))===normalizedCurrent
+              if(aIsCurrent===bIsCurrent) return 0
+              return aIsCurrent?-1:1
+            })
+            setWifiList(sortedNetworks);
             notify.success("Network scan Completed !")
-            setCurrentSSID(response.data?.current || "")
+            setCurrentSSID(currentNetwork)
         setIsLoading(false);
 
     }catch(e){
@@ -39,7 +59,9 @@ export const WifiConnections = () => {
 
   // Open modal on connect click
   const handleConnectClick = (ssid) => {
-    setSelectedSSID(ssid);
+    setSelectedSSID(getNetworkName(ssid));
+    setPassword("");
+    setMetric("");
     setIsModalOpen(true);
   };
 
@@ -47,6 +69,13 @@ export const WifiConnections = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setMessage(null);
+    const metricValue = Number(metric);
+
+    if (!Number.isInteger(metricValue)) {
+      setIsSubmitting(false);
+      setMessage({ type: "error", text: "Metric must be an integer." });
+      return;
+    }
 
     try {
       const { data } = await axios.post(
@@ -54,6 +83,7 @@ export const WifiConnections = () => {
         {
           ssid: selectedSSID,
           password,
+          metric: metricValue,
         }
       );
 
@@ -62,7 +92,9 @@ export const WifiConnections = () => {
       setIsSubmitting(false);
       setIsModalOpen(false);
       setPassword("");
+      setMetric("");
       setMessage({ type: "success", text: `Connected to ${selectedSSID}` });
+      window.location.reload();
     } catch (err) {
       console.error("Error connecting to Wi-Fi:", err);
       setIsSubmitting(false);
@@ -123,28 +155,40 @@ export const WifiConnections = () => {
                 <tr>
                   <th className="px-6 py-3 border-b">#</th>
                   <th className="px-6 py-3 border-b">WiFi Name</th>
+                  <th className="px-6 py-3 border-b">Metric</th>
                   <th className="px-6 py-3 border-b text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {wifiList.map((ssid, index) => (
-                  
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-50 transition border-b last:border-none"
-                  >
-                    <td className="px-6 py-3">{index + 1}</td>
-                    <td className="px-6 py-3">{ssid.replace(/\\x20/g,"")===currentSSID && <span className="w-3 h-3  bg-green-500 rounded-full inline-block"></span>}   {ssid}</td>
-                    <td className="px-6 py-3 text-right">
-                      <button
-                        onClick={() => handleConnectClick(ssid)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition"
-                      >
-                        {ssid.replace(/\\x20/g, "")===currentSSID?`Connected`:`Connect`}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {wifiList.map((ssid, index) => {
+                  const ssidName = getNetworkName(ssid);
+                  const normalizedSSID = normalizeSSID(ssidName);
+                  const metricValue = getNetworkMetric(ssid);
+                  const isCurrent = normalizedSSID === normalizedCurrentSSID;
+
+                  return (
+                    <tr
+                      key={index}
+                      className="hover:bg-gray-50 transition border-b last:border-none"
+                    >
+                      <td className="px-6 py-3">{index + 1}</td>
+                      <td className="px-6 py-3">
+                        {isCurrent && <span className="w-3 h-3  bg-green-500 rounded-full inline-block"></span>}{" "}
+                        {ssidName || "Unknown"}
+                      </td>
+                      <td className="px-6 py-3">{metricValue ?? "-"}</td>
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => handleConnectClick(ssid)}
+                          className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition ${isCurrent ? "cursor-not-allowed opacity-90" : ""}`}
+                          disabled={isCurrent}
+                        >
+                          {isCurrent ? `Connected` : `Connect`}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -182,6 +226,21 @@ export const WifiConnections = () => {
               </div>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-medium">
+                Metric
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={metric}
+                onChange={(e) => setMetric(e.target.value)}
+                className="w-full mt-2 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter metric (integer)"
+              />
+            </div>
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -191,7 +250,7 @@ export const WifiConnections = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!password || isSubmitting}
+                disabled={!password || metric === "" || isSubmitting}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md transition flex items-center gap-2"
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -204,4 +263,3 @@ export const WifiConnections = () => {
     </div>
   );
 };
-

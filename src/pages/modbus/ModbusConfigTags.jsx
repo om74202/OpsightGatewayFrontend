@@ -12,11 +12,12 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle,
+  Info,
 } from "lucide-react";
 import axios from "axios";
 import { useForm, useFieldArray } from "react-hook-form";
 import { applyScaling } from "../../functions/tags";
-import { useNotify } from "../../context/ConfirmContext";
+import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
 // Function codes to choose from
 const functionCodes = [
@@ -25,6 +26,16 @@ const functionCodes = [
   { value: "3", label: "Holding" },
   { value: "4", label: "Input" },
 ];
+
+const dropdownClass =
+  "w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition";
+
+const SLAVE_ID_INFO_TEXT =
+  "Slave ID identifies the Modbus device address (1-247) on the bus. Each device must have a unique ID.";
+const BYTE_INFO_TEXT =
+  "Byte indicates how many bytes are read per register. Choose 1 for 8-bit values or 2 for 16-bit values.";
+const CONVERSION_INFO_TEXT =
+  "Conversion defines how to combine multiple registers (e.g., MSRF = most significant register first).";
 
 /* --------------------- Child: manages ranges with useFieldArray --------------------- */
 const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
@@ -45,16 +56,25 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
       </h5>
 
       {(rangeFields || []).map((range, rIndex) => (
-        <div key={range.key} className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div key={range.key} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm text-gray-600 mb-1">
               Start<span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
               {...register(
                 `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges.${rIndex}.addresses`,
-                { required: "Addresses are required" }
+                {
+                  valueAsNumber: true,
+                  required: "Start is required",
+                  min: { value: 0, message: "Start must be non-negative" },
+                  validate: (value) =>
+                    Number.isInteger(value) || "Start must be an integer",
+                }
               )}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
             />
@@ -96,6 +116,50 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
             )}
           </div>
 
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className="relative group flex items-center cursor-help"
+                  tabIndex={0}
+                  aria-label={BYTE_INFO_TEXT}
+                >
+                  <Info className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                  <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-60 -translate-x-1/2 rounded bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                    {BYTE_INFO_TEXT}
+                  </span>
+                </span>
+                <span>
+                  Byte<span className="text-red-500">*</span>
+                </span>
+              </span>
+            </label>
+            <select
+              {...register(
+                `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges.${rIndex}.byte`,
+                {
+                  required: "Byte is required",
+                  setValueAs: (value) => Number(value),
+                  validate: (value) =>
+                    [1, 2].includes(Number(value)) || "Byte must be 1 or 2",
+                }
+              )}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+            </select>
+            {errors?.servers?.[serverIndex]?.functionConfigs?.[fcIndex]?.ranges?.[rIndex]
+              ?.byte && (
+              <p className="text-xs text-red-600 mt-1">
+                {
+                  errors.servers[serverIndex].functionConfigs[fcIndex].ranges[rIndex]
+                    .byte.message
+                }
+              </p>
+            )}
+          </div>
+
           <div className="flex items-end">
             <button
               type="button"
@@ -110,7 +174,7 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
 
       <button
         type="button"
-        onClick={() => appendRange({ addresses: "", count: 1 })}
+        onClick={() => appendRange({ addresses: 0, count: 1, byte: 1 })}
         className="mt-2 text-blue-600 text-sm hover:underline"
       >
         + Add Start-Count
@@ -130,6 +194,7 @@ export const ServerSection = React.memo(
     serverUi, // { id, name, isConnected, isExpanded, tags }
     toggleExpand,
     updateTagProperties,
+    toggleAllTagsStatus,
     loading,
   }) => {
     const {
@@ -141,9 +206,12 @@ export const ServerSection = React.memo(
       name: `servers.${index}.functionConfigs`,
       keyName: "key",
     });
+    const tags = serverUi.tags || [];
+    const allTagsSelected =
+      tags.length > 0 && tags.every((tag) => tag.status === "pass");
 
     return (
-      <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-visible">
         {/* Header */}
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -188,7 +256,21 @@ export const ServerSection = React.memo(
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slave ID{type==="rtu" && <span className="text-red-500">*</span>}
+                    <span className="inline-flex items-center gap-1">
+                      <span
+                        className="relative group flex items-center cursor-help"
+                        tabIndex={0}
+                        aria-label={SLAVE_ID_INFO_TEXT}
+                      >
+                        <Info className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                        <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-60 -translate-x-1/2 rounded bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                          {SLAVE_ID_INFO_TEXT}
+                        </span>
+                      </span>
+                      <span>
+                        Slave ID{type === "rtu" && <span className="text-red-500">*</span>}
+                      </span>
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -223,7 +305,7 @@ export const ServerSection = React.memo(
                           `servers.${index}.functionConfigs.${fcIndex}.functionCode`,
                           { required: "Function Code is required" }
                         )}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        className={dropdownClass}
                       >
                         {functionCodes.map((fc) => (
                           <option key={fc.value} value={fc.value}>
@@ -241,18 +323,31 @@ export const ServerSection = React.memo(
                         </p>
                       )}
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Conversion
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className="relative group flex items-center cursor-help"
+                            tabIndex={0}
+                            aria-label={CONVERSION_INFO_TEXT}
+                          >
+                            <Info className="w-4 h-4 text-gray-500" aria-hidden="true" />
+                            <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-60 -translate-x-1/2 rounded bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                              {CONVERSION_INFO_TEXT}
+                            </span>
+                          </span>
+                          Conversion
+                        </span>
                       </label>
-                      <input
-                        type="text"
+                      <select
                         {...register(
                           `servers.${index}.functionConfigs.${fcIndex}.conversion`
                         )}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      />
+                        className={dropdownClass}
+                      >
+                        <option value="msrf">msrf</option>
+                        <option value="lsrf">lsrf</option>
+                      </select>
                     </div>
                   </div>
 
@@ -283,7 +378,7 @@ export const ServerSection = React.memo(
                   appendFunc({
                     functionCode: "3",
                     conversion: "",
-                    ranges: [{ addresses: "", count: 1 }],
+                    ranges: [{ addresses: "", count: 1, byte: 1 }],
                   })
                 }
                 className="text-blue-600 text-sm hover:underline"
@@ -301,7 +396,22 @@ export const ServerSection = React.memo(
 
             {/* Tag table */}
             <div className="w-full">
-              <h4 className="text-md font-medium text-gray-700 mb-3">Tag Data</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-md font-medium text-gray-700">Tag Data</h4>
+                {tags.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm text-gray-600 select-none">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600"
+                      checked={allTagsSelected}
+                      onChange={(e) =>
+                        toggleAllTagsStatus(serverUi.id, e.target.checked)
+                      }
+                    />
+                    <span>Select All</span>
+                  </label>
+                )}
+              </div>
 
               {loading ? (
                 <div className="overflow-x-auto border border-gray-200 rounded-md">
@@ -331,7 +441,7 @@ export const ServerSection = React.memo(
                     </tbody>
                   </table>
                 </div>
-              ) : serverUi.tags.length > 0 ? (
+              ) : tags.length > 0 ? (
                 <div className="overflow-x-auto border border-gray-200 rounded-md">
                   <table className="w-full">
                     <thead className="bg-gray-50">
@@ -354,11 +464,12 @@ export const ServerSection = React.memo(
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {serverUi.tags.map((tag) => (
+                      {tags.map((tag) => (
                         <tr key={tag.address} className="hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <input
                               type="checkbox"
+                              checked={tag.status === "pass"}
                               onChange={(e) =>
                                 updateTagProperties(serverUi.id, tag.address, {
                                   status: e.target.checked ? "pass" : "fail",
@@ -428,8 +539,14 @@ export const ModbusConfigTags = ({
 }) => {
   const notify = useNotify();
   const wsRef = useRef(null);
+  const confirm=useConfirm()
+  const notifyRef = useRef(notify);
   const [loading, setLoading] = useState(false);
   const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    notifyRef.current = notify;
+  }, [notify]);
 
   // UI-only devices state (id/name/expand/tags/connection flag)
   const [serversUi, setServersUi] = useState([
@@ -441,6 +558,7 @@ export const ModbusConfigTags = ({
       tags: [],
     },
   ]);
+
 
   // RHF: servers config lives here
   const {
@@ -454,12 +572,12 @@ export const ModbusConfigTags = ({
     defaultValues: {
       servers: [
         {
-          slaveId: "",
+          slaveId: "1",
           functionConfigs: [
             {
               functionCode: "3",
               conversion: "",
-              ranges: [{ addresses: "", count: 1 }],
+              ranges: [{ addresses: "", count: 1, byte: 1 }],
             },
           ],
         },
@@ -492,9 +610,9 @@ export const ModbusConfigTags = ({
   const addDevice = () => {
     const nextId = (serversUi[serversUi.length - 1]?.id || 0) + 1;
     appendServer({
-      slaveId: "",
+      slaveId: "1",
       functionConfigs: [
-        { functionCode: "3", conversion: "", ranges: [{ addresses: "", count: 1 }] },
+        { functionCode: "3", conversion: "", ranges: [{ addresses: "", count: 1, byte: 1 }] },
       ],
     });
     setServersUi((prev) => [
@@ -544,17 +662,31 @@ export const ModbusConfigTags = ({
     );
   }, []);
 
+  const toggleAllTagsStatus = useCallback((serverId, shouldSelect) => {
+    setServersUi((prevServers) =>
+      prevServers.map((server) => {
+        if (server.id !== serverId) return server;
+        const updatedTags = server.tags.map((tag) => ({
+          ...tag,
+          status: shouldSelect ? "pass" : "fail",
+        }));
+        return { ...server, tags: updatedTags };
+      })
+    );
+  }, []);
+  //TODO:i don't want to hit the disconnectserver on entering the page i want it only on redirect or closing the page
+
   // Disconnect server
-  const disConnectServer = async () => {
+  const disConnectServer = useCallback(async () => {
     try {
       await axios.post(`${api}/data-flush`);
-      notify.success("Server Disconnected Successfully");
+      notifyRef.current?.success("Server Disconnected Successfully");
       wsRef.current?.close();
     } catch (e) {
       console.log(e);
-      notify.error("Failed to disconnect");
+      notifyRef.current?.error("Failed to disconnect");
     }
-  };
+  }, [api]);
 
   /* ------------------------ Browse (validated by RHF) ----------------------- */
   const onBrowse = async (values) => {
@@ -581,6 +713,9 @@ export const ModbusConfigTags = ({
 
       clearErrors();
 
+      const ok=await confirm("Browsing will temporarily stop any ongoing data logging . Do you want to continue?")
+      if(!ok) return;
+
       const result = {};
       // Build result from form values
       values.servers.forEach((device, idx) => {
@@ -605,8 +740,9 @@ export const ModbusConfigTags = ({
 
           (functionConfig.ranges || []).forEach((range) => {
             result[deviceName][typeLabel].register.push({
-              addresses: range.addresses,
-              count: Number(range.count || 0),
+              addresses: range.addresses+"-"+(range.addresses+Number(range.count || 0)),
+              count: Number(range.byte || 1),
+              byte: Number(range.byte || 1),
             });
           });
         });
@@ -677,7 +813,7 @@ export const ModbusConfigTags = ({
         notify.error("Please provide a name for all selected tags");
       } else {
         console.log(e);
-        notify.error("Failed to save Tags");
+      notify.error("Failed to save tags, Make sure the names of the selected tags are unique");
       }
     }
   };
@@ -740,7 +876,7 @@ export const ModbusConfigTags = ({
         wsRef.current = null;
       }
     };
-  }, [selectedServer, count]);
+  }, [selectedServer, count,api]);
 
   /* -------------------------------- Render -------------------------------- */
   return (
@@ -786,6 +922,7 @@ export const ModbusConfigTags = ({
               serverUi={serversUi[i]}
               toggleExpand={toggleExpand}
               updateTagProperties={updateTagProperties}
+              toggleAllTagsStatus={toggleAllTagsStatus}
               loading={loading}
             />
           ))}

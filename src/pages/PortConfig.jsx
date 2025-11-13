@@ -3,6 +3,9 @@ import { Plus, Trash2, X } from "lucide-react";
 import axios from "axios";
 import { useConfirm, useNotify } from "../context/ConfirmContext";
 
+const RESTRICTED_PORTS = new Set([22, 80, 3000, 3001, 8000, 8001, 8002, 8003, 8004, 8086]);
+const isRestrictedPort = (port) => RESTRICTED_PORTS.has(Number(port));
+
 export const FirewallPortConfiguration = () => {
   const [ports, setPorts] = useState([]);
   const [portNumber, setPortNumber] = useState("");
@@ -14,7 +17,7 @@ export const FirewallPortConfiguration = () => {
   const fetchPortProfiles = async() => {
     try{
           const response=await  axios.get(`${process.env.REACT_APP_API_URL}/gatewayConfig/port`)
-  setPorts(response.data || [])
+  setPorts((response.data || []).filter((port) => !isRestrictedPort(port)))
     }catch(e){
       console.log(e);
     }
@@ -27,6 +30,10 @@ export const FirewallPortConfiguration = () => {
 
 
   const handleAddPort = async() => {
+    if (isRestrictedPort(portNumber)) {
+      notify.error("This port is reserved and cannot be modified.");
+      return;
+    }
     try{
       const respnse=await axios.post(`${process.env.REACT_APP_API_URL}/gatewayConfig/port`,{port:portNumber});
       console.log(respnse.data)
@@ -41,6 +48,10 @@ export const FirewallPortConfiguration = () => {
   };
 
   const handleDeletePort =async (port) => {
+    if (isRestrictedPort(port)) {
+      notify.error("This port is reserved and cannot be modified.");
+      return;
+    }
     try{
       const ok=await confirm("Are you sure you need to delete this port ?")
       if(!ok) return;
@@ -158,4 +169,3 @@ export const FirewallPortConfiguration = () => {
     </div>
   );
 };
-

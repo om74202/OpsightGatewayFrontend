@@ -27,8 +27,44 @@ import {
   Wand,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { motion } from "motion/react";
 import { DashboardLayout } from "./DashboardLayout";
 
+const sidebarVariant={
+  open:{
+    width:"16rem"
+  },
+  closed:{
+    width:"5.5rem"
+  }
+}
+
+//TODO: i want a smooth stagger animation for the list elements of the sidebar so that when it expands the elements appear one by one smoothly buth that's not happening why?
+const parentVariant={
+  open:{
+    transition:{
+      staggerChildren:0.03,
+      delayChildren:0.1
+    }
+  }
+  ,
+  closed:{
+    transition:{
+      staggerChildren:0.07,
+      delayChildren:-1
+    }
+  }
+}
+const childrenVariants={
+  open:{
+    opacity:1,
+    y:0
+  },
+  closed:{
+    opacity:0,
+    y:-10
+  }
+}
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState({});
@@ -105,24 +141,18 @@ const toggleSubMenu = (name) => {
   }
 
   return (
-    <aside
-      className={`h-screen bg-gray-600 text-white shadow-md fixed flex flex-col justify-between transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-56"
-      }`}
+    <motion.aside
+    initial={false}
+    animate={isCollapsed?"closed":"open"}
+    variants={sidebarVariant}
+    transition={{
+      duration:0.3
+    }}
+      className={`h-screen bg-gray-600 text-white shadow-md fixed flex flex-col justify-between  `}
     >
-      {/* Header */}
-      {/* <div className="p-4 border-b border-gray-500">
-        <div className={`flex ${isCollapsed ? "justify-center" : "justify-end"}`}>
-          <button
-            onClick={toggleCollapse}
-            className="p-1 rounded hover:bg-gray-800 transition-colors"
-          >
-            {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
-        </div>
-      </div> */}
+    
             <div className="px-4 py-6 flex  justify-between border-b ">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+        <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
           {/* User Avatar */}
           <div className="flex-shrink-0">
             {authUser.user.profileImage ? (
@@ -162,23 +192,24 @@ const toggleSubMenu = (name) => {
       </div>
 
       {/* Navigation */}
-      <div className="p-4 mt-2 overflow-y-auto pt-0 flex-1">
-        <nav>
-          <ul>
+      <div className="p-4 mt-2 overflow-y-auto pt-0 flex-1 ">
+        <motion.nav 
+        >
+          <motion.ul variants={parentVariant}  >
             {navItems.map((item) => (
-              <li key={item.name} className="mb-0 text-sm">
+              <motion.li variants={childrenVariants}   key={item.name} className={` mb-0  text-sm`}>
                 {item.children ? (
                   <>
                     <button
                       onClick={() => toggleSubMenu(item.name)}
-                      className={`w-full flex justify-between p-3 rounded-lg transition-colors duration-200 ${
+                      className={`w-full  flex justify-between p-3 rounded-lg  ${
                         expanded[item.name]
                           ? "bg-gray-800 font-semibold"
                           : "hover:bg-gray-800"
-                      } ${isCollapsed ? "justify-center" : ""}`}
+                      } ${isCollapsed ? "justify-between" : ""}`}
                     >
                       {React.cloneElement(item.icon, {
-                        className: `w-5 h-5 ${isCollapsed ? "" : "mr-3"}`,
+                        className: `w-5 h-5 ${isCollapsed ? "" : ""}`,
                       })}
                       {!isCollapsed && (
                         <>
@@ -190,7 +221,7 @@ const toggleSubMenu = (name) => {
                           )}
                         </>
                       )}
-                    </button>
+                    </button> 
 
                     {/* Submenu */}
                     {expanded[item.name] && !isCollapsed && (
@@ -200,7 +231,7 @@ const toggleSubMenu = (name) => {
                             <NavLink
                               to={subItem.path}
                               className={({ isActive }) =>
-                                `block px-3 py-2 rounded text-xs transition-colors ${
+                                `block px-3 py-2 rounded text-xs  ${
                                   isActive
                                     ? "bg-gray-800 font-semibold"
                                     : "hover:bg-gray-800"
@@ -219,23 +250,23 @@ const toggleSubMenu = (name) => {
                     to={item.path}
                     end={item.end}
                     className={({ isActive }) =>
-                      `flex items-center p-3 rounded-lg transition-colors duration-200 ${
+                      `flex items-center p-3 rounded-lg  ${
                         isActive
                           ? "bg-gray-800 font-semibold"
                           : "hover:bg-gray-800"
-                      } ${isCollapsed ? "justify-center" : ""}`
+                      } ${isCollapsed ? "" : ""}`
                     }
                   >
                     {React.cloneElement(item.icon, {
-                      className: `w-5 h-5 ${isCollapsed ? "" : "mr-3"}`,
+                      className: `w-5 h-5 ${isCollapsed ? "" : "mr-6"}`,
                     })}
                     {!isCollapsed && item.name}
                   </NavLink>
                 )}
-              </li>
+              </motion.li>
             ))}
-          </ul>
-        </nav>
+          </motion.ul>
+        </motion.nav>
       </div>
 
       {/* Footer with Logout */}
@@ -243,7 +274,7 @@ const toggleSubMenu = (name) => {
         <div className="p-4 border-t border-gray-500">
           <button
           onClick={()=>handleLogout()}
-            className={`w-full flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors duration-200 ${
+            className={`w-full flex items-center p-3 rounded-lg hover:bg-gray-800  ${
               isCollapsed ? "justify-center" : ""
             }`}
           >
@@ -258,7 +289,7 @@ const toggleSubMenu = (name) => {
           </div>
         )}
       </div>
-    </aside>
+    </motion.aside>
   );
 };
 

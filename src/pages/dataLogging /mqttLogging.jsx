@@ -31,7 +31,6 @@ export const MQTTConfigPage = () => {
       password: "",
       topics: "",
       qos: "0",
-      targetTopic: "",
     },
     mode: "onSubmit",
   });
@@ -56,7 +55,6 @@ export const MQTTConfigPage = () => {
           password: mqttData.data.password ?? "",
           topics: mqttData.data.topics ?? "",
           qos: String(mqttData.data.qos ?? "0"),
-          targetTopic: mqttData.data.targetTopic ?? "",
         };
         reset(hydrated);
         // test with hydrated values
@@ -85,7 +83,6 @@ export const MQTTConfigPage = () => {
         password: values.password,
         topics: values.topics,
         qos: String(values.qos),
-        targetTopic: values.targetTopic,
       };
 
       const response = await axios.post(
@@ -116,7 +113,6 @@ export const MQTTConfigPage = () => {
           password: values.password,
           topics: values.topics,
           qos: String(values.qos),
-          targetTopic: values.targetTopic,
         },
       };
 
@@ -195,11 +191,7 @@ export const MQTTConfigPage = () => {
                 </label>
                 <input
                   type="text"
-                  {...register("broker", { required: "Broker Host is required" ,pattern: {
-                      value:
-                        /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)$/,
-                      message: "Invalid IP address format",
-                    },})}
+                  {...register("broker", { required: "Broker Host is required" })}
                   placeholder="Enter Broker Host"
                   className="w-full px-3 py-2 border rounded-lg"
                 />
@@ -252,58 +244,9 @@ export const MQTTConfigPage = () => {
               </div>
             </div>
 
-            {/* Topics + QoS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm mb-2">
-                  Topics<span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...register("topics", { required: "At least one topic is required" })}
-                  placeholder="Enter Topic(s), comma separated"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-                {errors.topics && (
-                  <p className="text-red-500 text-sm">{errors.topics.message}</p>
-                )}
-              </div>
+         
 
-              <div>
-                <label className="block text-sm mb-2">QoS Level</label>
-                <select
-                  {...register("qos")}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="0">0 - At most once</option>
-                  <option value="1">1 - At least once</option>
-                  <option value="2">2 - Exactly once</option>
-                </select>
-              </div>
-            </div>
 
-            {/* Target Topic */}
-            <div>
-              <label className="block text-sm mb-2">
-                Target Topic<span className="text-red-500">*</span>
-              </label>
-              <select
-                {...register("targetTopic", {
-                  required: "Target Topic is required",
-                })}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">-- Select Topic --</option>
-                {parsedTopics.map((t, i) => (
-                  <option key={i} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              {errors.targetTopic && (
-                <p className="text-red-500 text-sm">{errors.targetTopic.message}</p>
-              )}
-            </div>
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3">

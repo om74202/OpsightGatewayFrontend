@@ -13,11 +13,11 @@ export const HealthMonitoring = () => {
     memory: "",
     disk: "",
   });
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
 
   // Fetch health data from API
   const fetchHealthData = () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     fetch(`${process.env.REACT_APP_API_URL}/gatewayConfig/health`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch health data");
@@ -30,17 +30,17 @@ export const HealthMonitoring = () => {
           memory: data.memoryUsage,
           disk: data.diskUsage,
         });
-        setIsLoading(false);
+        // setIsLoading(false);
       })
       .catch((err) => {
         console.error(err);
-        setIsLoading(false);
+        // setIsLoading(false);
       });
   };
 
   useEffect(() => {
     fetchHealthData();
-    const interval = setInterval(fetchHealthData, 60000);
+    const interval = setInterval(fetchHealthData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -131,11 +131,12 @@ export const HealthMonitoring = () => {
                   </h3>
                 </div>
                 <p className="text-3xl font-bold mt-3 text-gray-900">
-                  {isLoading ? (
+                  {/* {isLoading ? (
                     <span className="animate-pulse text-gray-500">...</span>
                   ) : (
                     card.value
-                  )}
+                  )} */}
+                  {card.value}
                 </p>
               </div>
             );
@@ -166,7 +167,7 @@ export const HealthMonitoring = () => {
               try {
                 const ok = await confirm("Are you sure you want to Reboot the device?");
                 if (!ok) return;
-                const res = await axios.post(`${process.env.REACT_APP_API_URL}/system/reboot`);
+                const res = await axios.post(`${process.env.REACT_APP_API_URL}/gatewayConfig/system/reboot`);
                 alert(res.data.message);
               } catch (err) {
                 console.error(err);

@@ -1,5 +1,6 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './sidebar';
+import opsightLogo from '../Assets/opsightAIBlack.png'
 
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ const pageTitles = {
   };
 
 export function DashboardLayout() {
+  const navigate=useNavigate();
       const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const location = useLocation()
     let pageTitle = pageTitles[location.pathname];
@@ -40,22 +42,26 @@ export function DashboardLayout() {
     return (
         <div className="flex h-screen bg-gray-100 ">
                 <Sidebar 
-        isCollapsed={isSidebarCollapsed} 
+        isCollapsed={isSidebarCollapsed}
         toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
       <div 
-        className={`flex-1 flex  flex-col p-2 overflow-y-auto transition-all duration-300 ${
+        className={`flex-1 flex  flex-col p-2 overflow-y-visible transition-all duration-300 ${
           isSidebarCollapsed ? 'ml-20' : 'ml-52'
         }`}
       >
                 <header className="bg-white ml-4  border-b">
-                    <div className="flex items-center justify-between px-8 h-10">
+                    <div className="flex items-center justify-between px-8 h-11">
                         <h1 className="text-lg font-semibold">{pageTitle}</h1>
-                        <div className="flex items-center">
-                      
-  <span className='text-[16px] font-medium'>Opsight Gateway</span>
-  
- </div>
+                        
+                        <div className="flex items-center relative overflow-visible">
+                          <img 
+                            className="h-8 w-auto object-contain cursor-pointer relative z-10" 
+                            onClick={()=>window.open("https://opsight.ai", "_blank", "noopener,noreferrer")} 
+                            src={opsightLogo}
+                            alt="Opsight logo"
+                          />
+                        </div>
                     </div>
                 </header>
                 <main className="flex-1 overflow-y-auto p-4">

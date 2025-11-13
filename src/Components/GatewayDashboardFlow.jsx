@@ -75,7 +75,7 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       id: "iiot",
       type: "custom",
       data: {
-        label: `${iiot.name} (${iiot.type})`,
+        label: `${iiot.name} ${iiot.type}`,
         type: "iiot",
       },
       position: { x: 600, y: 229 },
@@ -84,7 +84,7 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       id: "gateway",
       type: "custom",
       data: {
-        label: `${gateway.name} (${gateway.type})`,
+        label: `${gateway.name} `,
         type: "gateway",
       },
       position: { x: 300, y: 150 },
@@ -109,8 +109,9 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       target: "iiot",
 
       type: "straight",
-      animated: true,
-      style: { stroke: "#10B981", strokeWidth: 5 },
+      animated: iiot.name===""?false:true,
+      style: { stroke: iiot.name !=="" ? "#10B981" : "#EF4444",
+         strokeWidth: 5 },
     },
     ...edges.map((edge) => ({
       id: `${edge.name}-to-gateway`,
