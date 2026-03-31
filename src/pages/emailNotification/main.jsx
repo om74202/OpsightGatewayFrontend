@@ -271,7 +271,7 @@ export const Main = () => {
 
     try{
       const payload = { ...merged, conditionExpression: buildPythonCondition(merged) };
-      const response=await axios.post(url, payload);
+      await axios.post(url, payload);
       notify.success("Rule saved successfully !")
       setShowRuleForm(false);
       getVariables();
@@ -355,7 +355,7 @@ export const Main = () => {
         return;
       }
 
-      const response=await axios.put(`${process.env.REACT_APP_API_URL}/emailNotification/config/update/config-1`, payload);
+      await axios.put(`${process.env.REACT_APP_API_URL}/emailNotification/config/update/config-1`, payload);
       await notify.success('Sender settings saved successfully!');
       setShowSettings(false);
     }catch(e){

@@ -19,7 +19,7 @@ import {
   Wand,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 const sidebarVariant={
   open:{

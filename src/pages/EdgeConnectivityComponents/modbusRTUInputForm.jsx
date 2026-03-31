@@ -121,7 +121,7 @@ export const ModbusRTUConfig = () => {
 
   useEffect(() => {
     getServerList();
-  }, [count]);
+  }, []);
 
   const testConnection = async (data) => {
     try {

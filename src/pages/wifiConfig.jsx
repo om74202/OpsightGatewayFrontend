@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Wifi, RefreshCcw, Eye, EyeOff, Lock, Loader2 } from "lucide-react";
 import axios from "axios";
-import { useConfirm, useNotify } from "../context/ConfirmContext";
+import { useNotify } from "../context/ConfirmContext";
 
 const normalizeSSID = (value = "") =>
   (typeof value === "string" ? value : "").replace(/\\x20/g, "");
@@ -53,6 +53,7 @@ export const WifiConnections = () => {
 
   useEffect(() => {
     handleScan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 

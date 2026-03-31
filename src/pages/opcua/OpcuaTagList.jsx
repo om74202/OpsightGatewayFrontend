@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Edit2, Trash2, Save, X, Database, Tag } from 'lucide-react';
+import { Search, Edit2, Trash2, Save, X } from 'lucide-react';
 import axios from 'axios';
 import { applyScaling } from "../../functions/tags";
 import DatabaseSelector from './database';
@@ -91,7 +91,7 @@ export const TagsList = () => {
       const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/writeData/${databaseConfig.db}`,{...databaseConfig,
         action:"stop",connectionId:"2"})
       if(response.data.status==="Success"){
-        const response2=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"2"});
+        await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"2"});
         if(response.data.status==="Success"){
           setIsConnected(false);
         }
@@ -159,7 +159,7 @@ export const TagsList = () => {
     }
     
     try{
-        const response=await axios.put(`${process.env.REACT_APP_API_URL}/opcua/updateTag/${tagId}`,{name:editValues.name,scaling:editValues.scaling})
+        await axios.put(`${process.env.REACT_APP_API_URL}/opcua/updateTag/${tagId}`,{name:editValues.name,scaling:editValues.scaling})
 
         setEditingId(null);
         setEditValues({});
@@ -174,7 +174,7 @@ export const TagsList = () => {
   const deleteTag = async(tagId) => {
     if (window.confirm('Are you sure you want to delete this tag?')) {
       try{
-        const response=await axios.delete(`${process.env.REACT_APP_API_URL}/opcua/deleteTag/${tagId}`)
+        await axios.delete(`${process.env.REACT_APP_API_URL}/opcua/deleteTag/${tagId}`)
         setCount(count+1); 
       }catch(e){
         console.log(e);
@@ -188,11 +188,6 @@ export const TagsList = () => {
       ...prev,
       [field]: value
     }));
-  };
-
-  // Format display values
-  const formatValue = (value) => {
-    return value === null || value === undefined ? '-' : value.toString();
   };
 
   return (
@@ -396,4 +391,3 @@ export const TagsList = () => {
     </div>
   );
 };
-

@@ -1,11 +1,9 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, RefreshCw, Save, CheckCircle, Wifi, WifiOff, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
-import { jsx } from 'react/jsx-runtime';
+import { Play, CheckCircle, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 import { applyScaling } from './../functions/tags';
 import { useConfirm, useNotify } from '../context/ConfirmContext';
-import { useForm, useFieldArray } from "react-hook-form";
 
 
  const skeletonRows = Array(5).fill(0);
@@ -317,18 +315,10 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
   setCount(0)
   },[selectedServer])
 
-    useEffect(()=>{
-      window.addEventListener("beforeunload",disConnectServer(true))
-      return ()=>{
-        disConnectServer(true);
-        window.removeEventListener("beforeunload",disConnectServer(true))
-      }
-    },[selectedServer.name])
-
-    const disConnectServer=async (first=false)=>{
+    const disConnectServer=useCallback(async (first=false)=>{
       try{
 
-                wsRef.current.close();
+                wsRef.current?.close();
       await axios.post(`${process.env.REACT_APP_API_URL}/gateway/stopBrowsing`,{type:selectedServer.type});
         if(!first){
           notify.success("Connection Disconnected Successfully")
@@ -341,19 +331,29 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
           notify.error("Make sure this connection is active")
         }
       }
-    }
-    console.log(dataType)
-
+    }, [notify, selectedServer.type])
     const saveTags=async()=>{
       try{
         const selectedTags=tags.filter((t)=>t.status==="pass")
-        const response=await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:selectedTags})
+        await axios.post(`${process.env.REACT_APP_API_URL}/allServers/tags/add`,{tags:selectedTags})
         notify.success("Tags saved successfully")
       }catch(e){
         console.log(e);
               notify.error("Failed to save tags, Make sure the names of the selected tags are unique");
       }
     }
+
+    useEffect(() => {
+      const handleBeforeUnload = () => {
+        disConnectServer(true);
+      };
+
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        handleBeforeUnload();
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }, [disConnectServer]);
 
 
 
@@ -412,7 +412,6 @@ function updateTagProperties(address, updatedFields) {
 const browseTags = useCallback(async () => {
   try {
     
-    console.log(dataType)
     const newAddresses = addresses.map((a) => ({
       address: dataType.value + a.address
     }));
@@ -432,15 +431,23 @@ const browseTags = useCallback(async () => {
       }
     };
     console.log(payload);
-       const response=await axios.post(`/mitsubishi-plc/start-background-read/`,payload)
+       await axios.post(`/mitsubishi-plc/start-background-read/`,payload)
        setCount(count+1);
-    console.log(response.data)
   } catch (e) {
     console.log(e);
   }finally{
     setIsLoading(false)
   }
-}, [addresses, dataType,count]); 
+}, [
+  addresses,
+  confirm,
+  count,
+  dataType,
+  notify,
+  selectedServer.data.communicationType,
+  selectedServer.data.ip,
+  selectedServer.data.port,
+]); 
 
 
 
@@ -473,7 +480,6 @@ const browseTags = useCallback(async () => {
         if (!streamNames.includes(msg.stream)) return;
         
 
-        const deviceName = msg.stream.split(":")[1];
         const matchedServer = streamNames.find(
           (s) => s === msg.stream
         );
@@ -518,7 +524,7 @@ const browseTags = useCallback(async () => {
         wsRef.current = null;
       }
     };
-  }, [count]);
+  }, [count, selectedServer.id, selectedServer.serverId]);
 
 
 

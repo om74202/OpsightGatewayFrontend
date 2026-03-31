@@ -120,6 +120,7 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
 
   useEffect(() => {
     getShift();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // -------------------- Availability (custom tags) --------------------
@@ -601,10 +602,6 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
                 <p className="text-gray-500 text-center py-8">No shifts added yet</p>
               ) : (
                 shifts.map((shift) => {
-                  const tagNames = (shift.tags || []).map((x) => (typeof x === 'string' ? x : x?.name));
-                  const customNames = (shift.customTags || []).map((x) =>
-                    typeof x === 'string' ? x : x?.name
-                  );
                   return (
                     <div
                       key={shift.id}

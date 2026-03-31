@@ -16,46 +16,6 @@ const disconnectApis = [
   `${process.env.REACT_APP_API_URL}/opcua/LogData`,
 ];
 
-
-const SERVER_REGISTRY = {
-  SIEMENS: {
-    id: "S-7",
-    label: "Siemens",
-    connect: "/siemen-plc/data-flush",
-    disconnect: "http://127.0.0.1:8001/disconnect",
-  },
-  OPCUA: {
-    id: "OPC UA",
-    label: "OPC UA",
-    connect: `${process.env.REACT_APP_API_URL}/opcua/LogData`,
-    disconnect: `${process.env.REACT_APP_API_URL}/opcua/writeData/Influx`,
-  },
-  TCP: {
-    id: "Modbus-TCP",
-    label: "TCP",
-    connect: "/modbus-tcp/data-flush",
-    disconnect: "http://100.107.186.122:8002/disconnect",
-  },
-  SLMP: {
-    id: "SLMP",
-    label: "SLMP",
-    connect: "/mitsubishi-plc/data-flush",
-    disconnect: "http://100.107.186.122:8003/disconnect",
-  },
-  RTU: {
-    id: "Modbus-RTU",
-    label: "RTU",
-    connect: "/modbus-rtu/data-flush",
-    disconnect: "http://100.107.186.122:8000/disconnect",
-  },
-  All: {
-    id: "All",
-    label: "RTU",
-    connect: "/central/data-flush",
-    disconnect: "http://100.107.186.122:8000/disconnect",
-  },
-};
-
 export const WizardMain = () => {
   const [serverList, setServerList] = useState([]);
   const [shifts, setShifts] = useState([]);

@@ -105,6 +105,7 @@ export const FormulaConfig = () => {
   const [expression, setExpression] = useState("");
   const [formulaName, setFormulaName] = useState("");
   const [savedFormulas, setSavedFormulas] = useState([]);
+  const [testValues] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
@@ -218,7 +219,7 @@ export const FormulaConfig = () => {
   }, [selectedServer, customTagSuggestions]);
 
   // ---------- Helpers ----------
-  const parseFormula = (input, vars = variables) => {
+  const parseFormula = useCallback((input, vars = variables) => {
     try {
       let testExpression = input;
 
@@ -243,7 +244,7 @@ export const FormulaConfig = () => {
     } catch {
       return { isValid: false, error: "Invalid formula syntax" };
     }
-  };
+  }, [variables]);
 
   const getCurrentWord = (text, position) => {
     let start = position;
@@ -460,6 +461,8 @@ export const FormulaConfig = () => {
     (value) => validateConditionValue(value, buildAllowedIdentifiersForEdit),
     [buildAllowedIdentifiersForEdit]
   );
+
+
 
   // ---------- Create form interactions ----------
   const handleInputChange = (e) => {
@@ -681,7 +684,7 @@ export const FormulaConfig = () => {
       const res = parseFormula(value, allowed);
       return res.isValid || res.error;
     },
-    [buildAllowedIdentifiersForEdit]
+    [buildAllowedIdentifiersForEdit, parseFormula]
   );
 
   const saveEdit = async (formula, values) => {

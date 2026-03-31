@@ -27,7 +27,7 @@ useEffect(() => {
       selectedTopic
     );
   }
-}, [selectedDbType, selectedBucket, selectedMeasurement, selectedTopic]);
+}, [selectedDbType, selectedBucket, selectedMeasurement, selectedTopic, onChange]);
 
   return (
     <div className="p-4 flex items-center space-x-4">

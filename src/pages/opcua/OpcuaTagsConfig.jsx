@@ -5,7 +5,7 @@ import { applyScaling } from "../../functions/tags";
 import { useNotify } from "../../context/ConfirmContext";
 
 
-const ServerSection = React.memo(({  updateTagProperties, setIsExpanded,isExpanded,isConnected,subscribedNodes=[]}) => (
+const ServerSection = React.memo(({  updateTagProperties, isExpanded,isConnected,subscribedNodes=[]}) => (
   <div>
     <div className="bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
     
@@ -117,15 +117,16 @@ export const OpcuaTagsConfig = ({serverInfo}) => {
   const [isConnected,setIsConnected]=useState(false)
   const [isLoading,setIsLoading]=useState(false)
   const [expandedNodes, setExpandedNodes] = useState({});
-  const [isExpanded,setIsExpanded]=useState(true);
+  const [isExpanded] = useState(true);
   const notify=useNotify()
 
-useEffect(()=>{
-  setSubscribedNodes([])
-  setStaticTags([])
-  browseTags()
+  useEffect(() => {
+    setSubscribedNodes([]);
+    setStaticTags([]);
+    browseTags();
     getStaticTags();
-},[serverInfo])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverInfo]);
 
   const handleSubscribeNodeChange = (newNode) => {
     setSubscribedNodes((prevNodes) => {
@@ -190,19 +191,10 @@ useEffect(()=>{
     }
   }
 
-  const deleteTag=(id)=>{
-    try{
-
-    }catch(e){
-      console.log(e);
-      notify.error("Tag deletion failed , Internal Server error")
-    }
-  }
-
   const disConnectServer=async()=>{
     setIsLoading(true)
     try{
-      const response=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"1"})
+      await axios.post(`${process.env.REACT_APP_API_URL}/opcua/disconnectServer`,{connectionId:"1"})
       notify.success("Server Disconnected");
       setIsConnected(false);
     }catch(e){
@@ -224,7 +216,7 @@ useEffect(()=>{
         if(connected.data.status==="Success"){
           setIsConnected(true)
             
-            const subscribed=await axios.post(`${process.env.REACT_APP_API_URL}/opcua/subscribeNodes`,{nodeIds,connectionId:"1"});
+            await axios.post(`${process.env.REACT_APP_API_URL}/opcua/subscribeNodes`,{nodeIds,connectionId:"1"});
         }
 
     }catch(e){
@@ -235,6 +227,7 @@ useEffect(()=>{
 
   useEffect(()=>{
     browseTags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[nodeIds])
 
   const getStaticTags = async () => {

@@ -385,7 +385,6 @@ export const ModbusTCPConfig = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [editConfig, setEditConfig] = useState({});
   const [oldName,setOldName]=useState(null);
   const [serverList, setServerList] = useState([]);
 
@@ -548,23 +547,6 @@ export const ModbusTCPConfig = () => {
       console.log(e);
       notify.error("Failed to delete connection");
 
-    }
-  };
-
-  const handleEdit = (name, value) => {
-    if (name === "name" || name === "frequency") {
-      setEditConfig((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    } else {
-      setEditConfig((prev) => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          [name]: value,
-        },
-      }));
     }
   };
 
@@ -750,7 +732,6 @@ export const ModbusTCPConfig = () => {
                             {...registerEdit("name", {
                               required: "Connection name is required",
                               minLength: { value: 2, message: "Min 2 characters" },
-                              onChange: (e) => handleEdit("name", e.target.value),
                             })}
                             className={`w-full border px-2 py-1 rounded ${
                               editErrors.name ? "border-red-500" : ""
@@ -774,7 +755,6 @@ export const ModbusTCPConfig = () => {
                                   /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/,
                                 message: "Invalid IPv4 address",
                               },
-                              onChange: (e) => handleEdit("ip", e.target.value),
                             })}
                             className={`w-32 border px-2 py-1 rounded ${
                               editErrors.data?.ip ? "border-red-500" : ""
@@ -787,10 +767,9 @@ export const ModbusTCPConfig = () => {
                             {...registerEdit("data.port", {
                               required: "Port is required",
                               validate: (v) =>
-                                Number(v) > 0 &&
-                                Number.isInteger(Number(v)) ||
+                                (Number(v) > 0 &&
+                                Number.isInteger(Number(v))) ||
                                 "Port must be a positive integer",
-                              onChange: (e) => handleEdit("port", e.target.value),
                             })}
                             className={`w-20 border px-2 py-1 rounded ${
                               editErrors.data?.port ? "border-red-500" : ""
@@ -820,10 +799,9 @@ export const ModbusTCPConfig = () => {
                             {...registerEdit("frequency", {
                               required: "Frequency is required",
                               validate: (v) =>
-                                Number(v) > 0 &&
-                                Number.isFinite(Number(v)) ||
+                                (Number(v) > 0 &&
+                                Number.isFinite(Number(v))) ||
                                 "Frequency must be > 0",
-                              onChange: (e) => handleEdit("frequency", e.target.value),
                             })}
                             className={`w-20 border px-2 py-1 rounded ${
                               editErrors.frequency ? "border-red-500" : ""
@@ -869,7 +847,6 @@ export const ModbusTCPConfig = () => {
                             onClick={() => {
                               setEditingId(server.id);
                               setOldName(server.name)
-                              setEditConfig(server);
                               // hydrate RHF edit form with existing row values
                               resetEdit({
                                 name: server.name ?? "",

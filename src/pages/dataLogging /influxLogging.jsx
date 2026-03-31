@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Save,
   Wifi,
@@ -34,7 +34,6 @@ export const InfluxConfigPage = () => {
     handleSubmit,
     setError,
     clearErrors,
-    watch,
     formState: { errors },
     reset,
   } = useForm({
@@ -52,16 +51,6 @@ export const InfluxConfigPage = () => {
 
   const [loading, setLoading] = useState(false);
 
-
-  const serverFilterOptions = useMemo(() => {
-    const nameSet = new Set();
-    const typeSet = new Set();
-   
-    return {
-      serverNames: Array.from(nameSet),
-      serverTypes: Array.from(typeSet),
-    };
-  }, []);
   // Fetch existing config
   const getAllDatabases = async () => {
     try {

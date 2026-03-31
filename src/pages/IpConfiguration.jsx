@@ -88,7 +88,6 @@ export const StaticIPConfiguration = () => {
   const closeModal = () => {
     setModalType(null);
     setEditMode(false);
-    setProfileToEdit(null);
     reset({
       name: "",
       staticIP: "",

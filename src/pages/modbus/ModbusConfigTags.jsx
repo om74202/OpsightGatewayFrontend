@@ -663,18 +663,6 @@ export const ModbusConfigTags = ({
       )
     );
   }, []);
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      disConnectServer(true);
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      handleBeforeUnload();
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [disConnectServer]);
-
   // UI: add/remove device buttons (affects RHF + UI state)
   const addDevice = () => {
     const nextId = (serversUi[serversUi.length - 1]?.id || 0) + 1;
@@ -759,7 +747,19 @@ export const ModbusConfigTags = ({
         notifyRef.current?.error("Failed to disconnect");
       }
     }
-  }, [api, selectedServer.type]);
+  }, [selectedServer.type]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disConnectServer(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      handleBeforeUnload();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [disConnectServer]);
 
   /* ------------------------ Browse (validated by RHF) ----------------------- */
   const onBrowse = async (values) => {

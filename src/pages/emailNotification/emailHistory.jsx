@@ -4,7 +4,6 @@ import {
   RefreshCcw,
   ChevronLeft,
   ChevronRight,
-  AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -256,16 +255,7 @@ export const AlertsHistory = () => {
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <SkeletonRows />
-                ) : err ? (
-                  <tr>
-                    <td colSpan={4} className="p-6 text-center">
-                      <div className="flex items-center justify-center gap-2 text-red-600">
-                        <AlertCircle className="w-5 h-5" />
-                        <span>{err}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : pageSlice.length === 0 ? (
+                ) :  pageSlice.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-10 text-center text-gray-500">
                       No alerts found for selected date.

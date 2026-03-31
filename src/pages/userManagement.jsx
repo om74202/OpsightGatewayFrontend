@@ -11,7 +11,6 @@ export const UserManagement = () => {
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors },
   } = useForm();
   const [users, setUsers] = useState([]);
