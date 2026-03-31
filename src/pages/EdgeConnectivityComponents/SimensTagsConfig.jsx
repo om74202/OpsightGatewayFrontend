@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle,
+  Info,
 } from "lucide-react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
@@ -15,6 +16,33 @@ import axios from "axios";
 
 const Datatypes = ["INT", "DINT", "REAL", "BOOL"];
 const DatatypesGlobal = ["INT", "DINT", "DWORD", "REAL", "BOOL"];
+const DB_INFO_TEXT =
+  "DB (Data Block) number identifies which Siemens data block holds the tag.";
+const AREA_INFO_TEXT =
+  "Area specifies the Siemens memory area (e.g., M, Q, I) for a global tag.";
+const OFFSET_INFO_TEXT =
+  "Offset is the byte position within the selected DB/area where the tag starts.";
+
+const TooltipLabel = ({ label, infoText, required }) => (
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    <span className="inline-flex items-center gap-1">
+      <span
+        className="relative group flex items-center cursor-help"
+        tabIndex={0}
+        aria-label={infoText}
+      >
+        <Info className="w-4 h-4 text-gray-500" aria-hidden="true" />
+        <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-60 -translate-x-1/2 rounded bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+          {infoText}
+        </span>
+      </span>
+      <span>
+        {label}
+        {required && <span className="text-red-500">*</span>}
+      </span>
+    </span>
+  </label>
+);
 
 /* -------------------------------------------------------------------------- */
 /*                        Server section (form-driven UI)                      */
@@ -129,9 +157,11 @@ const ServerSection = React.memo(function ServerSection({
 
                   {/* db */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      db<span className="text-red-500">*</span>
-                    </label>
+                    <TooltipLabel
+                      label="db"
+                      required
+                      infoText={DB_INFO_TEXT}
+                    />
                     <input
                       className="px-3 py-2 border border-gray-300 rounded text-sm w-full"
                       type="number"
@@ -150,9 +180,11 @@ const ServerSection = React.memo(function ServerSection({
 
                   {/* offset */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      offset<span className="text-red-500">*</span>
-                    </label>
+                    <TooltipLabel
+                      label="offset"
+                      required
+                      infoText={OFFSET_INFO_TEXT}
+                    />
                     <input
                       className="px-3 py-2 border border-gray-300 rounded text-sm w-full"
                       type="number"
@@ -258,9 +290,11 @@ const ServerSection = React.memo(function ServerSection({
 
                   {/* area */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      area<span className="text-red-500">*</span>
-                    </label>
+                    <TooltipLabel
+                      label="area"
+                      required
+                      infoText={AREA_INFO_TEXT}
+                    />
                     <input
                       type="text"
                       className="px-3 py-2 border border-gray-300 rounded text-sm w-full"
@@ -278,9 +312,11 @@ const ServerSection = React.memo(function ServerSection({
 
                   {/* offset */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      offset<span className="text-red-500">*</span>
-                    </label>
+                    <TooltipLabel
+                      label="offset"
+                      required
+                      infoText={OFFSET_INFO_TEXT}
+                    />
                     <input
                       className="px-3 py-2 border border-gray-300 rounded text-sm w-full"
                       type="number"
@@ -512,14 +548,18 @@ export const SimensTagsConfig = ({ serverInfo }) => {
     [browsedTags]
   );
 
-  const disConnectServer = useCallback(async () => {
+  const disConnectServer = useCallback(async (first=false) => {
     try {
-      await axios.post(`/siemen-plc/data-flush`);
-      notify.success("Disconnected successfully");
+      await axios.post(`${process.env.REACT_APP_API_URL}/gateway/stopBrowsing`,{type:serverInfo.type});
+      if(!first){
+        notify.success("Disconnected successfully");
       wsRef.current?.close();
+      }
     } catch (e) {
       console.log(e);
-      notify.error("Make sure this connection is active");
+      if(!first){
+        notify.error("Make sure this connection is active");
+      }
     }
   }, [notify]);
 
@@ -569,6 +609,14 @@ export const SimensTagsConfig = ({ serverInfo }) => {
     control,
     name: "globalTags",
   });
+
+    useEffect(()=>{
+      window.addEventListener("beforeunload",disConnectServer(true))
+      return ()=>{
+        disConnectServer(true);
+        window.removeEventListener("beforeunload",disConnectServer(true))
+      }
+    },[serverInfo.name])
 
   /* -------------------------- Browsed tags helpers ------------------------- */
   const updateBrowsedTag = useCallback((id, field, value) => {

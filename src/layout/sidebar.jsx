@@ -27,8 +27,7 @@ import {
   Wand,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { motion } from "motion/react";
-import { DashboardLayout } from "./DashboardLayout";
+import { AnimatePresence, motion } from "motion/react";
 
 const sidebarVariant={
   open:{
@@ -91,6 +90,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
         { name: "OPC UA", path: "/gateway/edge-connection/opcua", tab: "OPCUA" },
         { name: "Modbus RTU", path: "/gateway/edge-connection/modbus-rtu", tab: "Modbus RTU" },
         { name: "Modbus TCP", path: "/gateway/edge-connection/modbus-tcp", tab: "Modbus TCP" },
+        { name: "EtherNet/IP", path: "/gateway/edge-connection/ethernet-ip", tab: "EtherNet/IP" },
         { name: "S-7", path: "/gateway/edge-connection/s-7", tab: "Simens" },
         { name: "SLMP", path: "/gateway/edge-connection/slmp", tab: "Seamless Message Protocol" },
       ],
@@ -200,9 +200,9 @@ const toggleSubMenu = (name) => {
               <motion.li variants={childrenVariants}   key={item.name} className={` mb-0  text-sm`}>
                 {item.children ? (
                   <>
-                    <button
+                    <motion.button
                       onClick={() => toggleSubMenu(item.name)}
-                      className={`w-full  flex justify-between p-3 rounded-lg  ${
+                      className={`w-full  flex justify-between px-3 p-1.5 rounded-lg  ${
                         expanded[item.name]
                           ? "bg-gray-800 font-semibold"
                           : "hover:bg-gray-800"
@@ -214,24 +214,38 @@ const toggleSubMenu = (name) => {
                       {!isCollapsed && (
                         <>
                           {item.name}
-                          {expanded[item.name] ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
+                          <motion.span
+                            animate={{ rotate: expanded[item.name] ? 90 : 0 }}  // 0° = right, 90° = down
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            >
                             <ChevronRight className="w-4 h-4" />
-                          )}
+                          </motion.span>
                         </>
                       )}
-                    </button> 
+                    </motion.button> 
 
                     {/* Submenu */}
-                    {expanded[item.name] && !isCollapsed && (
-                      <ul className="ml-6 mt-1">
+                    <AnimatePresence initial={false}>
+                      {expanded[item.name] && !isCollapsed && (
+                      <motion.ul
+                      key="submenu"
+                          className="ml-6 mt-1 overflow-hidden"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}>
                         {item.children.map((subItem) => (
-                          <li key={subItem.tab}>
+                          <motion.li
+                          key={subItem.tab}
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.15,  }}
+                          >
                             <NavLink
                               to={subItem.path}
                               className={({ isActive }) =>
-                                `block px-3 py-2 rounded text-xs  ${
+                                `block px-3 py-1 rounded text-xs  ${
                                   isActive
                                     ? "bg-gray-800 font-semibold"
                                     : "hover:bg-gray-800"
@@ -240,17 +254,18 @@ const toggleSubMenu = (name) => {
                             >
                               {subItem.name}
                             </NavLink>
-                          </li>
+                          </motion.li>
                         ))}
-                      </ul>
+                      </motion.ul>
                     )}
+                    </AnimatePresence>
                   </>
                 ) : (
                   <NavLink
                     to={item.path}
                     end={item.end}
                     className={({ isActive }) =>
-                      `flex items-center p-3 rounded-lg  ${
+                      `flex items-center px-3 py-1.5 rounded-lg  ${
                         isActive
                           ? "bg-gray-800 font-semibold"
                           : "hover:bg-gray-800"

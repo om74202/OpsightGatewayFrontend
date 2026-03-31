@@ -3,7 +3,7 @@
 
 
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   Play,
   Save as SaveIcon,
@@ -15,7 +15,7 @@ import {
   Info,
 } from "lucide-react";
 import axios from "axios";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { applyScaling } from "../../functions/tags";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
@@ -37,6 +37,45 @@ const BYTE_INFO_TEXT =
 const CONVERSION_INFO_TEXT =
   "Conversion defines how to combine multiple registers (e.g., MSRF = most significant register first).";
 
+const OVERLAPPING_BYTE_ERROR =
+  "Overlapping ranges cannot share the same byte value";
+
+const getOverlappingByteErrors = (ranges = []) => {
+  const normalized = Array.isArray(ranges) ? ranges : [];
+  const overlaps = {};
+
+  for (let i = 0; i < normalized.length; i += 1) {
+    const currentStart = Number(normalized[i]?.addresses);
+    const currentCount = Number(normalized[i]?.count);
+    const currentByte = Number(normalized[i]?.byte);
+    if (!Number.isFinite(currentStart) || !Number.isFinite(currentCount) || !Number.isFinite(currentByte)) {
+      continue;
+    }
+    if (currentCount <= 0) continue;
+    const currentEnd = currentStart + currentCount;
+
+    for (let j = i + 1; j < normalized.length; j += 1) {
+      const compareStart = Number(normalized[j]?.addresses);
+      const compareCount = Number(normalized[j]?.count);
+      const compareByte = Number(normalized[j]?.byte);
+      if (!Number.isFinite(compareStart) || !Number.isFinite(compareCount) || !Number.isFinite(compareByte)) {
+        continue;
+      }
+      if (compareCount <= 0) continue;
+      if (currentByte !== compareByte) continue;
+
+      const compareEnd = compareStart + compareCount;
+      const overlapsInclusive = currentStart <= compareEnd && compareStart <= currentEnd;
+      if (overlapsInclusive) {
+        overlaps[i] = OVERLAPPING_BYTE_ERROR;
+        overlaps[j] = OVERLAPPING_BYTE_ERROR;
+      }
+    }
+  }
+
+  return overlaps;
+};
+
 /* --------------------- Child: manages ranges with useFieldArray --------------------- */
 const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
   const {
@@ -48,6 +87,15 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
     name: `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges`,
     keyName: "key",
   });
+  const watchedRanges =
+    useWatch({
+      control,
+      name: `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges`,
+    }) || [];
+  const overlappingErrors = useMemo(
+    () => getOverlappingByteErrors(watchedRanges),
+    [watchedRanges]
+  );
 
   return (
     <>
@@ -55,9 +103,15 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
         Register Ranges <span className="text-red-500">*</span>
       </h5>
 
-      {(rangeFields || []).map((range, rIndex) => (
-        <div key={range.key} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div>
+      {(rangeFields || []).map((range, rIndex) => {
+        const byteError =
+          errors?.servers?.[serverIndex]?.functionConfigs?.[fcIndex]?.ranges?.[rIndex]
+            ?.byte;
+        const overlapMessage = byteError ? null : overlappingErrors[rIndex];
+
+        return (
+          <div key={range.key} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div>
             <label className="block text-sm text-gray-600 mb-1">
               Start<span className="text-red-500">*</span>
             </label>
@@ -87,9 +141,9 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
                 }
               </p>
             )}
-          </div>
+            </div>
 
-          <div>
+            <div>
             <label className="block text-sm text-gray-600 mb-1">
               Count<span className="text-red-500">*</span>
             </label>
@@ -114,9 +168,9 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
                 }
               </p>
             )}
-          </div>
+            </div>
 
-          <div>
+            <div>
             <label className="block text-sm text-gray-600 mb-1">
               <span className="inline-flex items-center gap-1">
                 <span
@@ -158,9 +212,12 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
                 }
               </p>
             )}
-          </div>
+            {!byteError && overlapMessage && (
+              <p className="text-xs text-red-600 mt-1">{overlapMessage}</p>
+            )}
+            </div>
 
-          <div className="flex items-end">
+            <div className="flex items-end">
             <button
               type="button"
               onClick={() => removeRange(rIndex)}
@@ -168,9 +225,10 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
             >
               Remove
             </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <button
         type="button"
@@ -345,6 +403,7 @@ export const ServerSection = React.memo(
                         )}
                         className={dropdownClass}
                       >
+                        <option value="None">None</option>
                         <option value="msrf">msrf</option>
                         <option value="lsrf">lsrf</option>
                       </select>
@@ -377,7 +436,7 @@ export const ServerSection = React.memo(
                 onClick={() =>
                   appendFunc({
                     functionCode: "3",
-                    conversion: "",
+                    conversion: "None",
                     ranges: [{ addresses: "", count: 1, byte: 1 }],
                   })
                 }
@@ -576,7 +635,7 @@ export const ModbusConfigTags = ({
           functionConfigs: [
             {
               functionCode: "3",
-              conversion: "",
+              conversion: "None",
               ranges: [{ addresses: "", count: 1, byte: 1 }],
             },
           ],
@@ -605,6 +664,13 @@ export const ModbusConfigTags = ({
       )
     );
   }, []);
+    useEffect(()=>{
+      window.addEventListener("beforeunload",disConnectServer(true))
+      return ()=>{
+        disConnectServer(true);
+        window.removeEventListener("beforeunload",disConnectServer(true))
+      }
+    },[selectedServer.name])
 
   // UI: add/remove device buttons (affects RHF + UI state)
   const addDevice = () => {
@@ -677,14 +743,18 @@ export const ModbusConfigTags = ({
   //TODO:i don't want to hit the disconnectserver on entering the page i want it only on redirect or closing the page
 
   // Disconnect server
-  const disConnectServer = useCallback(async () => {
+  const disConnectServer = useCallback(async (first=false) => {
     try {
-      await axios.post(`${api}/data-flush`);
-      notifyRef.current?.success("Server Disconnected Successfully");
+      await axios.post(`${process.env.REACT_APP_API_URL}/gateway/stopBrowsing`,{type:selectedServer.type});
+      if(!first){
+        notifyRef.current?.success("Server Disconnected Successfully");
       wsRef.current?.close();
+      }
     } catch (e) {
       console.log(e);
-      notifyRef.current?.error("Failed to disconnect");
+      if(!first){
+        notifyRef.current?.error("Failed to disconnect");
+      }
     }
   }, [api]);
 
@@ -712,6 +782,25 @@ export const ModbusConfigTags = ({
       });
 
       clearErrors();
+
+      let hasOverlappingRanges = false;
+      values.servers.forEach((srv, serverIdx) => {
+        (srv.functionConfigs || []).forEach((fc, fcIdx) => {
+          const overlaps = getOverlappingByteErrors(fc.ranges);
+          Object.entries(overlaps).forEach(([rangeIdx, message]) => {
+            hasOverlappingRanges = true;
+            setError(
+              `servers.${serverIdx}.functionConfigs.${fcIdx}.ranges.${rangeIdx}.byte`,
+              { type: "manual", message }
+            );
+          });
+        });
+      });
+
+      if (hasOverlappingRanges) {
+        notify.error("Resolve overlapping register ranges before browsing");
+        return;
+      }
 
       const ok=await confirm("Browsing will temporarily stop any ongoing data logging . Do you want to continue?")
       if(!ok) return;

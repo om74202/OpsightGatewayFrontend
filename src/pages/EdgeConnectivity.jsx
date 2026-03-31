@@ -1,8 +1,9 @@
-import { useParams, useSearchParams } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { OpcuaInputForm } from "./EdgeConnectivityComponents/OpcuaInputForm"
 import { SimensInputForm } from "./EdgeConnectivityComponents/simensInputForm"
 import { ModbusTCPConfig } from "./EdgeConnectivityComponents/modbusTCPInputFrom"
 import { ModbusRTUConfig } from "./EdgeConnectivityComponents/modbusRTUInputForm"
+import { EthernetIPInputForm } from "./EdgeConnectivityComponents/EthernetIPInputForm"
 import { SLMPConfig } from "./SlmpInputForm"
 
 export const EdgeConnectivity=()=>{
@@ -29,6 +30,13 @@ export const EdgeConnectivity=()=>{
                 && 
                 <div>
                     <ModbusRTUConfig/>
+                </div>
+            }
+            {
+                (tab==="ethernet-ip")
+                &&
+                <div>
+                    <EthernetIPInputForm/>
                 </div>
             }
             {

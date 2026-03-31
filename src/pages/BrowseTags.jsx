@@ -4,6 +4,7 @@ import { ModbusConfigTags } from "./modbus/ModbusConfigTags";
 import { SimensTagsConfig } from "./EdgeConnectivityComponents/SimensTagsConfig";
 import axios from "axios";
 import { SlmpBrowseTags } from "./slmpBrowseTags";
+import { EthernetIPBrowseTags } from "./ethernetip/EthernetIPBrowseTags";
 
 export function capitalizeFirstLetter(str) {
   if (typeof str !== 'string' || str.length === 0) {
@@ -39,13 +40,29 @@ export default function BrowseTagsPage(){
       case "OPC UA":
         return <OpcuaTagsConfig serverInfo={selectedServer}/>;
       case "Modbus-RTU":
-        return <ModbusConfigTags selectedServer={selectedServer} streamNames={streamNames} />;
+        return (
+          <ModbusConfigTags
+            key="modbus-rtu"
+            selectedServer={selectedServer}
+            streamNames={streamNames}
+          />
+        );
       case "Modbus-TCP":
-        return <ModbusConfigTags type="tcp" api="/modbus-tcp" selectedServer={selectedServer}/>;
+        return (
+          <ModbusConfigTags
+            key="modbus-tcp"
+            type="tcp"
+            api="/modbus-tcp"
+            selectedServer={selectedServer}
+          />
+        );
       case "S-7":
         return <SimensTagsConfig  serverInfo={selectedServer}/>;
-        case "SLMP":
+      case "SLMP":
         return <SlmpBrowseTags selectedServer={selectedServer}/>;
+      case "EtherNet-IP":
+      case "EtherNet/IP":
+        return <EthernetIPBrowseTags selectedServer={selectedServer} />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-40 text-center text-gray-500">

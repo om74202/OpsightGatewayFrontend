@@ -18,6 +18,7 @@ export const ModbusRTUConfig = () => {
   const [editingId, setEditingId] = useState(null);
   const [editConfig, setEditConfig] = useState({});
   const [serverList, setServerList] = useState([]);
+  const [oldName,setOldName]=useState(null);
   const [count, setCount] = useState(0);
   const confirm=useConfirm()
   const {
@@ -90,6 +91,7 @@ export const ModbusRTUConfig = () => {
     try {
       const response = await axios.post(`/modbus-rtu/test-connection`, {
         name: config?.name,
+        oldName:oldName,
         port,
         baudRate,
         parity: config?.data?.parity,
@@ -164,6 +166,7 @@ export const ModbusRTUConfig = () => {
       await axios.post(`${process.env.REACT_APP_API_URL}/allServers/add`, {
         type: "Modbus-RTU",
         ...data,
+        frequency:Number.parseInt(data.frequency,10),
         
         data: {
           stopBits: data.stopBits,
@@ -606,6 +609,7 @@ const handleSaveEditValues = async (id, values) => {
                           <button
                             onClick={() => {
                               setEditingId(server.id);
+                              setOldName(server.name)
                               setEditConfig(server);
                               resetEdit({
       name: server.name ?? "",

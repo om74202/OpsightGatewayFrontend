@@ -15,9 +15,9 @@ const deviceTypes = [
   { key: 'timer (coil)', value: 'TC' },
   { key: 'timer (switch)', value: 'TS' },
   { key: 'counter', value: 'CN' },
+  { key: 'holding', value: 'D' },
   { key: 'counter (coil)', value: 'CC' },
   { key: 'counter (switch)', value: 'CS' },
-  { key: 'word', value: 'D' },
   { key: 'Bit', value: 'M' },
   {key:'Input' , value:'X'},
   {key:'Word' , value:'W'},
@@ -317,20 +317,29 @@ export const SlmpBrowseTags = ({api="/mitsubishi-plc" ,selectedServer}) => {
   setCount(0)
   },[selectedServer])
 
-    const disConnectServer=async ()=>{
+    useEffect(()=>{
+      window.addEventListener("beforeunload",disConnectServer(true))
+      return ()=>{
+        disConnectServer(true);
+        window.removeEventListener("beforeunload",disConnectServer(true))
+      }
+    },[selectedServer.name])
+
+    const disConnectServer=async (first=false)=>{
       try{
-        // setServers(prev=>prev.map((server)=>{
-        //   return {...server,tags:[],isConnected:false}
-        // }))
 
                 wsRef.current.close();
-        const response=await axios.post(`${api}/data-flush`);
-        notify.success("Connection Disconnected Successfully")
+      await axios.post(`${process.env.REACT_APP_API_URL}/gateway/stopBrowsing`,{type:selectedServer.type});
+        if(!first){
+          notify.success("Connection Disconnected Successfully")
+        }
 
         
       }catch(e){
         console.log(e);
-        notify.error("Make sure this connection is active")
+        if(!first){
+          notify.error("Make sure this connection is active")
+        }
       }
     }
     console.log(dataType)

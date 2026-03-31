@@ -141,7 +141,7 @@ const panelVariants = {
         disconnectApis.map((d) => axios.post(d, { action: "stop" }))
       );
 
-      notify.success("Data Logging to Influx Stopped ");
+      notify.success("Data Logging Stopped ");
       window.location.reload();
     } catch (e) {
       console.error(e);
@@ -300,27 +300,10 @@ const updateConfiguration = async () => {
 
       // save selection
       await axios.put(`${process.env.REACT_APP_API_URL}/allServers/setActive`, config);
+      
 
-      // start data-flush per selected server
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // previous behavior
-
-      await Promise.allSettled(
-        selectedServers.map((server) => {
-          let apiDetails;
-          if (server.type === "OPC_UA") apiDetails = SERVER_REGISTRY.OPCUA;
-          else if (server.type === "Modbus-TCP") apiDetails = SERVER_REGISTRY.TCP;
-          else if (server.type === "Modbus-RTU") apiDetails = SERVER_REGISTRY.RTU;
-          else if (server.type === "S-7") apiDetails = SERVER_REGISTRY.SIEMENS;
-          else if (server.type === "SLMP") apiDetails = SERVER_REGISTRY.SLMP;
-          if (!apiDetails?.connect) return Promise.resolve();
-          return axios.post(apiDetails.connect, { action: "start" });
-        })
-      );
-      try{
-        const response=await axios.post(`/central/data-flush`,{action:"start"}) 
-      }catch(e){
-        console.log(e);
-      }
+      
+     
 
       notify.success("Configuration updated successfully");
     } catch (error) {

@@ -20,6 +20,7 @@ export const SLMPConfig = () => {
   const [correctConfig, setCorrectConfig] = useState({});
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
+  const [oldName,setOldName]=useState(null)
   const [editingId, setEditingId] = useState(null);
   const [serverList, setServerList] = useState([]);
 
@@ -170,6 +171,7 @@ export const SLMPConfig = () => {
   // -------- ENTER EDIT MODE: seed RHF with row data --------
   const startEdit = (server) => {
     setEditingId(server.id);
+    setOldName(server.name)
     resetEdit({
       name: server?.name ?? "",
       ip: server?.data?.ip ?? "",
@@ -197,6 +199,7 @@ export const SLMPConfig = () => {
       const testResponse = await axios.post(
         `/mitsubishi-plc/test-connection`,
         {
+          oldName,
           ip: updatePayload.data.ip,
           port: updatePayload.data.port,
           frequency: updatePayload.frequency,

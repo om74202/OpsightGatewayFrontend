@@ -386,6 +386,7 @@ export const ModbusTCPConfig = () => {
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editConfig, setEditConfig] = useState({});
+  const [oldName,setOldName]=useState(null);
   const [serverList, setServerList] = useState([]);
   const [count, setCount] = useState(0);
 
@@ -460,6 +461,7 @@ export const ModbusTCPConfig = () => {
     try {
       const response = await axios.post(`/modbus-tcp/test-connection`, {
         name: config.name,
+        oldName:oldName,
         ip: config.data.ip,
         port,
         frequency,
@@ -894,6 +896,7 @@ export const ModbusTCPConfig = () => {
                           <button
                             onClick={() => {
                               setEditingId(server.id);
+                              setOldName(server.name)
                               setEditConfig(server);
                               // hydrate RHF edit form with existing row values
                               resetEdit({
