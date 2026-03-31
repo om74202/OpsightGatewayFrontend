@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Save, RotateCcw, Edit2, Trash2, Plus, X } from 'lucide-react';
 
 export const ModbusFormulaConfig = () => {
@@ -59,6 +59,7 @@ export const ModbusFormulaConfig = () => {
       }
       
       // Try to evaluate to check syntax
+      // eslint-disable-next-line no-new-func
       Function('"use strict"; return (' + testExpression + ')')();
       return { isValid: true, expression: input };
     } catch (error) {
@@ -178,6 +179,7 @@ export const ModbusFormulaConfig = () => {
         expression = expression.replace(regex, value);
       });
       
+      // eslint-disable-next-line no-new-func
       return Function('"use strict"; return (' + expression + ')')();
     } catch (error) {
       return 'Error';
@@ -479,4 +481,3 @@ export const ModbusFormulaConfig = () => {
     </div>
   );
 };
-

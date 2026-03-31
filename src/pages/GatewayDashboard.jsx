@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wifi, Database, Tag, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import axios from 'axios';
 import GatewayGraph from '../Components/GatewayDashboardFlow';
 

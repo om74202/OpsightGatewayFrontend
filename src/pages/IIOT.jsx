@@ -411,7 +411,6 @@ export const IIOT = () => {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ name: "", protocol: "", database: "", serverName: "" });
   const [count, setCount] = useState(0);
-  const [databases, setDatabases] = useState([]);
   const [editingTagId, setEditingTagId] = useState(null);
 
   // RHF for edit row
@@ -419,10 +418,8 @@ export const IIOT = () => {
     register,
     handleSubmit,
     reset,
-    setError,
     clearErrors,
     formState: { errors },
-    getValues,
   } = useForm({
     defaultValues: {
       editName: "",
@@ -445,7 +442,6 @@ export const IIOT = () => {
         return orderA - orderB;
       });
       setTags(sorted);
-      setDatabases(response.data?.databases || []);
     } catch (e) {
       console.log(e);
     } finally {

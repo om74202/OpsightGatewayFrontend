@@ -4,7 +4,6 @@ import {
   RefreshCcw,
   ChevronLeft,
   ChevronRight,
-  Tag as TagIcon,
   AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
@@ -13,8 +12,6 @@ export const AlertsHistory = () => {
   const [alerts, setAlerts] = useState([]);
   const [rules, setRules] = useState([]); // optional, for rule name fallback
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
-
   // Date filter (default: today)
   const now = useMemo(() => new Date(), []);
   const [selectedDate, setSelectedDate] = useState(toLocalDateValue(now));
@@ -90,17 +87,15 @@ export const AlertsHistory = () => {
         a.variable?.name ||
         a.variableName ||
         '—';
-      const value =
-        a.value ?? a.currentValue ?? a.reading ?? '—';
       const occurredAt =
         a.occurredAt || a.timestamp || a.createdAt || a.time || null;
-      const occurredDate = occurredAt ? new Date(occurredAt) : null;
 
       return {
         id: a.id ?? `${ruleName}-${tagName}-${occurredAt}-${Math.random()}`,
         ruleId: a.ruleId ?? a.rule?.id,
         ruleName,
         tagName,
+        occurredDate: occurredAt ? new Date(occurredAt) : null,
         raw: a,
       };
     });
@@ -122,7 +117,7 @@ export const AlertsHistory = () => {
       const time = a.occurredDate.getTime();
       return time >= startTime && time <= endTime;
     });
-  }, [normalizedAlerts]);
+  }, [normalizedAlerts, selectedDate]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -411,11 +406,4 @@ function toLocalDateValue(date) {
 function toNum(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
-}
-
-function formatValue(v) {
-  if (typeof v === 'number') return v;
-  const n = Number(v);
-  if (!Number.isNaN(n) && Number.isFinite(n)) return n;
-  return String(v ?? '—');
 }

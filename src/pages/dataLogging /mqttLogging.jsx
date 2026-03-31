@@ -6,9 +6,6 @@ import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useNotify } from "../../context/ConfirmContext";
 
-// Mock user data since localStorage is not available in artifacts
-const user = { role: "SuperAdmin" };
-
 export const MQTTConfigPage = () => {
   const [connectionTest, setConnectionTest] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,7 +18,6 @@ export const MQTTConfigPage = () => {
     formState: { errors },
     reset,
     getValues,
-    watch,
   } = useForm({
     defaultValues: {
       broker: "",
@@ -34,8 +30,6 @@ export const MQTTConfigPage = () => {
     },
     mode: "onSubmit",
   });
-
-  const topicsStr = watch("topics");
 
   // Fetch config and hydrate form
   const getAllMQTTConfig = async () => {
@@ -136,11 +130,6 @@ export const MQTTConfigPage = () => {
   const onSubmit = (values) => {
     saveMQTTConfig(values);
   };
-
-  const parsedTopics = (topicsStr || "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

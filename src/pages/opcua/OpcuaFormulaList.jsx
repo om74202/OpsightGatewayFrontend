@@ -7,14 +7,6 @@ import { capitalizeFirstLetter } from "../BrowseTags";
 import { useForm, Controller, useForm as useRowForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 
-const protocolOrder = {
-  "opc ua": 1,
-  modbusrtu: 2,
-  modbustcp: 3,
-  siemens: 4,
-  slmp: 5,
-};
-
 const PYTHON_RESERVED_WORDS = new Set([
   "if",
   "elif",
@@ -113,7 +105,6 @@ export const FormulaConfig = () => {
   const [expression, setExpression] = useState("");
   const [formulaName, setFormulaName] = useState("");
   const [savedFormulas, setSavedFormulas] = useState([]);
-  const [testValues, setTestValues] = useState({});
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
@@ -134,9 +125,7 @@ export const FormulaConfig = () => {
     handleSubmit,
     formState: { errors, isValid: isCreateValid, isSubmitting: isCreateSubmitting },
     reset: resetCreate,
-    setValue,        // 👈 used to sync formula on suggestion accept
-    trigger,         // 👈 used if you want to force re-validate
-    getValues,       // optional
+    setValue,
     watch,
   } = useForm({
     mode: "onChange",
@@ -244,6 +233,7 @@ export const FormulaConfig = () => {
         return { isValid: false, error: "Invalid characters in formula" };
       }
 
+      // eslint-disable-next-line no-new-func
       const result = Function('"use strict"; return (' + testExpression + ")")();
       if (!Number.isFinite(result)) {
         return { isValid: false, error: "Formula evaluates to Infinity or NaN" };
@@ -272,6 +262,7 @@ export const FormulaConfig = () => {
         const regex = new RegExp(`\\b${variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "g");
         exp = exp.replace(regex, v);
       });
+      // eslint-disable-next-line no-new-func
       return Function('"use strict"; return (' + exp + ")")();
     } catch {
       return 0;
@@ -613,8 +604,6 @@ export const FormulaConfig = () => {
     const r = parseFormula(exp, buildAllowedIdentifiersForCreate());
     return { isValid: r.isValid, message: r.isValid ? "Valid formula" : r.error };
   };
-  const formulaStatus = getFormulaStatus();
-
   // ---------- Create: save ----------
   const saveFormula = async (values) => {
     try {
@@ -728,9 +717,6 @@ export const FormulaConfig = () => {
       notify.error("Failed to delete custom tag");
     }
   };
-
-  const protocols = [...new Set(savedFormulas.map((f) => f.server.type))];
-  const serverNames = [...new Set(savedFormulas.map((f) => f.server.name))];
 
   return (
     <div className="max-w-7xl mx-auto bg-gray-50 min-h-screen">

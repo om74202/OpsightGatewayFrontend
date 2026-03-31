@@ -7,8 +7,7 @@
 
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Tag, Search, Filter, Plus, Trash2, X, AlertCircle, Settings, Eye, EyeOff } from 'lucide-react';
-import { useEdges } from 'reactflow';
+import { Mail, Search, Plus, Trash2, X, AlertCircle, Settings, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
 import { useForm } from 'react-hook-form'; // ✅ ADDED
@@ -28,7 +27,7 @@ export const Main = () => {
   const [emailRules, setEmailRules] = useState([]);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [currentRule, setCurrentRule] = useState(null);
-  const [clickPosition, setClickPosition] = useState({ x: 50, y: -50 });
+  const [clickPosition] = useState({ x: 50, y: -50 });
   const [showSettings, setShowSettings] = useState(false);
   const [senderSettings, setSenderSettings] = useState({
     smtpHost:'',
@@ -65,7 +64,6 @@ export const Main = () => {
   const {
     register: registerSettings,
     handleSubmit: handleSubmitSettings,
-    setError: setSettingsError,
     reset: resetSettings,
     formState: { errors: settingsErrors }
   } = useForm({

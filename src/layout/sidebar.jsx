@@ -3,31 +3,23 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   LogOut,
   User,
-  HdmiPort,
   HdmiPortIcon,
   Wifi,
-  ActivityIcon,
   EthernetPort,
   Mail,
   Cable,
   Database,
   Tags,
   Stethoscope,
-  HeartIcon,
-  HeartCrack,
-  HeartPlus,
-  LucideLayoutDashboard,
   LayoutDashboardIcon,
   Wand,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 
 const sidebarVariant={
   open:{

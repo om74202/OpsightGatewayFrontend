@@ -20,7 +20,6 @@ export const StaticIPConfiguration = () => {
   const [ethProfiles, setEthProfiles] = useState([]);
   const [modalType, setModalType] = useState(null); // "wifi" | "ethernet" | null
   const [editMode, setEditMode] = useState(false);
-  const [profileToEdit, setProfileToEdit] = useState(null);
 
   // RHF for the modal form
   const {
@@ -67,8 +66,6 @@ export const StaticIPConfiguration = () => {
   const openModal = (type, profile = null) => {
     setModalType(type);
     setEditMode(!!profile);
-    setProfileToEdit(profile);
-
     if (profile) {
       reset({
         name: profile.name || "",

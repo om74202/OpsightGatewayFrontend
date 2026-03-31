@@ -48,6 +48,7 @@ export const SQLConfigPage = () => {
 
   useEffect(() => {
     getAllSQLConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveSQLConfig = async (formData) => {

@@ -1,11 +1,6 @@
-import { Server, Network, Radio } from "lucide-react";
+import { Server, Radio } from "lucide-react";
 import React from "react";
-import ReactFlow, {
-  Controls,
-  Background,
-  Handle,
-  Position,
-} from "reactflow";
+import ReactFlow, { Controls, Handle, Position } from "reactflow";
 import "reactflow/dist/style.css";
 
 // 🎨 Custom Node Component
@@ -68,7 +63,6 @@ function CustomNode({ data }) {
 
 
 export default function GatewayGraph({ iiot, gateway, edges }) {
-  console.log(edges)
   // Nodes
   const nodes = [
     {

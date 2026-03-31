@@ -2,7 +2,7 @@
 
 
 import axios from "axios";
-import { Edit, Trash2, Server, Radio } from "lucide-react";
+import { Edit, Trash2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
@@ -19,7 +19,6 @@ export const ModbusRTUConfig = () => {
   const [editConfig, setEditConfig] = useState({});
   const [serverList, setServerList] = useState([]);
   const [oldName,setOldName]=useState(null);
-  const [count, setCount] = useState(0);
   const confirm=useConfirm()
   const {
   register: registerEdit,

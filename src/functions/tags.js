@@ -38,6 +38,7 @@ export const applyScaling = (scaling, value) => {
     }
 
     const normalized = trimmed.includes("x") ? trimmed : `x${trimmed}`;
+    // eslint-disable-next-line no-new-func
     const fn = new Function("x", `return ${normalized};`);
     const evaluated = Number(fn(numericValue));
     return Number.isFinite(evaluated) ? evaluated.toFixed(3) : NaN;

@@ -41,7 +41,6 @@ export const OpcuaInputForm = () => {
   const {
     register,
     handleSubmit,
-    watch,
     getValues,
     reset,
     formState: { errors },
@@ -58,8 +57,6 @@ export const OpcuaInputForm = () => {
       password: "",
     },
   });
-
-  const watchAuth = watch("auth", auth);
 
   const testConnection = async (data) => {
     try {

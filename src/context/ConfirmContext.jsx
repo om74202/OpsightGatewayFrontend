@@ -108,8 +108,6 @@ export const ConfirmProvider = ({ children }) => {
   }, []);
 
   const isRendered = notification.phase !== "hidden";
-  const isVisible = notification.phase === "show";
-
   return (
     <ConfirmContext.Provider value={confirm}>
       <NotifyContext.Provider value={notify}>

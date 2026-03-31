@@ -371,7 +371,7 @@
 
 
 import axios from "axios";
-import { Edit, Trash2, Server, Wifi } from "lucide-react";
+import { Edit, Trash2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
@@ -388,7 +388,6 @@ export const ModbusTCPConfig = () => {
   const [editConfig, setEditConfig] = useState({});
   const [oldName,setOldName]=useState(null);
   const [serverList, setServerList] = useState([]);
-  const [count, setCount] = useState(0);
 
   // --- Create/Test form (unchanged) ---
   const {
@@ -448,7 +447,7 @@ export const ModbusTCPConfig = () => {
 
   useEffect(() => {
     getServerList();
-  }, [count]);
+  }, []);
 
   const testEditConnection = async (config) => {
     const port = parseInt(config.data?.port, 10);
@@ -595,33 +594,6 @@ export const ModbusTCPConfig = () => {
       console.log(e);
       notify.error("Failed to edit connection");
 
-    }
-    setEditingId(null);
-  };
-
-  const handleSaveEdit = async (id) => {
-    // kept for compatibility (not used after wiring handleSubmitEdit),
-    // but safe to keep per "keep other functionalities same".
-    const payload = {
-      name: editConfig.name,
-      frequency: parseInt(editConfig.frequency, 10),
-      data: {
-        ip: editConfig.data?.ip,
-        port: editConfig.data?.port,
-      },
-    };
-
-    const ok = await testEditConnection(payload);
-    if (!ok) {
-      notify.error("Connection test failed. Edit not saved.");
-      return;
-    }
-
-    try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/update/${id}`, payload);
-      getServerList();
-    } catch (e) {
-      console.log(e);
     }
     setEditingId(null);
   };

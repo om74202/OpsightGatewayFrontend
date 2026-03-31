@@ -3,7 +3,7 @@
 
 
 import axios from "axios";
-import { Edit, Trash2, Server, Wifi } from "lucide-react";
+import { Edit, Trash2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { capitalizeFirstLetter } from "./BrowseTags";

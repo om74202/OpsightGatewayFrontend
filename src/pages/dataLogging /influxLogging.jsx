@@ -1,71 +1,18 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Database,
-  ArrowLeft,
   Save,
   Wifi,
-  X,
-  Plus,
-  Minus,
-  CrossIcon,
   WifiOff,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import axios from "axios";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useNotify } from "../../context/ConfirmContext";
 
 
 
 
 // TODO:remove all react hook validations for bucket and measurements , custom tags and tags 
-const getItemId = (item) => {
-  const rawId =
-    item?.id ??
-    item?.tag?.id ??
-    item?.tagId ??
-    item?.name ??
-    item?.tag?.name ??
-    "";
-  return typeof rawId === "number" || typeof rawId === "string"
-    ? String(rawId)
-    : "";
-};
-
-const getItemServerName = (item) =>
-  item?.serverName ??
-  item?.tag?.serverName ??
-  item?.server?.name ??
-  item?.server?.serverName ??
-  "";
-
-const getItemServerType = (item) =>
-  item?.serverType ??
-  item?.tag?.serverType ??
-  item?.server?.type ??
-  item?.type ??
-  "";
-
-const filterItemsByServerMeta = (list, filters = {}) => {
-  if (!filters.serverName && !filters.serverType) return list;
-  return list.filter((item) => {
-    const serverName = getItemServerName(item);
-    const serverType = getItemServerType(item);
-    if (filters.serverName && serverName !== filters.serverName) return false;
-    if (filters.serverType && serverType !== filters.serverType) return false;
-    return true;
-  });
-};
-
-const MINUTES_IN_DAY = 24 * 60;
-
-
-
-
-const user = JSON.parse(localStorage.getItem("user"));
-
 export const InfluxConfigPage = () => {
   const [connectionTest, setConnectionTest] = useState(false);
   const notify = useNotify();
@@ -103,8 +50,6 @@ export const InfluxConfigPage = () => {
     },
   });
 
-  const pkg = watch("package");
-
   const [loading, setLoading] = useState(false);
 
 
@@ -117,17 +62,6 @@ export const InfluxConfigPage = () => {
       serverTypes: Array.from(typeSet),
     };
   }, []);
-  const { serverNames, serverTypes } = serverFilterOptions;
-
-
-  // Expose lists for UI
-
-
-
-
-  
-
-
   // Fetch existing config
   const getAllDatabases = async () => {
     try {

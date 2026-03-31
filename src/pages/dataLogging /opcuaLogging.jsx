@@ -256,6 +256,7 @@ export const OPCUAConfigPage = () => {
 
   useEffect(() => {
     getAllOPCUAConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveOPCUAConfig = async (formData) => {

@@ -87,13 +87,12 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
     name: `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges`,
     keyName: "key",
   });
-  const watchedRanges =
-    useWatch({
-      control,
-      name: `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges`,
-    }) || [];
+  const watchedRanges = useWatch({
+    control,
+    name: `servers.${serverIndex}.functionConfigs.${fcIndex}.ranges`,
+  });
   const overlappingErrors = useMemo(
-    () => getOverlappingByteErrors(watchedRanges),
+    () => getOverlappingByteErrors(watchedRanges || []),
     [watchedRanges]
   );
 
@@ -664,13 +663,17 @@ export const ModbusConfigTags = ({
       )
     );
   }, []);
-    useEffect(()=>{
-      window.addEventListener("beforeunload",disConnectServer(true))
-      return ()=>{
-        disConnectServer(true);
-        window.removeEventListener("beforeunload",disConnectServer(true))
-      }
-    },[selectedServer.name])
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disConnectServer(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      handleBeforeUnload();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [disConnectServer]);
 
   // UI: add/remove device buttons (affects RHF + UI state)
   const addDevice = () => {
@@ -756,7 +759,7 @@ export const ModbusConfigTags = ({
         notifyRef.current?.error("Failed to disconnect");
       }
     }
-  }, [api]);
+  }, [api, selectedServer.type]);
 
   /* ------------------------ Browse (validated by RHF) ----------------------- */
   const onBrowse = async (values) => {
@@ -965,7 +968,7 @@ export const ModbusConfigTags = ({
         wsRef.current = null;
       }
     };
-  }, [selectedServer, count,api]);
+  }, [selectedServer, count, api, streamNames, updateTagValue]);
 
   /* -------------------------------- Render -------------------------------- */
   return (

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, use } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Play,
   Save as SaveIcon,
@@ -257,8 +257,6 @@ const ServerSection = React.memo(function ServerSection({
             {globalFields.map((field, idx) => {
               const currentType = watchedGlobalTags?.[idx]?.type ?? field.type;
               const showBit = currentType === "BOOL";
-              console.log(globalFields)
-
               return (
                 <div
                   key={field.id}
@@ -561,7 +559,7 @@ export const SimensTagsConfig = ({ serverInfo }) => {
         notify.error("Make sure this connection is active");
       }
     }
-  }, [notify]);
+  }, [notify, serverInfo.type]);
 
   // RHF setup
   const {
@@ -610,13 +608,17 @@ export const SimensTagsConfig = ({ serverInfo }) => {
     name: "globalTags",
   });
 
-    useEffect(()=>{
-      window.addEventListener("beforeunload",disConnectServer(true))
-      return ()=>{
-        disConnectServer(true);
-        window.removeEventListener("beforeunload",disConnectServer(true))
-      }
-    },[serverInfo.name])
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disConnectServer(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      handleBeforeUnload();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [disConnectServer]);
 
   /* -------------------------- Browsed tags helpers ------------------------- */
   const updateBrowsedTag = useCallback((id, field, value) => {
