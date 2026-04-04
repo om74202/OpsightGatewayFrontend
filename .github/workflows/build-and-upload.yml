@@ -17,6 +17,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug secrets presence
+        run: |
+          [ -n "${{ secrets.GATEWAY_VM_HOST }}" ] && echo "HOST present" || echo "HOST missing"
+          [ -n "${{ secrets.GATEWAY_VM_USER }}" ] && echo "USER present" || echo "USER missing"
+          [ -n "${{ secrets.GATEWAY_VM_SSH_KEY }}" ] && echo "SSH KEY present" || echo "SSH KEY missing"
+          [ -n "${{ secrets.GATEWAY_REACT_APP_API_URL }}" ] && echo "API URL present" || echo "API URL missing"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -40,3 +47,4 @@ jobs:
           key: ${{ secrets.GATEWAY_VM_SSH_KEY }}
           source: "frontend-1.0.0.tar.gz"
           target: "/tmp/v2"
+          debug: true
