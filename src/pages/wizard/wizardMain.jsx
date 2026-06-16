@@ -1,11 +1,16 @@
-
 import { useState, useEffect } from "react";
-import { Server, Tag, Database, Settings, ChevronRight, TimerIcon } from "lucide-react";
+import {
+  Server,
+  Tag,
+  Database,
+  Settings,
+  ChevronRight,
+  TimerIcon,
+} from "lucide-react";
 import axios from "axios";
 import { useNotify } from "../../context/ConfirmContext";
 import ShiftManager from "./addShift";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-
 
 const disconnectApis = [
   "/siemen-plc/disconnect",
@@ -32,20 +37,24 @@ export const WizardMain = () => {
   const [protocolFilter, setProtocolFilter] = useState("");
   const [protocolFilterCustomTags, setProtocolFilterCustomTags] = useState("");
 
-  //ui things 
-  const [dir,setDir]=useState(1)
+  //ui things
+  const [dir, setDir] = useState(1);
   const order = ["servers", "tags", "customTags", "shifts", "database"]; // tab order
   const prefersReduced = useReducedMotion();
 
   const distance = prefersReduced ? 0 : 40;
-const enterDur = prefersReduced ? 0 : 0.20;
-const exitDur  = prefersReduced ? 0 : 0.15;
+  const enterDur = prefersReduced ? 0 : 0.2;
+  const exitDur = prefersReduced ? 0 : 0.15;
 
-const panelVariants = {
-  enter: (d) => ({ x: d * distance, opacity: 0 }),
-  center: { x: 0, opacity: 1, transition: { duration: enterDur } },
-  exit:  (d) => ({ x: -d * distance, opacity: 0, transition: { duration: exitDur } }),
-};
+  const panelVariants = {
+    enter: (d) => ({ x: d * distance, opacity: 0 }),
+    center: { x: 0, opacity: 1, transition: { duration: enterDur } },
+    exit: (d) => ({
+      x: -d * distance,
+      opacity: 0,
+      transition: { duration: exitDur },
+    }),
+  };
 
   const notify = useNotify();
 
@@ -54,14 +63,15 @@ const panelVariants = {
       try {
         setIsUpdating(true);
 
-        const [tagsRes, serversRes, latestData,shiftResponse] = await Promise.all([
-          axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`),
-          axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllServers`),
-          axios.get(`${process.env.REACT_APP_API_URL}/allServers/getActive`),
-          axios.get(`${process.env.REACT_APP_API_URL}/database/getShifts`)
-        ]);
-        
-      setShifts(shiftResponse.data?.shifts || []);
+        const [tagsRes, serversRes, latestData, shiftResponse] =
+          await Promise.all([
+            axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllTags`),
+            axios.get(`${process.env.REACT_APP_API_URL}/gateway/getAllServers`),
+            axios.get(`${process.env.REACT_APP_API_URL}/allServers/getActive`),
+            axios.get(`${process.env.REACT_APP_API_URL}/database/getShifts`),
+          ]);
+
+        setShifts(shiftResponse.data?.shifts || []);
 
         setSelectedServers(latestData.data.servers || []);
         setSelectedTags(latestData.data.tags || []);
@@ -98,7 +108,7 @@ const panelVariants = {
     try {
       setLoading(true);
       await Promise.allSettled(
-        disconnectApis.map((d) => axios.post(d, { action: "stop" }))
+        disconnectApis.map((d) => axios.post(d, { action: "stop" })),
       );
 
       notify.success("Data Logging Stopped ");
@@ -113,9 +123,11 @@ const panelVariants = {
   const handleResetConfig = async () => {
     try {
       setIsResettingConfig(true);
-      await axios.post(`${process.env.REACT_APP_API_URL}/allServers/resetConfig`);
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/allServers/resetConfig`,
+      );
       notify.success("Configuration reset successfully");
-      window.location.reload(true)
+      window.location.reload(true);
     } catch (error) {
       console.error("Failed to reset configuration:", error);
       notify.error("Failed to reset configuration");
@@ -127,21 +139,21 @@ const panelVariants = {
   // collect all available tags from selected servers
   const availableTags = selectedServers.flatMap((ser) => {
     const server = serverList.find(
-      (s) => s.id === ser.id || s.serverId === ser.id
+      (s) => s.id === ser.id || s.serverId === ser.id,
     );
     return server?.tags || [];
   });
 
   const availableCustomTags = selectedServers.flatMap((ser) => {
     const server = serverList.find(
-      (s) => s.id === ser.id || s.serverId === ser.id
+      (s) => s.id === ser.id || s.serverId === ser.id,
     );
     return server?.customTags || [];
   });
 
   // unique tag list by name
   const uniqueAvailableTags = Array.from(
-    new Map(availableTags.map((tag) => [tag.name, tag])).values()
+    new Map(availableTags.map((tag) => [tag.name, tag])).values(),
   );
 
   const toggleServer = (serverNew) => {
@@ -149,26 +161,32 @@ const panelVariants = {
 
     setSelectedServers((prev) => {
       const alreadySelected = prev.some(
-        (s) => (s.id || s.serverId) === serverNewId
+        (s) => (s.id || s.serverId) === serverNewId,
       );
 
       const newSelection = alreadySelected
-        ? prev.filter((server) => (server.id || server.serverId) !== serverNewId)
+        ? prev.filter(
+            (server) => (server.id || server.serverId) !== serverNewId,
+          )
         : [...prev, { ...serverNew, id: serverNewId }];
 
       // still-available sets for tags/customTags after the selection change
       const stillAvailable = new Set(
         newSelection.flatMap((server) => {
-          const s = serverList.find((sv) => (sv.id || sv.serverId) === (server.id || server.serverId));
+          const s = serverList.find(
+            (sv) => (sv.id || sv.serverId) === (server.id || server.serverId),
+          );
           return (s?.tags || []).map((t) => t.name.toLowerCase());
-        })
+        }),
       );
 
       const stillAvailableCustom = new Set(
         newSelection.flatMap((server) => {
-          const s = serverList.find((sv) => (sv.id || sv.serverId) === (server.id || server.serverId));
+          const s = serverList.find(
+            (sv) => (sv.id || sv.serverId) === (server.id || server.serverId),
+          );
           return (s?.customTags || []).map((t) => t.name.toLowerCase());
-        })
+        }),
       );
 
       setSelectedTags((current) =>
@@ -177,15 +195,15 @@ const panelVariants = {
           .map((tag) => {
             const s = serverList.find((srv) =>
               (srv?.tags || []).some(
-                (t) => t.name.toLowerCase() === tag.name.toLowerCase()
-              )
+                (t) => t.name.toLowerCase() === tag.name.toLowerCase(),
+              ),
             );
             return {
               ...tag,
               serverName: s?.name || s?.serverName,
               serverType: s?.type || s?.protocol,
             };
-          })
+          }),
       );
 
       setSelectedCustomTags((current) =>
@@ -194,15 +212,15 @@ const panelVariants = {
           .map((tag) => {
             const s = serverList.find((srv) =>
               (srv?.customTags || []).some(
-                (t) => t.name.toLowerCase() === tag.name.toLowerCase()
-              )
+                (t) => t.name.toLowerCase() === tag.name.toLowerCase(),
+              ),
             );
             return {
               ...tag,
               serverName: s?.name || s?.serverName,
               serverType: s?.type || s?.protocol,
             };
-          })
+          }),
       );
 
       return newSelection;
@@ -224,7 +242,7 @@ const panelVariants = {
   const toggleTag = (tag) => {
     setSelectedTags((prev) => {
       const exists = prev.some(
-        (t) => t.name.toLowerCase() === tag.name.toLowerCase()
+        (t) => t.name.toLowerCase() === tag.name.toLowerCase(),
       );
       return exists ? prev.filter((t) => t.name !== tag.name) : [...prev, tag];
     });
@@ -233,7 +251,7 @@ const panelVariants = {
   const toggleCustomTag = (tag) => {
     setSelectedCustomTags((prev) => {
       const exists = prev.some(
-        (t) => t.name.toLowerCase() === tag.name.toLowerCase()
+        (t) => t.name.toLowerCase() === tag.name.toLowerCase(),
       );
       return exists ? prev.filter((t) => t.name !== tag.name) : [...prev, tag];
     });
@@ -241,7 +259,7 @@ const panelVariants = {
 
   const selectDatabase = (databaseId) => setSelectedDatabase(databaseId);
 
-const updateConfiguration = async () => {
+  const updateConfiguration = async () => {
     const config = {
       servers: selectedServers,
       tags: selectedTags,
@@ -255,15 +273,14 @@ const updateConfiguration = async () => {
     try {
       // stop current logging
       await Promise.allSettled(
-        disconnectApis.map((d) => axios.post(d, { action: "stop" }))
+        disconnectApis.map((d) => axios.post(d, { action: "stop" })),
       );
 
       // save selection
-      await axios.put(`${process.env.REACT_APP_API_URL}/allServers/setActive`, config);
-      
-
-      
-     
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/allServers/setActive`,
+        config,
+      );
 
       notify.success("Configuration updated successfully");
     } catch (error) {
@@ -277,8 +294,8 @@ const updateConfiguration = async () => {
   const tabs = [
     { id: "servers", name: "Edge-Connections", icon: Server },
     { id: "tags", name: "Tags", icon: Tag },
-    { id: "customTags", name: "Custom Tags", icon: Tag },
-    { id: "shifts", name: "Shifts", icon: TimerIcon},
+    // { id: "customTags", name: "Custom Tags", icon: Tag },
+    { id: "shifts", name: "Shifts", icon: TimerIcon },
     { id: "database", name: "IIOT Connection", icon: Database },
   ];
 
@@ -287,8 +304,8 @@ const updateConfiguration = async () => {
     serverList.every((server) =>
       selectedServers.some(
         (selected) =>
-          (selected.id || selected.serverId) === (server.id || server.serverId)
-      )
+          (selected.id || selected.serverId) === (server.id || server.serverId),
+      ),
     );
 
   const toggleSelectAllServers = () => {
@@ -324,10 +341,10 @@ const updateConfiguration = async () => {
               <button
                 key={tab.id}
                 onClick={() => {
-                  const prev=order.indexOf(activeTab)
-                  const next=order.indexOf(tab.id)
-                  setDir(prev>next?-1:1)
-                  setActiveTab(tab.id)
+                  const prev = order.indexOf(activeTab);
+                  const next = order.indexOf(tab.id);
+                  setDir(prev > next ? -1 : 1);
+                  setActiveTab(tab.id);
                 }}
                 className={`relative py-4 px-1  font-medium text-sm flex items-center gap-2 ${
                   isActive
@@ -340,9 +357,7 @@ const updateConfiguration = async () => {
                 {tab.id === "servers" && selectedServers.length > 0 && (
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                     {selectedServers.length}
-                    
                   </span>
-                  
                 )}
                 {tab.id === "tags" && selectedTags.length > 0 && (
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
@@ -361,17 +376,20 @@ const updateConfiguration = async () => {
                 )}
                 {tab.id === "database" && selectedDatabase !== "" && (
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                    {selectedDatabase === "" ? "" : selectedDatabase === null ? "" : "1"}
+                    {selectedDatabase === ""
+                      ? ""
+                      : selectedDatabase === null
+                        ? ""
+                        : "1"}
                   </span>
                 )}
-                  {isActive && (
-    <motion.div
-      layoutId="tab-underline"
-      className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-blue-500 rounded-full"
-      transition={{ type: "spring", stiffness: 500, damping: 40 }}
-    />
-  )}
-                
+                {isActive && (
+                  <motion.div
+                    layoutId="tab-underline"
+                    className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-blue-500 rounded-full"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                )}
               </button>
             );
           })}
@@ -380,133 +398,252 @@ const updateConfiguration = async () => {
 
       {/* Tab Content */}
       <AnimatePresence mode="wait" custom={dir}>
-  <motion.div
-    key={activeTab}
-    custom={dir}
-    variants={panelVariants}
-    initial="enter"
-    animate="center"
-    exit="exit"
-    className="mb-8"
-  >
-        {/* Servers */}
-        {activeTab === "servers" && (
-          <div>
-            <table className="min-w-full border border-gray-300 rounded-lg">
-              <thead className="rounded-lg">
-                <tr className="bg-gray-100 text-center">
-                  <th className="px-4 py-2 border-b">
-                    <div className="flex items-center justify-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 text-blue-600"
-                        checked={allServersSelected}
-                        onChange={toggleSelectAllServers}
-                      />
-                      <span>Select</span>
-                    </div>
-                  </th>
-                  <th className="px-4 py-2 border-b">Protocol</th>
-                  <th className="px-4 py-2 border-b">Connection Name</th>
-                </tr>
-              </thead>
-              <tbody className="rounded-lg">
-                {serverList.map((server) => {
-                  const serverId = server.id || server.serverId;
-                  const checked = selectedServers.some(
-                    (s) => (s.id || s.serverId) === serverId
-                  );
-                  return (
-                    <tr key={serverId} className="hover:bg-gray-50 transition-all">
-                      <td className="px-4 py-2 border text-center">
+        <motion.div
+          key={activeTab}
+          custom={dir}
+          variants={panelVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          className="mb-8"
+        >
+          {/* Servers */}
+          {activeTab === "servers" && (
+            <div>
+              <table className="min-w-full border border-gray-300 rounded-lg">
+                <thead className="rounded-lg">
+                  <tr className="bg-gray-100 text-center">
+                    <th className="px-4 py-2 border-b">
+                      <div className="flex items-center justify-center gap-2">
                         <input
                           type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleServer(server)}
                           className="h-4 w-4 text-blue-600"
+                          checked={allServersSelected}
+                          onChange={toggleSelectAllServers}
                         />
-                      </td>
-                      <td className="px-4 py-2 border">{server.protocol || server.type}</td>
-                      <td className="px-4 py-2 border">{server.name || server.serverName}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        <span>Select</span>
+                      </div>
+                    </th>
+                    <th className="px-4 py-2 border-b">Protocol</th>
+                    <th className="px-4 py-2 border-b">Connection Name</th>
+                  </tr>
+                </thead>
+                <tbody className="rounded-lg">
+                  {serverList.map((server) => {
+                    const serverId = server.id || server.serverId;
+                    const checked = selectedServers.some(
+                      (s) => (s.id || s.serverId) === serverId,
+                    );
+                    return (
+                      <tr
+                        key={serverId}
+                        className="hover:bg-gray-50 transition-all"
+                      >
+                        <td className="px-4 py-2 border text-center">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleServer(server)}
+                            className="h-4 w-4 text-blue-600"
+                          />
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {server.protocol || server.type}
+                        </td>
+                        <td className="px-4 py-2 border">
+                          {server.name || server.serverName}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {/* Tags */}
-        {activeTab === "tags" && (
-          <div>
-            {selectedServers.length === 0 ? (
-              <p className="text-gray-500">Please select servers first</p>
-            ) : (
-              <div>
-                <div className="flex">
-                  <div className="flex mr-5 items-center mb-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedTags.length === uniqueAvailableTags.length}
-                      onChange={() => selectAllTags("tags")}
-                      className="h-4 w-4 mr-3 text-blue-600"
-                    />
-                    <label className="text-gray-700 font-medium">
-                      Select all the tags
-                    </label>
-                  </div>
-                  <div className="mb-3 flex items-center space-x-2">
-                    <label className="text-gray-700 font-medium">
-                      | Filter by Protocol:
-                    </label>
-                    <select
-                      value={protocolFilter}
-                      onChange={(e) => setProtocolFilter(e.target.value)}
-                      className="border border-gray-300 rounded-lg text-[15px] px-3 py-1"
-                    >
-                      <option value="">All</option>
-                      {[...new Set(uniqueAvailableTags.map((tag) => tag.serverType || tag.type || "N/A"))]
-                        .map((protocol) => (
+          {/* Tags */}
+          {activeTab === "tags" && (
+            <div>
+              {selectedServers.length === 0 ? (
+                <p className="text-gray-500">Please select servers first</p>
+              ) : (
+                <div>
+                  <div className="flex">
+                    <div className="flex mr-5 items-center mb-3">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedTags.length === uniqueAvailableTags.length
+                        }
+                        onChange={() => selectAllTags("tags")}
+                        className="h-4 w-4 mr-3 text-blue-600"
+                      />
+                      <label className="text-gray-700 font-medium">
+                        Select all the tags
+                      </label>
+                    </div>
+                    <div className="mb-3 flex items-center space-x-2">
+                      <label className="text-gray-700 font-medium">
+                        | Filter by Protocol:
+                      </label>
+                      <select
+                        value={protocolFilter}
+                        onChange={(e) => setProtocolFilter(e.target.value)}
+                        className="border border-gray-300 rounded-lg text-[15px] px-3 py-1"
+                      >
+                        <option value="">All</option>
+                        {[
+                          ...new Set(
+                            uniqueAvailableTags.map(
+                              (tag) => tag.serverType || tag.type || "N/A",
+                            ),
+                          ),
+                        ].map((protocol) => (
                           <option key={protocol} value={protocol}>
                             {protocol}
                           </option>
                         ))}
-                    </select>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border border-gray-200 rounded-lg">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 border">Select</th>
+                          <th className="px-4 py-2 border">Tag Name</th>
+                          <th className="px-4 py-2 border">Connection Name</th>
+                          <th className="px-4 py-2 border">Protocol</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {uniqueAvailableTags
+                          .filter(
+                            (tag) =>
+                              protocolFilter === "" ||
+                              (tag.serverType || tag.type || "N/A") ===
+                                protocolFilter,
+                          )
+                          .map((tag) => {
+                            const isSelected = selectedTags.some(
+                              (t) => t.name === tag.name,
+                            );
+                            return (
+                              <tr key={tag.name} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 border text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleTag(tag)}
+                                    className="h-4 w-4 text-blue-600"
+                                  />
+                                </td>
+                                <td className="px-4 py-2 border">{tag.name}</td>
+                                <td className="px-4 py-2 border">
+                                  {tag.serverName || "Unknown"}
+                                </td>
+                                <td className="px-4 py-2 border">
+                                  {tag.serverType || tag.type || "N/A"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
 
+          {/* Custom Tags */}
+          {activeTab === "customTags" && (
+            <div>
+              {selectedServers.length === 0 ? (
+                <p className="text-gray-500">Please select servers first</p>
+              ) : (
                 <div className="overflow-x-auto">
+                  <div className="flex">
+                    <div className="flex mr-5 items-center mb-3">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedCustomTags.length ===
+                          availableCustomTags.length
+                        }
+                        onChange={() => selectAllTags("customTags")}
+                        className="h-4 w-4 mr-3 text-blue-600"
+                      />
+                      <label className="text-gray-700 font-medium">
+                        Select all the custom tags
+                      </label>
+                    </div>
+                    <div className="mb-3 flex items-center space-x-2">
+                      <label className="text-gray-700 font-medium">
+                        | Filter by Protocol:
+                      </label>
+                      <select
+                        value={protocolFilterCustomTags}
+                        onChange={(e) =>
+                          setProtocolFilterCustomTags(e.target.value)
+                        }
+                        className="border border-gray-300 rounded-lg text-[15px] px-3 py-1"
+                      >
+                        <option value="">All</option>
+                        {[
+                          ...new Set(
+                            availableCustomTags.map(
+                              (tag) => tag.serverType || tag.type || "N/A",
+                            ),
+                          ),
+                        ].map((protocol) => (
+                          <option key={protocol} value={protocol}>
+                            {protocol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <table className="min-w-full border border-gray-200 rounded-lg">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 border">Select</th>
-                        <th className="px-4 py-2 border">Tag Name</th>
+                        <th className="px-4 py-2 border">Custom Tag Name</th>
                         <th className="px-4 py-2 border">Connection Name</th>
+                        <th className="px-4 py-2 border">Expression</th>
                         <th className="px-4 py-2 border">Protocol</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {uniqueAvailableTags
+                      {availableCustomTags
                         .filter(
                           (tag) =>
-                            protocolFilter === "" ||
-                            (tag.serverType || tag.type || "N/A") === protocolFilter
+                            protocolFilterCustomTags === "" ||
+                            (tag.serverType || tag.type || "N/A") ===
+                              protocolFilterCustomTags,
                         )
                         .map((tag) => {
-                          const isSelected = selectedTags.some((t) => t.name === tag.name);
+                          const isSelected = selectedCustomTags.some(
+                            (t) => t.name === tag.name,
+                          );
                           return (
                             <tr key={tag.name} className="hover:bg-gray-50">
                               <td className="px-4 py-2 border text-center">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
-                                  onChange={() => toggleTag(tag)}
+                                  onChange={() => toggleCustomTag(tag)}
                                   className="h-4 w-4 text-blue-600"
                                 />
                               </td>
                               <td className="px-4 py-2 border">{tag.name}</td>
                               <td className="px-4 py-2 border">
                                 {tag.serverName || "Unknown"}
+                              </td>
+                              <td className="px-4 py-2 border">
+                                {tag.expression || ""}
                               </td>
                               <td className="px-4 py-2 border">
                                 {tag.serverType || tag.type || "N/A"}
@@ -517,136 +654,45 @@ const updateConfiguration = async () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Custom Tags */}
-        {activeTab === "customTags" && (
-          <div>
-            {selectedServers.length === 0 ? (
-              <p className="text-gray-500">Please select servers first</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="flex">
-                  <div className="flex mr-5 items-center mb-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedCustomTags.length === availableCustomTags.length}
-                      onChange={() => selectAllTags("customTags")}
-                      className="h-4 w-4 mr-3 text-blue-600"
-                    />
-                    <label className="text-gray-700 font-medium">
-                      Select all the custom tags
-                    </label>
-                  </div>
-                  <div className="mb-3 flex items-center space-x-2">
-                    <label className="text-gray-700 font-medium">
-                      | Filter by Protocol:
-                    </label>
-                    <select
-                      value={protocolFilterCustomTags}
-                      onChange={(e) => setProtocolFilterCustomTags(e.target.value)}
-                      className="border border-gray-300 rounded-lg text-[15px] px-3 py-1"
-                    >
-                      <option value="">All</option>
-                      {[...new Set(availableCustomTags.map((tag) => tag.serverType || tag.type || "N/A"))]
-                        .map((protocol) => (
-                          <option key={protocol} value={protocol}>
-                            {protocol}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-
-                <table className="min-w-full border border-gray-200 rounded-lg">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 border">Select</th>
-                      <th className="px-4 py-2 border">Custom Tag Name</th>
-                      <th className="px-4 py-2 border">Connection Name</th>
-                      <th className="px-4 py-2 border">Expression</th>
-                      <th className="px-4 py-2 border">Protocol</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {availableCustomTags
-                      .filter(
-                        (tag) =>
-                          protocolFilterCustomTags === "" ||
-                          (tag.serverType || tag.type || "N/A") === protocolFilterCustomTags
-                      )
-                      .map((tag) => {
-                        const isSelected = selectedCustomTags.some(
-                          (t) => t.name === tag.name
-                        );
-                        return (
-                          <tr key={tag.name} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 border text-center">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleCustomTag(tag)}
-                                className="h-4 w-4 text-blue-600"
-                              />
-                            </td>
-                            <td className="px-4 py-2 border">{tag.name}</td>
-                            <td className="px-4 py-2 border">
-                              {tag.serverName || "Unknown"}
-                            </td>
-                            <td className="px-4 py-2 border">
-                              {tag.expression || ""}
-                            </td>
-                            <td className="px-4 py-2 border">
-                              {tag.serverType || tag.type || "N/A"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-      
-
-        {activeTab==="shifts" && (
-          <div>
-            <ShiftManager
-            TotalShifts={shifts}
-      value={{ shifts}}
-      onChange={({ shifts }) => {
-        if (shifts) setShifts(shifts);
-      }}
-    />
-          </div>
-        )}
-
-        {/* Database */}
-        {activeTab === "database" && (
-          <div>
-            <div className="space-y-3">
-              {databaseList.map((db) => (
-                <div
-                  key={db.id}
-                  onClick={() => selectDatabase(db.id)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedDatabase === db.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <h3 className="font-medium">{String(db.type).replace("_", " ")}</h3>
-                </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
-      </motion.div>
+          )}
+
+          {activeTab === "shifts" && (
+            <div>
+              <ShiftManager
+                TotalShifts={shifts}
+                value={{ shifts }}
+                onChange={({ shifts }) => {
+                  if (shifts) setShifts(shifts);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Database */}
+          {activeTab === "database" && (
+            <div>
+              <div className="space-y-3">
+                {databaseList.map((db) => (
+                  <div
+                    key={db.id}
+                    onClick={() => selectDatabase(db.id)}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedDatabase === db.id
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <h3 className="font-medium">
+                      {String(db.type).replace("_", " ")}
+                    </h3>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
       </AnimatePresence>
 
       {/* Bottom Action Button */}
@@ -655,15 +701,16 @@ const updateConfiguration = async () => {
           <button
             onClick={() => {
               if (activeTab === "servers") setActiveTab("tags");
-              else if (activeTab === "tags") setActiveTab("customTags");
+              else if (activeTab === "tags") setActiveTab("shifts");
               else if (activeTab === "customTags") setActiveTab("shifts");
               else if (activeTab === "shifts") setActiveTab("database");
-
             }}
             className="px-6 py-3 rounded-lg font-medium bg-blue-600 text-white flex items-center gap-2"
           >
             Next
-            <ChevronRight className={`w-4 h-4 ${isUpdating ? "animate-spin" : ""}`} />
+            <ChevronRight
+              className={`w-4 h-4 ${isUpdating ? "animate-spin" : ""}`}
+            />
           </button>
         ) : (
           <div className="flex gap-4">
@@ -691,7 +738,9 @@ const updateConfiguration = async () => {
                   : "bg-gray-200 text-gray-400"
               }`}
             >
-              <Settings className={`w-4 h-4 ${isUpdating ? "animate-spin" : ""}`} />
+              <Settings
+                className={`w-4 h-4 ${isUpdating ? "animate-spin" : ""}`}
+              />
               {isUpdating ? "Updating..." : "Update Configuration"}
             </button>
           </div>

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { capitalizeFirstLetter } from "./BrowseTags";
 import { useConfirm, useNotify } from "../context/ConfirmContext";
+import { exportEdgeConnectionTemplate, importEdgeConnectionTemplate } from "../functions/exportEdgeTemplate";
 
 const IPV4_REGEX =
   /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/;
@@ -361,7 +362,16 @@ export const SLMPConfig = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+                      <div className="flex justify-end px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => importEdgeConnectionTemplate({ expectedProtocol: "SLMP", notify, onSuccess: getServerList })}
+              className="rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              Upload Template
+            </button>
+          </div>
+<table className="w-full text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="text-left py-3 px-6">Connection Name</th>
@@ -502,6 +512,12 @@ export const SLMPConfig = () => {
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                           >
                             <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => exportEdgeConnectionTemplate(server, notify)}
+                            className="rounded px-2 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Export
                           </button>
                           <button
                             onClick={() => handleDelete(server.id)}

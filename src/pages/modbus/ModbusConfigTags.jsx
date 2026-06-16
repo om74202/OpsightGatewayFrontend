@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   Play,
@@ -169,7 +164,7 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
             )}
             </div>
 
-            <div>
+            {/* <div>
             <label className="block text-sm text-gray-600 mb-1">
               <span className="inline-flex items-center gap-1">
                 <span
@@ -214,7 +209,7 @@ const RangeEditor = ({ control, register, errors, serverIndex, fcIndex }) => {
             {!byteError && overlapMessage && (
               <p className="text-xs text-red-600 mt-1">{overlapMessage}</p>
             )}
-            </div>
+            </div> */}
 
             <div className="flex items-end">
             <button
@@ -826,9 +821,11 @@ export const ModbusConfigTags = ({
           if (!result[deviceName][typeLabel]) {
             result[deviceName][typeLabel] = { register: [] };
           }
-          if (functionConfig.conversion) {
-            result[deviceName].conversion = functionConfig.conversion;
-          }
+          // Frontend conversion forwarding is intentionally disabled.
+          // Let the backend handle the default behavior as if no conversion was selected.
+          // if (functionConfig.conversion) {
+          //   result[deviceName].conversion = functionConfig.conversion;
+          // }
 
           (functionConfig.ranges || []).forEach((range) => {
             result[deviceName][typeLabel].register.push({

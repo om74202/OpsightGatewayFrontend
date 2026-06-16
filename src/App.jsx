@@ -1,6 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { DashboardLayout } from './layout/DashboardLayout';
-
 
 import Login from "./pages/Login";
 import { HealthMonitoring } from "./pages/HealthMonitoring";
@@ -15,6 +14,7 @@ import {InfluxConfigPage} from "./pages/dataLogging /influxLogging";
 import { MQTTConfigPage } from "./pages/dataLogging /mqttLogging";
 import { SQLConfigPage } from "./pages/dataLogging /sqlLogging";
 import { OPCUAConfigPage } from "./pages/dataLogging /opcuaLogging";
+import { APIConfigPage } from "./pages/dataLogging /apiLogging";
 import { UserManagement } from "./pages/userManagement";
 import { FirewallPortConfiguration } from "./pages/PortConfig";
 import { WifiConnections } from "./pages/wifiConfig";
@@ -24,65 +24,71 @@ import ProtectedRoute from "./pages/routes/protectedRoutes";
 import { Main } from "./pages/emailNotification/main";
 import { WizardMain } from "./pages/wizard/wizardMain";
 import { AlertsHistory } from "./pages/emailNotification/emailHistory";
+import {
+  getFirstEnabledEdgeProtocolPath,
+  isEdgeProtocolEnabled,
+} from "./config/edgeProtocolFlags";
+import { useGatewaySettings } from "./context/GatewaySettingsContext";
 
+function EdgeConnectionRouteGuard({ children }) {
+  const { tab } = useParams();
+  const { settings, settingsLoading } = useGatewaySettings();
 
+  if (settingsLoading) {
+    return null;
+  }
+
+  if (!isEdgeProtocolEnabled(tab, settings)) {
+    return <Navigate to={getFirstEnabledEdgeProtocolPath(settings)} replace />;
+  }
+
+  return children;
+}
 
 function App() {
+  const { settings, settingsLoading } = useGatewaySettings();
+
+  if (settingsLoading) {
+    return null;
+  }
+
   return (
     <>
-    <Routes>
-        {/* Public Route */}
+      <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-    
-
-        {/* Protected Routes */}
         <Route
           path="/login"
           element={
-              <Login />
+            <Login />
           }
         />
         <Route path="/gateway/*" element={<ProtectedRoute>
           <DashboardLayout/>
         </ProtectedRoute>}>
-        <Route path="" element={<OpSightDashboard/>}></Route>
-        <Route path="health-monitoring" element={<HealthMonitoring/>}></Route>
-        <Route path="portConfiguration" element={<FirewallPortConfiguration/>}></Route>
-        <Route path="wifiConfiguration" element={<WifiConnections/>}></Route>
-        <Route path="ipConfiguration" element={<StaticIPConfiguration/>}></Route>
-        <Route path="database-management/influx" element={<InfluxConfigPage/>}></Route>
-        <Route path="database-management/postgresql" element={<SQLConfigPage/>}></Route>
-        <Route path="database-management/opcua" element={<OPCUAConfigPage/>}></Route>
-        <Route path="database-management/mqtt" element={<MQTTConfigPage/>}></Route>
-        <Route path="edge-connection/:tab" element={<EdgeConnectivity/>}></Route>
-        <Route path="siemens/ConfigTags" element={<SiemensMain/>}></Route>
-        <Route path="userManagement" element={<UserManagement/>}></Route>
-        <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
-        <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
-        <Route path="emailNotification/rules" element={<Main/>}></Route>
-        <Route path="emailNotification/history" element={<AlertsHistory/>}></Route>
-        <Route path="wizard" element={<WizardMain/>}></Route>
-        <Route path="iiot/tags" element={<IIOT/>}></Route>
-        <Route path="iiot/browseTags" element={<BrowseTagsPage/>}></Route>
-        <Route path="iiot/customTags" element={<FormulaConfig/>}></Route>
-
-        
-
-
-
-        
-
-
+          <Route path="" element={<OpSightDashboard/>}></Route>
+          <Route path="health-monitoring" element={<HealthMonitoring/>}></Route>
+          <Route path="portConfiguration" element={<FirewallPortConfiguration/>}></Route>
+          <Route path="wifiConfiguration" element={<WifiConnections/>}></Route>
+          <Route path="ipConfiguration" element={<StaticIPConfiguration/>}></Route>
+          <Route path="database-management/influx" element={<InfluxConfigPage/>}></Route>
+          <Route path="database-management/postgresql" element={<SQLConfigPage/>}></Route>
+          <Route path="database-management/opcua" element={<OPCUAConfigPage/>}></Route>
+          <Route path="database-management/mqtt" element={<MQTTConfigPage/>}></Route>
+          <Route path="database-management/api" element={<APIConfigPage/>}></Route>
+          <Route path="edge-connection" element={<Navigate to={getFirstEnabledEdgeProtocolPath(settings)} replace />}></Route>
+          <Route path="edge-connection/:tab" element={<EdgeConnectionRouteGuard><EdgeConnectivity/></EdgeConnectionRouteGuard>}></Route>
+          <Route path="siemens/ConfigTags" element={<SiemensMain/>}></Route>
+          <Route path="userManagement" element={<UserManagement/>}></Route>
+          <Route path="modbus/FormulaConfig" element={<ModbusFormulaConfig/>}></Route>
+          <Route path="opcua/ConfigTags" element={<OpcuaMain/>}></Route>
+          <Route path="emailNotification/rules" element={<Main/>}></Route>
+          <Route path="emailNotification/history" element={<AlertsHistory/>}></Route>
+          <Route path="wizard" element={<WizardMain/>}></Route>
+          <Route path="iiot/tags" element={<IIOT/>}></Route>
+          <Route path="iiot/browseTags" element={<BrowseTagsPage/>}></Route>
+          <Route path="iiot/customTags" element={<FormulaConfig/>}></Route>
         </Route>
-        
-
-
-          
-        
-        </Routes>
-
-   
+      </Routes>
     </>
   );
 }

@@ -22,9 +22,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "dev": "bun run ./scripts/react-scripts-with-system-env.mjs start",
+    "build": "bun run ./scripts/react-scripts-with-system-env.mjs build",
+    "test": "bun run ./scripts/react-scripts-with-system-env.mjs test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

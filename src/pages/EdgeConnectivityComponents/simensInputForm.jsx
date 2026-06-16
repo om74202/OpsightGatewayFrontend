@@ -6,6 +6,7 @@ import { Edit, Server, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
+import { exportEdgeConnectionTemplate, importEdgeConnectionTemplate } from "../../functions/exportEdgeTemplate";
 
 
 const IPV4_REGEX =
@@ -343,6 +344,15 @@ export const SimensInputForm = () => {
           </div>
 
           <div className="overflow-x-auto">
+            <div className="flex justify-end px-4 pt-4">
+              <button
+                type="button"
+                onClick={() => importEdgeConnectionTemplate({ expectedProtocol: "S-7", notify, onSuccess: getServerList })}
+                className="rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+              >
+                Upload Template
+              </button>
+            </div>
             <table className="w-full">
               <thead className="bg-gray-50 text-sm text-gray-600">
                 <tr>
@@ -477,6 +487,12 @@ export const SimensInputForm = () => {
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                           >
                             <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => exportEdgeConnectionTemplate(server, notify)}
+                            className="rounded px-2 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Export
                           </button>
                           <button
                             onClick={() => handleDelete(server.id)}

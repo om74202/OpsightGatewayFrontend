@@ -1,6 +1,271 @@
-*{
-  padding:0;
+:root {
+  --space: 0.5rem;
+  --card-padding: 1rem;
+  --dashboard-card-max-h: 12.25rem;
+  --page-max-width: 100rem;
+  --font-size: 17px;
+  --background: #f5f7fa;
+  --foreground: #1a1f2e;
+  --card: #ffffff;
+  --active: #10b981;
+  --inactive: #ef4444;
+  --card-foreground: #1a1f2e;
+  --defaultBg: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #1a1f2e;
+  --primary: #5b7ff8;
+  --primary-foreground: #ffffff;
+  --secondary: #e8ecf3;
+  --secondary-foreground: #1a1f2e;
+  --muted: #e8ecf3;
+  --muted-foreground: #6b7280;
+  --accent: #dde3ed;
+  --accent-foreground: #1a1f2e;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d1d5db;
+  --input: #f3f3f5;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #5b7ff8;
+  --chart-1: #5b7ff8;
+  --chart-2: #22d3ee;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #6b7280;
+  --sidebar-primary: #5b7ff8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #1a1f2e;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #5b7ff8;
+  --mould-change-strip: #ffedd5;
+  --mould-change-text: #9a3412;
+  --pm-monthly-bg: #eef2ff;
+  --pm-monthly-border: #c7d2fe;
+  --pm-monthly-text: #4338ca;
+  --pm-monthly-dot: #6366f1;
+  --pm-yearly-bg: #fef3c7;
+  --pm-yearly-border: #fde68a;
+  --pm-yearly-text: #92400e;
+  --pm-yearly-dot: #f59e0b;
+}
+
+.dark {
+  --background: #1e2536;
+  --foreground: #f5f7fa;
+  --card: #2a3142;
+  --card-foreground: #f5f7fa;
+  --popover: #2a3142;
+  --popover-foreground: #f5f7fa;
+  --primary: #6b8aff;
+  --primary-foreground: #ffffff;
+  --secondary: #364054;
+  --secondary-foreground: #f5f7fa;
+  --muted: #364054;
+  --muted-foreground: #b0b8d0;
+  --accent: #445166;
+  --accent-foreground: #f5f7fa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #445166;
+  --input: #364054;
+  --input-background: #364054;
+  --ring: #6b8aff;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #6b8aff;
+  --chart-2: #22d3ee;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+  --sidebar: #252d3e;
+  --sidebar-foreground: #b0b8d0;
+  --sidebar-primary: #6b8aff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #364054;
+  --sidebar-accent-foreground: #f5f7fa;
+  --sidebar-border: #364054;
+  --sidebar-ring: #6b8aff;
+  --pm-monthly-bg: color-mix(in srgb, var(--primary) 18%, transparent);
+  --pm-monthly-border: color-mix(in srgb, var(--primary) 35%, transparent);
+  --pm-monthly-text: #c7d2fe;
+  --pm-monthly-dot: #a5b4fc;
+  --pm-yearly-bg: color-mix(in srgb, #f59e0b 18%, transparent);
+  --pm-yearly-border: color-mix(in srgb, #f59e0b 35%, transparent);
+  --pm-yearly-text: #fde68a;
+  --pm-yearly-dot: #fbbf24;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-size: var(--font-size);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) var(--card);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-radius: 999px;
+  border: 2px solid var(--card);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--card);
+}
+
+input,
+select,
+textarea,
+button {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-surface {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.theme-card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+}
+
+.theme-input {
+  background: var(--input-background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.theme-sidebar {
+  background: var(--sidebar);
+  color: var(--sidebar-foreground);
+}
+
+.theme-header {
+  background: var(--card);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--secondary);
+  color: var(--foreground);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--accent);
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.main-card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.page-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: var(--page-max-width);
+}
+
+.dashboard-gap {
+  gap: var(--space);
+}
+
+.dashboard-card-padding {
+  padding: var(--card-padding);
+}
+
+.dashboard-card-max-h {
+  max-height: var(--dashboard-card-max-h);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
   margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.hide-time-indicator[type="time"]::-webkit-calendar-picker-indicator,
+.hide-time-indicator[type="time"]::-webkit-inner-spin-button,
+.hide-time-indicator[type="time"]::-webkit-clear-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.hide-time-indicator {
+  cursor: pointer;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.btn-click {
+  transition: transform 0.2s ease-out;
+}
+
+.btn-click:active {
+  transform: scale(0.9);
 }
 
 .flip-card {
@@ -8,8 +273,6 @@
   width: 100%;
   height: 100%;
 }
-
-
 
 .flip-card-back {
   position: absolute;

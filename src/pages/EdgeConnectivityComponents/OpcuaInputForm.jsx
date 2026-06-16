@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
+import { exportEdgeConnectionTemplate, importEdgeConnectionTemplate } from "../../functions/exportEdgeTemplate";
 
 const securityPolicies = ["None", "Basic128Rsa15", "Basic256", "Basic256Sha256", "Aes128_Sha256_RsaOaep"];
 const securityModes = ["None", "Sign", "Sign and Encrypt"];
@@ -382,7 +383,16 @@ export const OpcuaInputForm = () => {
         {/* Table */}
 
         <div className="bg-white rounded border shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
+                    <div className="flex justify-end px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => importEdgeConnectionTemplate({ expectedProtocol: "OPC UA", notify, onSuccess: fetchServerList })}
+              className="rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              Upload Template
+            </button>
+          </div>
+<table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="px-4 py-2 text-left">Name</th>
@@ -466,6 +476,12 @@ export const OpcuaInputForm = () => {
                       <td className="px-4 py-2 flex gap-2 justify-center">
                         <button onClick={() => { setEditingId(server.id); setEditConfig(server); }} className="text-blue-600">
                           <Pencil size={18} />
+                        </button>
+                        <button
+                          onClick={() => exportEdgeConnectionTemplate(server, notify)}
+                          className="text-emerald-700 text-xs font-medium"
+                        >
+                          Export
                         </button>
                         <button onClick={() => handleDelete(server.id)} className="text-red-600">
                           <Trash2 size={18} />

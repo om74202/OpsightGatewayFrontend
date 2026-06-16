@@ -6,6 +6,7 @@ import { Edit, Trash2, Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useConfirm, useNotify } from "../../context/ConfirmContext";
+import { exportEdgeConnectionTemplate, importEdgeConnectionTemplate } from "../../functions/exportEdgeTemplate";
 
 export const ModbusRTUConfig = () => {
   const notify=useNotify()
@@ -449,7 +450,16 @@ const handleSaveEditValues = async (id, values) => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+                      <div className="flex justify-end px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => importEdgeConnectionTemplate({ expectedProtocol: "Modbus-RTU", notify, onSuccess: getServerList })}
+              className="rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+            >
+              Upload Template
+            </button>
+          </div>
+<table className="w-full text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="py-3 px-6 text-left">Connection Name</th>
@@ -625,6 +635,12 @@ const handleSaveEditValues = async (id, values) => {
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                           >
                             <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => exportEdgeConnectionTemplate(server, notify)}
+                            className="rounded px-2 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Export
                           </button>
                           <button
                             onClick={() => handleDelete(server.id)}

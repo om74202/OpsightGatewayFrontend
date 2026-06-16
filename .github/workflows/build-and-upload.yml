@@ -3,6 +3,7 @@ name: Build And Upload Frontend and
 on:
   push:
     branches:
+      - version1
       - version2
   workflow_dispatch:
 
@@ -46,5 +47,5 @@ jobs:
           username: ${{ secrets.GATEWAY_VM_USER }}
           key: ${{ secrets.GATEWAY_VM_SSH_KEY }}
           source: "frontend-1.0.0.tar.gz"
-          target: "/tmp/v2"
+          target: "/tmp/v1"
           debug: true

@@ -34,6 +34,7 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
   const [customTagsCollapsed, setCustomTagsCollapsed] = useState(true);
 
   const [error, setError] = useState('');
+  const [sharedBucketName, setSharedBucketName] = useState('');
 
   const resetShiftForm = () => {
     setCurrentShift({
@@ -104,6 +105,7 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/database/getShifts`);
       setShifts(response.data?.shifts || []);
+      setSharedBucketName(response.data?.bucketName || '');
 
       const responseServer = await axios.get(`${process.env.REACT_APP_API_URL}/allServers/all`);
       const serverLists = responseServer.data?.servers || [];
@@ -241,7 +243,11 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
       setError('Please fill in all required fields');
       return;
     }
-  
+
+    if (!sharedBucketName.trim()) {
+      setError('Please enter a shared bucket name');
+      return;
+    }
 
     const conflict = checkCustomTagConflict(currentShift);
     if (conflict) {
@@ -253,11 +259,14 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
       if (isEditing) {
         await axios.put(
           `${process.env.REACT_APP_API_URL}/database/updateShift/${currentShift.id}`,
-          currentShift
+          { ...currentShift, bucketName: sharedBucketName.trim() }
         );
         await notify.success('Shift Updated Successfully');
       } else {
-        await axios.post(`${process.env.REACT_APP_API_URL}/database/createShift`, currentShift);
+        await axios.post(`${process.env.REACT_APP_API_URL}/database/createShift`, {
+          ...currentShift,
+          bucketName: sharedBucketName.trim(),
+        });
         await notify.success('Shift Added Successfully');
       }
       await getShift();
@@ -314,6 +323,20 @@ export default function ShiftManager({ value, onChange,TotalShifts=[] }) {
             </h2>
 
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Shared Bucket Name *</label>
+                <input
+                  type="text"
+                  value={sharedBucketName}
+                  onChange={(e) => setSharedBucketName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="e.g., All Shifts"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  All shift data will use this one Influx bucket. Changing this name replaces the previous bucket.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Shift Name *</label>
                 <input

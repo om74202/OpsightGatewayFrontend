@@ -29,7 +29,7 @@ function CustomNode({ data }) {
       {data.type === "iiot" && (
         <>
           <Radio size={18} />
-          <span className="whitespace-nowrap text-sm font-medium">
+          <span className="whitespace-nowrap text-sm font-medium text-[var(--foreground)]">
             {data.label}
           </span>
         </>
@@ -43,7 +43,7 @@ function CustomNode({ data }) {
             alt="Gateway"
             className="w-40 h-40 object-contain"
           />
-          <span className="mt-1 text-xs font-medium text-black">
+          <span className="mt-1 text-xs font-medium text-foreground">
             {data.label}
           </span>
         </div>
@@ -80,6 +80,7 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
       data: {
         label: `${gateway.name} `,
         type: "gateway",
+        
       },
       position: { x: 300, y: 150 },
     },
@@ -124,10 +125,12 @@ export default function GatewayGraph({ iiot, gateway, edges }) {
   return (
     <div className="bg-white" style={{ width: "90%", height: "350px" }}>
       <ReactFlow
+        style={{ background: "var(--background)" }}
         nodes={nodes}
         edges={connections}
         fitView
         nodeTypes={{ custom: CustomNode }}
+        proOptions={{ hideAttribution: true }}
       >
         <Controls />
         {/* <Background className="bg-white "/> */}
